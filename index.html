@@ -178,15 +178,14 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
   gap:13px;margin-bottom:2rem;
 }
 
-/* Cards — all motion handled via JS springs, CSS only for base appearance */
+/* Cards — motion handled via JS springs */
 .acard{
   border-radius:20px;overflow:hidden;cursor:pointer;
   background:rgba(255,255,255,0.055);
   border:1px solid rgba(255,255,255,0.09);
   backdrop-filter:blur(22px) saturate(170%);
   -webkit-backdrop-filter:blur(22px) saturate(170%);
-  will-change:transform,filter;
-  /* motion blur applied via JS filter */
+  will-change:transform;
 }
 
 .athumb{
@@ -536,23 +535,15 @@ class Spring{
   stop(){if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}}
 }
 
-/* Apply motion blur from velocity */
-function motionBlur(el,vel){
-  const b=Math.min(Math.abs(vel)*0.7,8);
-  el.style.filter=b>0.4?`blur(${b.toFixed(1)}px)`:'none';
-}
-
-/* Spring a button with bounce + motion blur on hover/press */
+/* Spring a button with bounce on hover/press */
 function springBtn(el,{hoverScale=1.08,pressScale=0.94,stiffness=380,damping=18}={}){
   const sp=new Spring(stiffness,damping,1);
   sp.set(1);
   el.addEventListener('mouseenter',()=>sp.to(hoverScale,v=>{
     el.style.transform=`scale(${v})`;
-    motionBlur(el,sp.vel,'Y');
   }));
   el.addEventListener('mouseleave',()=>sp.to(1,v=>{
     el.style.transform=`scale(${v})`;
-    motionBlur(el,sp.vel,'Y');
   }));
   el.addEventListener('mousedown',()=>sp.to(pressScale,v=>{el.style.transform=`scale(${v})`;}));
   el.addEventListener('mouseup',()=>sp.to(hoverScale,v=>{el.style.transform=`scale(${v})`;}));
@@ -568,9 +559,7 @@ function springCard(el){
   el.style.transformOrigin='center center';
 
   function applyCard(){
-    const blur=Math.min(Math.abs(spY.vel)*0.4,5);
     el.style.transform=`translateY(${spY.pos.toFixed(2)}px) scale(${spS.pos.toFixed(4)})`;
-    el.style.filter=blur>0.3?`blur(${blur.toFixed(1)}px)`:'none';
   }
 
   el.addEventListener('mouseenter',()=>{
@@ -602,8 +591,6 @@ function staggerIn(els,{delay=60,fromY=28,stiffness=280,damping=22}={}){
       sp.set(fromY);
       sp.to(0,v=>{
         el.style.transform=`translateY(${v.toFixed(2)}px)`;
-        const blur=Math.min(Math.abs(sp.vel)*0.3,6);
-        el.style.filter=blur>0.3?`blur(${blur.toFixed(1)}px)`:'none';
       });
     },i*delay);
   });
@@ -729,7 +716,7 @@ function toggleSearch(){
   /* spring the toggle button */
   const sp=new Spring(420,15,1);
   sp.set(searchOpen?0.8:1.15);
-  sp.to(1,v=>{btn.style.transform=`scale(${v})`;motionBlur(btn,sp.vel,'Y');});
+  sp.to(1,v=>{btn.style.transform=`scale(${v})`;});
   if(searchOpen)setTimeout(()=>document.getElementById('searchInput').focus(),260);
   else clearSearch();
 }
@@ -750,10 +737,8 @@ function clearSearch(){
 /* ── SHEET SPRINGS ── */
 const sheetSp = new Spring(320, 28, 1);
 const hubSp   = new Spring(300, 26, 1);
-const hubBlurSp = new Spring(280, 24, 1);
-sheetSp.set(100); // starts fully offscreen (100% translated)
+sheetSp.set(100);
 hubSp.set(1);
-hubBlurSp.set(0);
 
 const sheet    = document.getElementById('game-sheet');
 const backdrop = document.getElementById('sheet-backdrop');
@@ -762,22 +747,16 @@ let sheetOpen  = false;
 
 function applySheet(v){
   sheet.style.transform = `translateY(${v.toFixed(2)}%)`;
-  // subtle motion blur while flying
-  const spd = Math.abs(sheetSp.vel);
-  const mb  = Math.min(spd * 0.3, 10);
-  sheet.style.filter = mb > 0.5 ? `blur(${mb.toFixed(1)}px)` : 'none';
 }
 
-function applyHub(scale, blur){
+function applyHub(scale){
   hubWrap.style.transform = `scale(${scale.toFixed(4)})`;
-  hubWrap.style.filter    = blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : 'none';
 }
 
 function openSheet(filename, displayName){
   if(sheetOpen) return;
   sheetOpen = true;
 
-  // Set iframe src + title
   const url = BASE + filename;
   const iframe = document.getElementById('sheet-iframe');
   document.getElementById('sheet-title').textContent = displayName;
@@ -785,18 +764,12 @@ function openSheet(filename, displayName){
   iframe.style.opacity = '0';
   iframe.src = url;
 
-  // Show backdrop
   backdrop.classList.add('open');
   hubWrap.classList.add('sheet-open');
   document.body.style.overflow = 'hidden';
 
-  // Spring sheet up from bottom (100% → 0%)
   sheetSp.to(0, applySheet);
-
-  // Spring hub: scale down + blur in
-  hubSp.to(0.92, v => {
-    hubBlurSp.to(6, b => applyHub(v, b));
-  });
+  hubSp.to(0.92, v => applyHub(v));
 }
 
 function closeSheet(){
@@ -806,22 +779,16 @@ function closeSheet(){
   backdrop.classList.remove('open');
   document.body.style.overflow = '';
 
-  // Spring sheet back down
   sheetSp.to(100, applySheet);
 
-  // Spring hub back to normal
   hubSp.to(1, v => {
-    hubBlurSp.to(0, b => {
-      applyHub(v, b);
-      if(Math.abs(v - 1) < 0.001){
-        hubWrap.classList.remove('sheet-open');
-        hubWrap.style.transform = '';
-        hubWrap.style.filter = '';
-      }
-    });
+    applyHub(v);
+    if(Math.abs(v - 1) < 0.001){
+      hubWrap.classList.remove('sheet-open');
+      hubWrap.style.transform = '';
+    }
   });
 
-  // Clear iframe after animation
   setTimeout(()=>{
     const iframe = document.getElementById('sheet-iframe');
     iframe.src = '';
@@ -829,7 +796,6 @@ function closeSheet(){
     document.getElementById('sheet-loading').style.display = 'flex';
   }, 450);
 
-  // Spring close button
   const closeBtn = document.getElementById('sheet-close');
   const sp = new Spring(400, 14, 1); sp.set(0.8);
   sp.to(1, v => closeBtn.style.transform = `scale(${v})`);

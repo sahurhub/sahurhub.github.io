@@ -72,7 +72,30 @@ header{
 }
 @keyframes gradShift{0%,100%{background-position:0%;}50%{background-position:100%;}}
 
-.header-right{display:flex;align-items:center;gap:10px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+
+/* ── NAV TABS ── */
+.nav-tab{
+  padding:0.32rem 0.85rem;border-radius:999px;
+  font-size:0.75rem;font-weight:600;letter-spacing:0.1px;
+  cursor:pointer;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.09);
+  color:rgba(255,255,255,0.45);
+  will-change:transform;
+  transition:background 0.18s,border-color 0.18s,color 0.18s;
+}
+.nav-tab.active{
+  background:linear-gradient(135deg,rgba(167,139,250,0.28),rgba(96,165,250,0.22));
+  border-color:rgba(167,139,250,0.4);
+  color:#fff;
+  box-shadow:0 2px 12px rgba(167,139,250,0.2);
+}
+
+/* page containers */
+#page-home,#page-credits{
+  transition:opacity 0.28s ease,transform 0.28s ease;
+}
 
 .search-toggle{
   width:36px;height:36px;border-radius:50%;
@@ -137,8 +160,6 @@ nav{
 
 /* ── MAIN ── */
 main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 1.8rem 4rem;}
-#hv{display:block;}
-#av{display:none;}
 
 .sec-label{
   font-size:0.66rem;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;
@@ -342,7 +363,32 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
   nav,.search-wrap,main{padding-left:1.1rem;padding-right:1.1rem;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
   #game-sheet{height:96vh;}
+  .credit-card{padding:0.75rem 0.9rem;}
 }
+
+/* ── CREDITS ── */
+.credits-section{margin-top:0.5rem;padding-bottom:1rem;}
+.credits-grid{display:flex;flex-direction:column;gap:10px;}
+.credit-card{
+  display:flex;align-items:center;gap:14px;
+  padding:0.85rem 1.1rem;border-radius:16px;
+  transition:transform 0.2s cubic-bezier(0.34,1.6,0.64,1),box-shadow 0.2s;
+  will-change:transform;cursor:default;
+}
+.credit-card:hover{
+  transform:translateY(-3px) scale(1.01);
+  box-shadow:0 8px 28px rgba(0,0,0,0.35);
+}
+.credit-avatar{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(167,139,250,0.25),rgba(96,165,250,0.2));
+  border:1px solid rgba(255,255,255,0.1);
+  font-size:1.1rem;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:-0.5px;
+}
+.credit-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.credit-name{font-size:0.88rem;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:-0.1px;}
+.credit-desc{font-size:0.72rem;font-weight:400;color:rgba(255,255,255,0.35);line-height:1.4;}
 </style>
 </head>
 <body>
@@ -378,35 +424,82 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
     Sahur<span>Hub</span>
   </div>
   <div class="header-right">
-    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()" title="Search">
-      &#9906;
-    </button>
+    <button class="nav-tab active" id="tabHome" onclick="showPage('home')">Home</button>
+    <button class="nav-tab" id="tabCredits" onclick="showPage('credits')">Credits</button>
+    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()" title="Search">&#9906;</button>
   </div>
 </header>
 
 <div class="search-wrap glass" id="searchWrap">
   <div class="search-inner glass">
     <span class="search-icon">&#9906;</span>
-    <input type="text" id="searchInput" placeholder="Search activities..." oninput="onSearch(this.value)">
+    <input type="text" id="searchInput" placeholder="Search honey pots..." oninput="onSearch(this.value)">
     <button class="clear-search" id="clearBtn" onclick="clearSearch()">&#10005;</button>
   </div>
 </div>
 
-<nav>
-  <button class="pill active" onclick="filt('all',this)">All</button>
-  <button class="pill" onclick="filt('action',this)">Action</button>
-  <button class="pill" onclick="filt('puzzle',this)">Puzzle</button>
-  <button class="pill" onclick="filt('classic',this)">Classic</button>
-</nav>
+
 
 <main>
-  <div id="hv">
-    <p class="sec-label">Activities</p>
+  <!-- HOME PAGE -->
+  <div id="page-home">
+    <p class="sec-label">Honey Pots</p>
     <div class="grid" id="grid">
-      <div class="state-msg" id="loadMsg">Loading activities…</div>
+      <div class="state-msg" id="loadMsg">Loading honey pots…</div>
+    </div>
+  </div>
+
+  <!-- CREDITS PAGE -->
+  <div id="page-credits" style="display:none;opacity:0;transform:translateY(16px);">
+    <p class="sec-label">Credits</p>
+    <div class="credits-grid">
+
+      <div class="credit-card glass">
+        <div class="credit-avatar">P</div>
+        <div class="credit-info">
+          <p class="credit-name">Plixy</p>
+          <p class="credit-desc">the biggest larper and vibe coder</p>
+        </div>
+      </div>
+
+      <div class="credit-card glass">
+        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(245,158,11,0.15));">
+          <img src="https://sahurhub.github.io/Objects/logo.png" alt="Claude" style="width:20px;height:20px;border-radius:4px;object-fit:contain;">
+        </div>
+        <div class="credit-info">
+          <p class="credit-name">Claude.ai</p>
+          <p class="credit-desc">main contributor</p>
+        </div>
+      </div>
+
+      <div class="credit-card glass">
+        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(251,146,60,0.25),rgba(234,88,12,0.15));">🍩</div>
+        <div class="credit-info">
+          <p class="credit-name">DrDonut</p>
+          <p class="credit-desc">making donutsmp and the only reason why i play minecraft</p>
+        </div>
+      </div>
+
+      <div class="credit-card glass">
+        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(220,38,38,0.25),rgba(185,28,28,0.15));">🍓</div>
+        <div class="credit-info">
+          <p class="credit-name">Raspberry Pi 5</p>
+          <p class="credit-desc">most useful tool</p>
+        </div>
+      </div>
+
+      <div class="credit-card glass">
+        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(16,185,129,0.25),rgba(5,150,105,0.15));">🍯</div>
+        <div class="credit-info">
+          <p class="credit-name">Opsec</p>
+          <p class="credit-desc">holy honey pot</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </main>
+
 
 <footer></footer>
 
@@ -443,12 +536,10 @@ class Spring{
   stop(){if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}}
 }
 
-/* Apply motion blur from velocity — mimics iOS' velocity-proportional blur */
-function motionBlur(el,vel,axis='Y'){
-  const b=Math.min(Math.abs(vel)*0.9,12);
-  el.style.filter=b>0.4
-    ?`blur(${axis==='Y'?`0px,${b.toFixed(1)}px`:`${b.toFixed(1)}px,0px`})`
-    :'none';
+/* Apply motion blur from velocity */
+function motionBlur(el,vel){
+  const b=Math.min(Math.abs(vel)*0.7,8);
+  el.style.filter=b>0.4?`blur(${b.toFixed(1)}px)`:'none';
 }
 
 /* Spring a button with bounce + motion blur on hover/press */
@@ -469,34 +560,34 @@ function springBtn(el,{hoverScale=1.08,pressScale=0.94,stiffness=380,damping=18}
   el.addEventListener('touchend',{passive:true},()=>sp.to(1,v=>{el.style.transform=`scale(${v})`;}));
 }
 
-/* Spring a card: lift + tilt + motion blur */
+/* Spring a card: lift + scale from centre + motion blur */
 function springCard(el){
   const spY=new Spring(260,20,1);
   const spS=new Spring(260,20,1);
   spY.set(0);spS.set(1);
+  el.style.transformOrigin='center center';
 
   function applyCard(){
-    const blur=Math.min(Math.abs(spY.vel)*0.5,6);
+    const blur=Math.min(Math.abs(spY.vel)*0.4,5);
     el.style.transform=`translateY(${spY.pos.toFixed(2)}px) scale(${spS.pos.toFixed(4)})`;
-    el.style.filter=blur>0.3?`blur(0px,${blur.toFixed(1)}px)`:'none';
-    // glow border on hover
+    el.style.filter=blur>0.3?`blur(${blur.toFixed(1)}px)`:'none';
   }
 
   el.addEventListener('mouseenter',()=>{
-    spY.to(-7,applyCard);
-    spS.to(1.025,applyCard);
+    spY.to(-6,applyCard);
+    spS.to(1.02,applyCard);
     el.style.borderColor='rgba(167,139,250,0.35)';
-    el.style.boxShadow='0 18px 44px rgba(0,0,0,0.45),0 0 0 1px rgba(167,139,250,0.12)';
+    el.style.boxShadow='0 16px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(167,139,250,0.1)';
   });
   el.addEventListener('mouseleave',()=>{
     spY.to(0,applyCard);
     spS.to(1,applyCard);
-    el.style.borderColor='rgba(255,255,255,0.09)';
+    el.style.borderColor='';
     el.style.boxShadow='none';
   });
-  el.addEventListener('mousedown',()=>{spY.to(-2,applyCard);spS.to(0.96,applyCard);});
-  el.addEventListener('mouseup',()=>{spY.to(-7,applyCard);spS.to(1.025,applyCard);});
-  el.addEventListener('touchstart',{passive:true},()=>{spY.to(-2,applyCard);spS.to(0.96,applyCard);});
+  el.addEventListener('mousedown',()=>{spY.to(-2,applyCard);spS.to(0.97,applyCard);});
+  el.addEventListener('mouseup',()=>{spY.to(-6,applyCard);spS.to(1.02,applyCard);});
+  el.addEventListener('touchstart',{passive:true},()=>{spY.to(-2,applyCard);spS.to(0.97,applyCard);});
   el.addEventListener('touchend',{passive:true},()=>{spY.to(0,applyCard);spS.to(1,applyCard);});
 }
 
@@ -511,8 +602,8 @@ function staggerIn(els,{delay=60,fromY=28,stiffness=280,damping=22}={}){
       sp.set(fromY);
       sp.to(0,v=>{
         el.style.transform=`translateY(${v.toFixed(2)}px)`;
-        const blur=Math.min(Math.abs(sp.vel)*0.4,8);
-        el.style.filter=blur>0.3?`blur(0px,${blur.toFixed(1)}px)`:'none';
+        const blur=Math.min(Math.abs(sp.vel)*0.3,6);
+        el.style.filter=blur>0.3?`blur(${blur.toFixed(1)}px)`:'none';
       });
     },i*delay);
   });
@@ -540,7 +631,7 @@ function guessCategory(name){
 }
 function prettyName(f){return f.replace(/\.html?$/i,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
 
-let allFiles=[],currentCat='all',currentSearch='',searchOpen=false;
+let allFiles=[],currentSearch='',searchOpen=false;
 
 /* ── LOAD FILES ── */
 async function loadFiles(){
@@ -550,7 +641,7 @@ async function loadFiles(){
     const data=await res.json();
     allFiles=data.filter(f=>f.type==='file'&&/\.html?$/i.test(f.name))
       .map(f=>({name:f.name,display:prettyName(f.name),cat:guessCategory(f.name),emoji:fileEmoji(f.name),url:BASE+f.name}));
-    if(!allFiles.length){document.getElementById('loadMsg').textContent='No activities in Education/ yet.';}
+    if(!allFiles.length){document.getElementById('loadMsg').textContent='No honey pots in Education/ yet.';}
     else renderCards();
   }catch(e){document.getElementById('loadMsg').textContent='Could not reach repo. Make sure it\'s public.';console.error(e);}
 }
@@ -560,11 +651,9 @@ function renderCards(){
   const grid=document.getElementById('grid');
   const q=currentSearch.toLowerCase().trim();
   const filtered=allFiles.filter(f=>{
-    const catOk=currentCat==='all'||f.cat===currentCat;
-    const searchOk=!q||f.display.toLowerCase().includes(q)||f.name.toLowerCase().includes(q);
-    return catOk&&searchOk;
+    return !q||f.display.toLowerCase().includes(q)||f.name.toLowerCase().includes(q);
   });
-  if(!filtered.length){grid.innerHTML=`<div class="no-results">Nothing found for "${currentSearch||currentCat}"</div>`;return;}
+  if(!filtered.length){grid.innerHTML=`<div class="no-results">No honey pots found for "${currentSearch}"</div>`;return;}
 
   grid.innerHTML=filtered.map(f=>`
     <div class="acard" data-cat="${f.cat}" data-name="${f.name}">
@@ -585,19 +674,49 @@ function renderCards(){
   staggerIn(document.querySelectorAll('.acard'),{delay:50,fromY:22});
 }
 
-/* ── FILTER ── */
-function filt(cat,btn){
-  currentCat=cat;
-  /* spring the pill */
-  document.querySelectorAll('.pill').forEach(b=>{
-    b.classList.remove('active');
-    const sp=new Spring(320,18,1);sp.set(1);
-    sp.to(1,v=>b.style.transform=`scale(${v})`);
-  });
-  btn.classList.add('active');
-  const sp=new Spring(380,16,1);sp.set(0.88);
-  sp.to(1,v=>btn.style.transform=`scale(${v})`);
-  renderCards();
+/* ── PAGE SWITCHING ── */
+let currentPage='home';
+
+function showPage(page){
+  if(page===currentPage)return;
+  const fromEl=document.getElementById('page-'+currentPage);
+  const toEl=document.getElementById('page-'+page);
+  const dir=page==='credits'?1:-1;
+
+  // out
+  fromEl.style.transition='opacity 0.22s ease,transform 0.22s ease';
+  fromEl.style.opacity='0';
+  fromEl.style.transform=`translateY(${dir*-12}px)`;
+  setTimeout(()=>{fromEl.style.display='none';fromEl.style.transform='';},230);
+
+  // in
+  toEl.style.display='';
+  toEl.style.opacity='0';
+  toEl.style.transform=`translateY(${dir*14}px)`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    toEl.style.transition='opacity 0.28s ease,transform 0.3s cubic-bezier(0.34,1.4,0.64,1)';
+    toEl.style.opacity='1';
+    toEl.style.transform='translateY(0)';
+  }));
+
+  // tab spring
+  document.getElementById('tabHome').classList.remove('active');
+  document.getElementById('tabCredits').classList.remove('active');
+  const newTab=document.getElementById(page==='home'?'tabHome':'tabCredits');
+  newTab.classList.add('active');
+  const sp=new Spring(400,15,1);sp.set(0.85);
+  sp.to(1,v=>{newTab.style.transform=`scale(${v})`;});
+
+  // stagger credit cards in
+  if(page==='credits'){
+    setTimeout(()=>{
+      const cards=document.querySelectorAll('#page-credits .credit-card');
+      staggerIn(cards,{delay:55,fromY:18,stiffness:300,damping:22});
+      cards.forEach(c=>springCard(c));
+    },80);
+  }
+
+  currentPage=page;
 }
 
 /* ── SEARCH ── */
@@ -646,7 +765,7 @@ function applySheet(v){
   // subtle motion blur while flying
   const spd = Math.abs(sheetSp.vel);
   const mb  = Math.min(spd * 0.3, 10);
-  sheet.style.filter = mb > 0.5 ? `blur(0px,${mb.toFixed(1)}px)` : 'none';
+  sheet.style.filter = mb > 0.5 ? `blur(${mb.toFixed(1)}px)` : 'none';
 }
 
 function applyHub(scale, blur){
@@ -743,10 +862,9 @@ font-family:system-ui,sans-serif;background:#080810;color:rgba(255,255,255,0.35)
 
 /* ── BOOT ── */
 window.addEventListener('DOMContentLoaded',()=>{
-  staggerIn(document.querySelectorAll('.pill'),{delay:80,fromY:14,stiffness:350,damping:20});
-  document.querySelectorAll('.pill').forEach(p=>springBtn(p,{hoverScale:1.06,pressScale:0.94,stiffness:360,damping:18}));
   springBtn(document.getElementById('searchToggle'),{hoverScale:1.12,pressScale:0.9,stiffness:400,damping:15});
   springBtn(document.getElementById('sheet-close'),{hoverScale:1.15,pressScale:0.88,stiffness:420,damping:14});
+  document.querySelectorAll('.credit-card').forEach(c=>springCard(c));
   sheet.style.transform='translateY(100%)';
 
   /* wire iframe load event here so function is guaranteed defined */

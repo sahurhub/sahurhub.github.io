@@ -236,16 +236,127 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
   color:rgba(255,255,255,0.3);font-weight:400;
 }
 
-footer{position:relative;z-index:10;padding:0.8rem;border-top:1px solid rgba(255,255,255,0.04);}
+/* ── GAME SHEET ── */
+/* Dim overlay behind sheet */
+#sheet-backdrop{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0);
+  pointer-events:none;
+  transition:background 0.4s ease;
+}
+#sheet-backdrop.open{
+  background:rgba(0,0,0,0.55);
+  pointer-events:all;
+}
 
-@media(max-width:600px){
+/* The sheet itself — slides up from bottom */
+#game-sheet{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  height:92vh;
+  z-index:201;
+  border-radius:22px 22px 0 0;
+  background:rgba(12,12,22,0.82);
+  backdrop-filter:blur(40px) saturate(200%) brightness(1.1);
+  -webkit-backdrop-filter:blur(40px) saturate(200%) brightness(1.1);
+  border-top:1px solid rgba(255,255,255,0.13);
+  border-left:1px solid rgba(255,255,255,0.08);
+  border-right:1px solid rgba(255,255,255,0.08);
+  display:flex;flex-direction:column;
+  /* start offscreen */
+  transform:translateY(100%);
+  will-change:transform,filter;
+  box-shadow:0 -20px 80px rgba(0,0,0,0.6);
+}
+
+/* drag handle */
+.sheet-handle{
+  width:36px;height:5px;border-radius:999px;
+  background:rgba(255,255,255,0.22);
+  margin:10px auto 0;flex-shrink:0;
+  cursor:pointer;
+}
+
+/* sheet top bar */
+.sheet-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 8px;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.sheet-title{
+  font-size:0.82rem;font-weight:600;
+  color:rgba(255,255,255,0.75);letter-spacing:-0.1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:70%;
+}
+.sheet-close{
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.6);
+  font-size:0.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  will-change:transform;flex-shrink:0;
+}
+
+/* iframe container */
+.sheet-frame{
+  flex:1;overflow:hidden;
+  border-radius:0 0 0 0;
+  position:relative;
+}
+.sheet-frame iframe{
+  width:100%;height:100%;border:none;display:block;
+}
+
+/* loading state inside sheet */
+.sheet-loading{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;color:rgba(255,255,255,0.3);
+  font-weight:400;letter-spacing:0.3px;
+}
+
+/* hub shrinks when sheet is open */
+#hub-wrap{
+  will-change:transform,filter;
+  transition:border-radius 0.5s ease;
+}
+#hub-wrap.sheet-open{
+  border-radius:16px;
+  overflow:hidden;
+}
+
   header{padding:0.9rem 1.1rem;}
   nav,.search-wrap,main{padding-left:1.1rem;padding-right:1.1rem;}
   .grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
+  #game-sheet{height:96vh;}
 }
 </style>
 </head>
 <body>
+
+<!-- Sheet backdrop -->
+<div id="sheet-backdrop" onclick="closeSheet()"></div>
+
+<!-- Game sheet panel -->
+<div id="game-sheet">
+  <div class="sheet-handle" onclick="closeSheet()"></div>
+  <div class="sheet-bar">
+    <span class="sheet-title" id="sheet-title">Activity</span>
+    <button class="sheet-close" id="sheet-close" onclick="closeSheet()">&#10005;</button>
+  </div>
+  <div class="sheet-frame">
+    <div class="sheet-loading" id="sheet-loading">Loading…</div>
+    <iframe id="sheet-iframe" src="" allowfullscreen
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      style="opacity:0;transition:opacity 0.3s ease;"
+      onload="onFrameLoad()"></iframe>
+  </div>
+</div>
+
+<!-- Hub content wrapped so we can scale it -->
+<div id="hub-wrap">
 
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
@@ -286,7 +397,8 @@ footer{position:relative;z-index:10;padding:0.8rem;border-top:1px solid rgba(255
 
 <footer></footer>
 
-<script>
+</div><!-- end #hub-wrap -->
+
 /* ═══════════════════════════════════════════════
    SPRING PHYSICS ENGINE
    Simulates iOS UIKit spring animations:
@@ -502,10 +614,108 @@ function clearSearch(){
   renderCards();
 }
 
-/* ── LAUNCH — direct link, new tab ── */
-function launch(filename){
-  window.open(BASE+filename,'_blank');
+/* ── SHEET SPRINGS ── */
+const sheetSp = new Spring(320, 28, 1);
+const hubSp   = new Spring(300, 26, 1);
+const hubBlurSp = new Spring(280, 24, 1);
+sheetSp.set(100); // starts fully offscreen (100% translated)
+hubSp.set(1);
+hubBlurSp.set(0);
+
+const sheet    = document.getElementById('game-sheet');
+const backdrop = document.getElementById('sheet-backdrop');
+const hubWrap  = document.getElementById('hub-wrap');
+let sheetOpen  = false;
+
+function applySheet(v){
+  sheet.style.transform = `translateY(${v.toFixed(2)}%)`;
+  // subtle motion blur while flying
+  const spd = Math.abs(sheetSp.vel);
+  const mb  = Math.min(spd * 0.3, 10);
+  sheet.style.filter = mb > 0.5 ? `blur(0px,${mb.toFixed(1)}px)` : 'none';
 }
+
+function applyHub(scale, blur){
+  hubWrap.style.transform = `scale(${scale.toFixed(4)})`;
+  hubWrap.style.filter    = blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : 'none';
+}
+
+function openSheet(filename, displayName){
+  if(sheetOpen) return;
+  sheetOpen = true;
+
+  // Set iframe src + title
+  const url = BASE + filename;
+  const iframe = document.getElementById('sheet-iframe');
+  document.getElementById('sheet-title').textContent = displayName;
+  document.getElementById('sheet-loading').style.display = 'flex';
+  iframe.style.opacity = '0';
+  iframe.src = url;
+
+  // Show backdrop
+  backdrop.classList.add('open');
+  hubWrap.classList.add('sheet-open');
+  document.body.style.overflow = 'hidden';
+
+  // Spring sheet up from bottom (100% → 0%)
+  sheetSp.to(0, applySheet);
+
+  // Spring hub: scale down + blur in
+  hubSp.to(0.92, v => {
+    hubBlurSp.to(6, b => applyHub(v, b));
+  });
+}
+
+function closeSheet(){
+  if(!sheetOpen) return;
+  sheetOpen = false;
+
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+
+  // Spring sheet back down
+  sheetSp.to(100, applySheet);
+
+  // Spring hub back to normal
+  hubSp.to(1, v => {
+    hubBlurSp.to(0, b => {
+      applyHub(v, b);
+      if(Math.abs(v - 1) < 0.001){
+        hubWrap.classList.remove('sheet-open');
+        hubWrap.style.transform = '';
+        hubWrap.style.filter = '';
+      }
+    });
+  });
+
+  // Clear iframe after animation
+  setTimeout(()=>{
+    const iframe = document.getElementById('sheet-iframe');
+    iframe.src = '';
+    iframe.style.opacity = '0';
+    document.getElementById('sheet-loading').style.display = 'flex';
+  }, 450);
+
+  // Spring close button
+  const closeBtn = document.getElementById('sheet-close');
+  const sp = new Spring(400, 14, 1); sp.set(0.8);
+  sp.to(1, v => closeBtn.style.transform = `scale(${v})`);
+}
+
+function onFrameLoad(){
+  const iframe = document.getElementById('sheet-iframe');
+  if(!iframe.src || iframe.src === window.location.href) return;
+  document.getElementById('sheet-loading').style.display = 'none';
+  iframe.style.opacity = '1';
+}
+
+/* ── LAUNCH — open in sheet with spring ── */
+function launch(filename){
+  const card = document.querySelector(`.acard[data-name="${filename}"]`);
+  const displayName = card ? card.querySelector('.aname').textContent : filename;
+  openSheet(filename, displayName);
+}
+
 
 /* ── POPOUT — open in about:blank then immediately redirect ── */
 function popout(filename){
@@ -524,16 +734,14 @@ font-family:system-ui,sans-serif;background:#080810;color:rgba(255,255,255,0.35)
   tab.document.close();
 }
 
-/* ── BOOT: spring in nav pills, then load files ── */
+/* ── BOOT ── */
 window.addEventListener('DOMContentLoaded',()=>{
-  /* stagger pills in */
   staggerIn(document.querySelectorAll('.pill'),{delay:80,fromY:14,stiffness:350,damping:20});
-  /* spring each pill on hover */
   document.querySelectorAll('.pill').forEach(p=>springBtn(p,{hoverScale:1.06,pressScale:0.94,stiffness:360,damping:18}));
-  /* spring search toggle */
   springBtn(document.getElementById('searchToggle'),{hoverScale:1.12,pressScale:0.9,stiffness:400,damping:15});
+  springBtn(document.getElementById('sheet-close'),{hoverScale:1.15,pressScale:0.88,stiffness:420,damping:14});
+  sheet.style.transform='translateY(100%)';
   loadFiles();
-});
-</script>
+});</script>
 </body>
 </html>

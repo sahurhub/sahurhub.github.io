@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storm Chaser: Twisted Web</title>
+    <title>Storm Chaser: Twisted Web v4</title>
     <style>
         :root {
             --bg-color: rgba(15, 23, 42, 0.85);
@@ -30,14 +30,16 @@
         }
         .hidden { display: none !important; opacity: 0; pointer-events: none; }
         
-        h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px; }
-        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 40px; font-weight: 500; }
+        h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 20px; font-weight: 500; }
         
+        .career-stats { background: rgba(0,0,0,0.4); padding: 10px 30px; border-radius: 20px; font-weight: bold; color: #fbbf24; margin-bottom: 30px; border: 1px solid rgba(251, 191, 36, 0.3); }
+
         .vehicle-grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 1000px; }
         .vehicle-card { 
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); 
             padding: 20px; border-radius: 16px; width: 220px; text-align: left; 
-            cursor: pointer; transition: all 0.2s ease; 
+            cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden;
         }
         .vehicle-card:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-3px); }
         .vehicle-card.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2); }
@@ -49,12 +51,12 @@
         .v-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 20px; line-height: 1.4; height: 60px;}
         
         #deploy-btn { 
-            margin-top: 40px; padding: 16px 60px; font-size: 1.2rem; font-family: inherit; font-weight: 700; 
+            margin-top: 40px; padding: 16px 60px; font-size: 1.2rem; font-weight: 700; 
             background: var(--accent); color: white; border: none; border-radius: 30px; 
-            cursor: pointer; transition: 0.2s ease; letter-spacing: 1px;
+            cursor: pointer; transition: 0.2s ease; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
         #deploy-btn:hover:not(:disabled) { background: var(--accent-hover); transform: scale(1.05); }
-        #deploy-btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); cursor: not-allowed; }
+        #deploy-btn:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); cursor: not-allowed; box-shadow: none; }
 
         #pause-menu { 
             position: absolute; top:0; left:0; width:100%; height:100%; 
@@ -64,6 +66,10 @@
         
         .damage-pulse { animation: pulseRed 0.5s infinite; }
         @keyframes pulseRed { 0% { box-shadow: inset 0 0 0px red; } 50% { box-shadow: inset 0 0 80px rgba(255,0,0,0.5); } 100% { box-shadow: inset 0 0 0px red; } }
+        
+        .flash-white { animation: flashScreen 0.2s ease-out; }
+        @keyframes flashScreen { 0% { background-color: white; opacity: 1; } 100% { background-color: transparent; opacity: 0; } }
+        #lightning-flash { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 5; pointer-events: none; opacity: 0; background: white; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -71,24 +77,27 @@
 
     <canvas id="game-canvas"></canvas>
     <canvas id="hud-canvas"></canvas>
+    <div id="lightning-flash"></div>
 
     <div id="ui-layer">
         <h1>Twisted Web</h1>
         <div class="subtitle">Select your intercept vehicle</div>
+        <div class="career-stats" id="career-data">Total Data Collected: 0 TB</div>
         <div class="vehicle-grid" id="v-grid"></div>
-        <button id="deploy-btn" disabled>Deploy to Field</button>
+        <button id="deploy-btn" disabled>DEPLOY TO FIELD</button>
     </div>
 
     <div id="pause-menu" class="hidden">
         <h1>Paused</h1>
         <p style="color: var(--text-muted); margin-top: -10px; margin-bottom: 30px;">Press ESC to resume</p>
-        <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; font-size: 0.9rem;">
-            <p><b>WASD</b> - Drive</p>
-            <p><b>F</b> - Deploy anchors / Drop suspension</p>
-            <p><b>C</b> - Cycle camera view</p>
-            <p><b>Right-Click Drag</b> - Orbit Camera</p>
-            <p><b>Scroll</b> - Zoom camera</p>
+        <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; font-size: 0.9rem; line-height: 1.8;">
+            <b>WASD</b> - Drive & Steer<br>
+            <b>F</b> - Deploy anchors / Drop suspension<br>
+            <b>C</b> - Cycle camera view<br>
+            <b>Right-Click Drag</b> - Orbit Camera<br>
+            <b>Scroll</b> - Zoom camera
         </div>
+        <button id="return-btn" style="margin-top: 30px; padding: 12px 30px; background: #ef4444; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight:bold;">ABORT & RETURN</button>
     </div>
 
     <script>
@@ -101,18 +110,22 @@
             { id: 'van', name: 'Doppler Van', speed: 5, armor: 6, weight: 7, handling: 5, desc: 'Mobile radar lab. F: Raise radar mast to passively earn data while parked.', color: 0xdddddd }
         ];
 
+        let careerDataPoints = 0; // Persistent between rounds
+        let sessionDataPoints = 0;
+        
         let selectedVehicleId = null;
         let gameState = 'menu'; 
-        let dataPoints = 0;
         let cameraShake = 0;
 
         // --- AUDIO SYSTEM ---
         const AudioSys = {
             ctx: null, windGain: null, engineOsc: null,
             init() {
+                if(this.ctx) return;
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AudioContext();
                 
+                // Wind Noise
                 const bufferSize = this.ctx.sampleRate * 2;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -122,34 +135,50 @@
                 noiseSource.buffer = buffer; noiseSource.loop = true;
                 
                 const windFilter = this.ctx.createBiquadFilter();
-                windFilter.type = 'lowpass'; windFilter.frequency.value = 600;
+                windFilter.type = 'lowpass'; windFilter.frequency.value = 400;
                 
                 this.windGain = this.ctx.createGain(); this.windGain.gain.value = 0;
                 
                 noiseSource.connect(windFilter); windFilter.connect(this.windGain);
                 this.windGain.connect(this.ctx.destination); noiseSource.start();
 
+                // Engine drone
                 this.engineOsc = this.ctx.createOscillator(); this.engineOsc.type = 'sawtooth';
                 this.engineOsc.frequency.value = 40;
-                const engineGain = this.ctx.createGain(); engineGain.gain.value = 0.03;
+                const engineGain = this.ctx.createGain(); engineGain.gain.value = 0.02;
                 this.engineOsc.connect(engineGain); engineGain.connect(this.ctx.destination);
                 this.engineOsc.start();
             },
             updateWind(proximity) { 
-                if(this.ctx) this.windGain.gain.setTargetAtTime(proximity * 0.8, this.ctx.currentTime, 0.1);
+                if(this.ctx) this.windGain.gain.setTargetAtTime(proximity * 0.9, this.ctx.currentTime, 0.1);
             },
             updateEngine(speedRatio) {
-                if(this.ctx) this.engineOsc.frequency.setTargetAtTime(40 + speedRatio * 120, this.ctx.currentTime, 0.1);
+                if(this.ctx) this.engineOsc.frequency.setTargetAtTime(40 + speedRatio * 100, this.ctx.currentTime, 0.1);
             },
             playBang() {
                 if(!this.ctx) return;
                 const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'square'; osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
-                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
                 osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playThunder() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 2.5);
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2.5);
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(300, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 2);
+                
+                osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 2.5);
             }
         };
 
@@ -158,21 +187,26 @@
         const hudCanvas = document.getElementById('hud-canvas');
         const hudCtx = hudCanvas.getContext('2d');
         
-        let scene, camera, renderer, dirLight, ambientLight, skyMesh;
+        let scene, camera, renderer, dirLight, ambientLight, skyMesh, lightningLight;
         let player, tornado, terrain;
-        let props = [];
+        let props = [], rainParticles, dirtParticles;
         let time = 0;
 
         const Input = {
             keys: { w:false, a:false, s:false, d:false },
             mouse: { rightDown: false, x: 0, y: 0 },
             camMode: 0, 
-            orbitAngleX: Math.PI, orbitAngleY: Math.PI/6, zoom: 25 // Camera starts behind
+            orbitAngleX: Math.PI, orbitAngleY: Math.PI/8, zoom: 25 
         };
 
         function initThree() {
+            // Clean up old scene if restarting
+            if(scene) {
+                renderer.dispose();
+            }
+
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x5c7a99, 0.0015); 
+            scene.fog = new THREE.FogExp2(0x5c7a99, 0.0012); 
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
             
@@ -184,14 +218,18 @@
             ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
             scene.add(ambientLight);
 
-            dirLight = new THREE.DirectionalLight(0xfff5e6, 1.2); 
+            dirLight = new THREE.DirectionalLight(0xfff5e6, 1.0); 
             dirLight.position.set(150, 250, 100);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
-            dirLight.shadow.camera.top = 300; dirLight.shadow.camera.bottom = -300;
-            dirLight.shadow.camera.left = -300; dirLight.shadow.camera.right = 300;
+            dirLight.shadow.camera.top = 400; dirLight.shadow.camera.bottom = -400;
+            dirLight.shadow.camera.left = -400; dirLight.shadow.camera.right = 400;
             scene.add(dirLight);
+
+            lightningLight = new THREE.PointLight(0xe0f2fe, 0, 1000);
+            lightningLight.position.set(0, 300, 0);
+            scene.add(lightningLight);
 
             const skyGeo = new THREE.SphereGeometry(1500, 32, 15);
             const skyMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, side: THREE.BackSide }); 
@@ -199,19 +237,47 @@
             scene.add(skyMesh);
 
             createWorld();
+            createWeatherSystems();
+            
             window.addEventListener('resize', onWindowResize);
-            setupInputs();
+            if(!window.inputSetup) { setupInputs(); window.inputSetup = true; }
+        }
+
+        function createWeatherSystems() {
+            // Rain System
+            const rainGeo = new THREE.BufferGeometry();
+            const rainCount = 2000;
+            const rainPos = new Float32Array(rainCount * 3);
+            for(let i=0; i<rainCount*3; i++) {
+                rainPos[i] = (Math.random() - 0.5) * 200; // Spread around camera
+            }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+            const rainMat = new THREE.PointsMaterial({color: 0x94a3b8, size: 0.2, transparent: true, opacity: 0.6});
+            rainParticles = new THREE.Points(rainGeo, rainMat);
+            scene.add(rainParticles);
+
+            // Dirt Trail System
+            const dirtGeo = new THREE.BufferGeometry();
+            const dirtCount = 100;
+            const dirtPos = new Float32Array(dirtCount * 3);
+            const dirtLife = new Float32Array(dirtCount);
+            for(let i=0; i<dirtCount; i++) { dirtPos[i*3]=0; dirtPos[i*3+1]=-100; dirtPos[i*3+2]=0; dirtLife[i]=0; }
+            dirtGeo.setAttribute('position', new THREE.BufferAttribute(dirtPos, 3));
+            dirtGeo.setAttribute('life', new THREE.BufferAttribute(dirtLife, 1));
+            const dirtMat = new THREE.PointsMaterial({color: 0x5d4037, size: 1.5, transparent: true, opacity: 0.4});
+            dirtParticles = new THREE.Points(dirtGeo, dirtMat);
+            scene.add(dirtParticles);
         }
 
         function createWorld() {
             const planeGeo = new THREE.PlaneGeometry(3000, 3000, 64, 64);
-            const planeMat = new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 0.8, flatShading: true });
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0x3d5a40, roughness: 0.9, flatShading: true });
             
             const pos = planeGeo.attributes.position;
             for(let i=0; i<pos.count; i++) {
                 let x = pos.getX(i), y = pos.getY(i);
                 if(Math.abs(x % 400) > 20 && Math.abs(y % 400) > 20) { 
-                    pos.setZ(i, Math.sin(x*0.01) * Math.cos(y*0.01) * 10);
+                    pos.setZ(i, Math.sin(x*0.01) * Math.cos(y*0.01) * 8);
                 }
             }
             planeGeo.computeVertexNormals();
@@ -221,7 +287,7 @@
             terrain.receiveShadow = true;
             scene.add(terrain);
 
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
             const lineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
             for(let i=-3; i<=3; i++) {
                 let rNS = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 3000), roadMat);
@@ -234,15 +300,15 @@
                 rEW.position.set(0, 0.2, i * 400); rEW.receiveShadow = true; scene.add(rEW);
             }
 
-            const treeLeafGeo = new THREE.ConeGeometry(2.5, 7, 5);
-            const treeTrunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 2, 5);
-            const treeMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, flatShading:true });
-            const woodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+            const treeLeafGeo = new THREE.ConeGeometry(3, 8, 5);
+            const treeTrunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 2, 5);
+            const treeMat = new THREE.MeshStandardMaterial({ color: 0x2e5a27, flatShading:true });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a3b32 });
             
             const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, 14, 4);
             const crossGeo = new THREE.BoxGeometry(4, 0.2, 0.2);
-            const poleMat = new THREE.MeshStandardMaterial({ color: 0x4a3b32 });
 
+            props = [];
             for(let i=0; i<400; i++) {
                 let x = (Math.random() - 0.5) * 2800;
                 let z = (Math.random() - 0.5) * 2800;
@@ -252,8 +318,8 @@
 
                 if(isNearRoad && Math.random() > 0.5) {
                     let group = new THREE.Group();
-                    let pole = new THREE.Mesh(poleGeo, poleMat); pole.position.y = 7;
-                    let cross = new THREE.Mesh(crossGeo, poleMat); cross.position.y = 13;
+                    let pole = new THREE.Mesh(poleGeo, woodMat); pole.position.y = 7;
+                    let cross = new THREE.Mesh(crossGeo, woodMat); cross.position.y = 13;
                     if(Math.abs(x % 400) < 25) cross.rotation.y = Math.PI/2;
                     group.add(pole, cross); group.position.set(x, 0, z);
                     pole.castShadow = true; scene.add(group);
@@ -290,7 +356,7 @@
             constructor(data) {
                 this.data = data;
                 this.group = new THREE.Group();
-                this.chassis = new THREE.Group(); // Holds the body (can squat down)
+                this.chassis = new THREE.Group(); 
                 this.group.add(this.chassis);
 
                 this.health = 100;
@@ -298,9 +364,9 @@
                 this.maxSpeed = data.speed * 4;
                 this.turnSpeed = data.handling * 0.005;
                 this.armor = data.armor;
-                this.weight = data.weight;
+                this.weight = data.weight; // CRITICAL for lift calculation
                 
-                this.velocityY = 0; // For vertical lifting
+                this.velocityY = 0; 
                 this.isDeployed = false;
                 this.deployCooldown = 0;
                 this.airbagsActive = false;
@@ -308,6 +374,9 @@
                 
                 this.buildGeometry();
                 scene.add(this.group);
+                
+                // Set initial rotation so W drives forward standardly
+                this.group.rotation.y = Math.PI;
             }
 
             buildGeometry() {
@@ -357,7 +426,6 @@
                     this.chassis.add(body, radar); this.deployParts.push(radar); 
                 }
 
-                // Wheels stay outside chassis so they don't squash into the floor
                 this.wheels = [];
                 const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.5, 16);
                 wheelGeo.rotateZ(Math.PI/2);
@@ -383,25 +451,24 @@
 
                 if(Input.keys.f && this.deployCooldown <= 0 && this.group.position.y <= 0.1) {
                     this.isDeployed = !this.isDeployed;
-                    this.deployCooldown = 5; 
+                    this.deployCooldown = 3; 
                     
                     if(this.data.id === 'riv' && this.isDeployed) {
                         this.speed = this.maxSpeed * 2.5; 
                         setTimeout(() => this.isDeployed = false, 3000);
                     }
                     if(this.data.id === 'twistex' && this.isDeployed) {
-                        dataPoints += 200; 
+                        sessionDataPoints += 200; 
                         this.deployParts[0].visible = false;
-                        setTimeout(() => { this.deployParts[0].visible = true; this.isDeployed = false; }, 5000);
+                        setTimeout(() => { this.deployParts[0].visible = true; this.isDeployed = false; }, 4000);
                     }
                 }
 
                 if(this.data.id === 'van' && this.isDeployed && this.speed < 1 && this.group.position.y <= 0) {
-                    dataPoints += 2;
+                    sessionDataPoints += 3;
                     this.deployParts[0].rotation.y += dt * 5; 
                 }
 
-                // Visual Suspension Squat & Anchors
                 let targetChassisY = 0;
                 if(this.data.id === 'dom3') {
                     targetChassisY = this.isDeployed ? -0.4 : 0;
@@ -413,59 +480,58 @@
                 }
                 this.chassis.position.y = THREE.MathUtils.lerp(this.chassis.position.y, targetChassisY, 0.1);
 
-                // Driving & Airborne Physics
                 let isGrounded = (this.group.position.y <= 0.1);
+                
+                // --- DIRT PARTICLES ---
+                let onGrass = (Math.abs(this.group.position.x % 400) > 12 && Math.abs(this.group.position.z % 400) > 12);
+                if(isGrounded && Math.abs(this.speed) > 5 && onGrass) {
+                    spawnDirt(this.group.position.x, this.group.position.z, this.group.rotation.y);
+                }
 
                 if(isGrounded) {
                     if(!this.isDeployed || this.data.id === 'riv' || this.data.id === 'twistex' || this.data.id === 'van') {
                         if(Input.keys.w) this.speed += 0.8;
                         else if(Input.keys.s) this.speed -= 0.8;
-                        else this.speed *= 0.96; 
+                        else this.speed *= 0.95; 
                     } else {
-                        this.speed *= 0.8; // Anchored brake
+                        this.speed *= 0.8; 
                     }
                     
                     this.speed = Math.max(-this.maxSpeed/2, Math.min(this.speed, this.maxSpeed));
                     
-                    // Steering (only if moving and grounded)
                     if(Math.abs(this.speed) > 0.1) {
                         let turn = this.turnSpeed * (this.speed > 0 ? 1 : -1);
                         if(Input.keys.a) this.group.rotation.y += turn;
                         if(Input.keys.d) this.group.rotation.y -= turn;
                     }
                 } else {
-                    // Airborne Drag
                     this.speed *= 0.99;
                 }
 
-                // Move forward (Three.js standard is -Z is forward)
+                // Three.js local forward is -Z
                 this.group.translateZ(-this.speed * dt); 
                 
-                // Wheel Spin
                 if(isGrounded) this.wheels.forEach(w => w.rotation.x -= this.speed * dt * 1.5);
 
-                // Vertical Lifting Gravity
+                // --- GRAVITY & VERTICAL MOVEMENT ---
                 this.group.position.y += this.velocityY * dt;
                 if(this.group.position.y > 0) {
-                    this.velocityY -= 30 * dt; // Gravity
-                    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, Math.sin(time*10)*0.2, 0.1); // Wobble in air
+                    this.velocityY -= 40 * dt; // Gravity
+                    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, Math.sin(time*10)*0.3, 0.05); 
                 } else {
-                    if (this.velocityY < -20) this.triggerCollision(Math.abs(this.velocityY) * 0.5); // Fall damage
+                    if (this.velocityY < -20) this.triggerCollision(Math.abs(this.velocityY) * 0.4); 
                     this.group.position.y = 0;
                     this.velocityY = 0;
-                    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.2); // Settle
+                    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.2); 
                 }
 
-                // Map Bounds
                 ['x','z'].forEach(axis => {
                     if(this.group.position[axis] > 1450) this.group.position[axis] = 1450;
                     if(this.group.position[axis] < -1450) this.group.position[axis] = -1450;
                 });
 
                 let targetScale = this.airbagsActive ? 1.2 : 0.01;
-                this.airbags.forEach(b => {
-                    b.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.2);
-                });
+                this.airbags.forEach(b => { b.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.2); });
             }
 
             triggerCollision(impact) {
@@ -480,12 +546,7 @@
                     document.body.classList.remove('damage-pulse');
                 }, 2500);
 
-                if(this.health <= 0) {
-                    gameState = 'menu';
-                    const ui = document.getElementById('ui-layer');
-                    ui.classList.remove('hidden');
-                    ui.innerHTML = `<h1 style="color:#ef4444">VEHICLE DESTROYED</h1><p class="subtitle">Data Collected: ${Math.floor(dataPoints)}</p><button id="deploy-btn" onclick="location.reload()">Return to Base</button>`;
-                }
+                if(this.health <= 0) endGame("VEHICLE DESTROYED");
             }
         }
 
@@ -493,18 +554,17 @@
             constructor() {
                 this.group = new THREE.Group();
                 this.efScale = Math.floor(Math.random() * 5) + 1; // EF1-EF5
-                this.speed = 8 + Math.random() * 4; 
+                this.speed = 10 + Math.random() * 6; 
                 
-                // Spawn on map edge and aim inwards
+                // Spawn on map edge and aim inwards (straight line path)
                 let spawnAngle = Math.random() * Math.PI * 2;
-                this.group.position.set(Math.cos(spawnAngle) * 1200, 0, Math.sin(spawnAngle) * 1200);
-                this.directionAngle = spawnAngle + Math.PI + ((Math.random() - 0.5) * 1.0); // Travel in straight line
+                this.group.position.set(Math.cos(spawnAngle) * 1300, 0, Math.sin(spawnAngle) * 1300);
+                this.directionAngle = spawnAngle + Math.PI + ((Math.random() - 0.5) * 0.5); 
                 
                 const mat = new THREE.MeshStandardMaterial({ color: 0x11161c, roughness: 0.9, transparent: true, opacity: 0.85 });
                 this.funnelLayers = [];
                 
-                // Dynamic size based on EF Scale
-                let scaleMult = 0.5 + (this.efScale * 0.3); // EF1 is thin, EF5 is massive
+                let scaleMult = 0.5 + (this.efScale * 0.35); 
 
                 for(let i=0; i<18; i++) {
                     let radius = (2 + (i * i * 0.4)) * scaleMult;
@@ -516,9 +576,9 @@
                 }
 
                 const partGeo = new THREE.BufferGeometry();
-                const partCount = 1000 + this.efScale * 500;
+                const partCount = 1000 + this.efScale * 600;
                 const posArray = new Float32Array(partCount * 3);
-                for(let i=0; i<partCount*3; i++) posArray[i] = (Math.random()-0.5)*150 * scaleMult;
+                for(let i=0; i<partCount*3; i++) posArray[i] = (Math.random()-0.5)*180 * scaleMult;
                 partGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
                 const partMat = new THREE.PointsMaterial({ color: 0x222222, size: 3 });
                 this.debris = new THREE.Points(partGeo, partMat);
@@ -528,64 +588,127 @@
             }
 
             update(dt, playerPos) {
-                // Violent Rotation
                 this.group.children.forEach((c, idx) => {
                     c.rotation.y += dt * (8 - idx*0.1);
                     if(c.isMesh) c.position.x = Math.sin(time*2 + idx) * (1 + idx*0.2); 
                 });
                 
-                // Predictable straight-line movement
                 this.group.position.x += Math.cos(this.directionAngle) * this.speed * dt;
                 this.group.position.z += Math.sin(this.directionAngle) * this.speed * dt;
 
                 let dist = this.group.position.distanceTo(playerPos);
                 
-                // Dynamic wind/lift calculations
-                let pushRadius = 150 + this.efScale * 80;
+                let pushRadius = 150 + this.efScale * 90;
                 
                 if(dist < pushRadius) {
-                    let windStrength = (1 - dist/pushRadius) * this.efScale; // 0 to EF Scale
+                    let windStrength = (1 - dist/pushRadius) * this.efScale; 
                     let gripThreshold = player.isDeployed ? player.weight * 0.8 : player.weight * 0.4;
                     
-                    // Only drift if wind strength overcomes vehicle grip (EF4/5 usually)
+                    // Sideways wind drag
                     if (windStrength > gripThreshold) {
-                        let force = (windStrength - gripThreshold) * 40;
+                        let force = (windStrength - gripThreshold) * 50;
                         let dir = new THREE.Vector3().subVectors(playerPos, this.group.position).normalize();
                         let tangent = new THREE.Vector3(-dir.z, 0, dir.x);
                         
-                        // Drag vehicle inward and sideways
-                        player.group.position.addScaledVector(dir, -force * dt * 0.5); 
-                        player.group.position.addScaledVector(tangent, force * dt * 0.8);
+                        player.group.position.addScaledVector(dir, -force * dt * 0.6); 
+                        player.group.position.addScaledVector(tangent, force * dt * 0.9);
                     }
 
-                    // Lifting Logic! (Close proximity core)
-                    let coreRadius = 40 + this.efScale * 10;
+                    // --- NEW EXPONENTIAL LIFT LOGIC ---
+                    // Ensures EF1/EF2 rarely lift heavy vehicles, but EF4/EF5 easily do
+                    let coreRadius = 45 + this.efScale * 12;
                     if(dist < coreRadius) {
-                        let liftForce = (this.efScale * 15) * (1 - dist/coreRadius);
-                        if (player.isDeployed) liftForce *= 0.2; // Anchors prevent most lift
+                        // Lift scales exponentially with EF rating
+                        let maxLift = Math.pow(this.efScale, 2.0) * 1.8; // EF1: 1.8, EF2: 7.2, EF3: 16.2, EF4: 28.8, EF5: 45.0
+                        let liftForce = maxLift * (1 - dist/coreRadius);
                         
+                        if (player.isDeployed) liftForce *= 0.15; 
+                        
+                        // Compare against vehicle weight (4 to 10)
                         if (liftForce > player.weight) {
-                            player.velocityY += (liftForce - player.weight) * dt * 5; // Launch upward
+                            player.velocityY += (liftForce - player.weight) * dt * 10; 
                         }
                         
-                        player.triggerCollision(8 * dt); // Core damage over time
+                        player.triggerCollision(10 * dt); // Core damage
                     }
 
-                    cameraShake = Math.max(0, windStrength * 0.2);
+                    cameraShake = Math.max(0, windStrength * 0.3);
                 } else {
                     cameraShake = 0;
                 }
 
                 props.forEach(p => {
-                    if(p.active && this.group.position.distanceTo(p.mesh.position) < 40 + this.efScale*8) {
+                    if(p.active && this.group.position.distanceTo(p.mesh.position) < 40 + this.efScale*10) {
                         p.active = false;
                         p.mesh.scale.set(0.1, 0.1, 0.1); 
                         p.mesh.position.y = -5;
-                        dataPoints += 15; 
+                        sessionDataPoints += 20; 
                     }
                 });
 
-                return { dist, speed: (this.speed * 15) + (this.efScale*30), ef: this.efScale }; 
+                return { dist, speed: (this.speed * 12) + (this.efScale*35), ef: this.efScale }; 
+            }
+        }
+
+        // --- PARTICLE LOGIC ---
+        let dirtIndex = 0;
+        function spawnDirt(x, z, rot) {
+            let pos = dirtParticles.geometry.attributes.position.array;
+            let life = dirtParticles.geometry.attributes.life.array;
+            let dx = Math.sin(rot); let dz = Math.cos(rot);
+            
+            // Spawn 2 particles (left and right tire)
+            for(let j=0; j<2; j++) {
+                let offset = (j===0? 1 : -1) * 1.5;
+                pos[dirtIndex*3] = x + dz*offset + (Math.random()-0.5);
+                pos[dirtIndex*3+1] = 0.5;
+                pos[dirtIndex*3+2] = z - dx*offset + (Math.random()-0.5);
+                life[dirtIndex] = 1.0;
+                dirtIndex = (dirtIndex + 1) % 100;
+            }
+            dirtParticles.geometry.attributes.position.needsUpdate = true;
+            dirtParticles.geometry.attributes.life.needsUpdate = true;
+        }
+
+        function updateWeather(dt, windFactor) {
+            // Rain 
+            rainParticles.position.copy(camera.position);
+            let rPos = rainParticles.geometry.attributes.position.array;
+            for(let i=1; i<rPos.length; i+=3) {
+                rPos[i] -= dt * 150; // Fall
+                rPos[i-1] -= dt * 40 * windFactor; // Wind push X
+                rPos[i+1] -= dt * 40 * windFactor; // Wind push Z
+                
+                if(rPos[i] < -100) {
+                    rPos[i] = 100;
+                    rPos[i-1] = (Math.random() - 0.5) * 200;
+                    rPos[i+1] = (Math.random() - 0.5) * 200;
+                }
+            }
+            rainParticles.geometry.attributes.position.needsUpdate = true;
+
+            // Dirt
+            let dPos = dirtParticles.geometry.attributes.position.array;
+            let dLife = dirtParticles.geometry.attributes.life.array;
+            for(let i=0; i<dLife.length; i++) {
+                if(dLife[i] > 0) {
+                    dLife[i] -= dt * 1.5;
+                    dPos[i*3+1] += dt * 2; // Rise
+                    if(dLife[i] <= 0) dPos[i*3+1] = -100; // Hide
+                }
+            }
+            dirtParticles.geometry.attributes.position.needsUpdate = true;
+
+            // Lightning
+            if(windFactor > 0.3 && Math.random() < 0.003) {
+                const flash = document.getElementById('lightning-flash');
+                flash.classList.remove('flash-white');
+                void flash.offsetWidth; // trigger reflow
+                flash.classList.add('flash-white');
+                
+                lightningLight.intensity = 2 + Math.random() * 3;
+                setTimeout(() => lightningLight.intensity = 0, 150);
+                setTimeout(() => AudioSys.playThunder(), 800 + Math.random()*1500); 
             }
         }
 
@@ -610,8 +733,8 @@
             window.addEventListener('mouseup', e => { if(e.button === 2 || e.button === 1) Input.mouse.rightDown = false; });
             window.addEventListener('mousemove', e => {
                 if(Input.mouse.rightDown) {
-                    Input.orbitAngleX += (e.clientX - Input.mouse.x) * 0.01;
-                    Input.orbitAngleY += (e.clientY - Input.mouse.y) * 0.01;
+                    Input.orbitAngleX -= (e.clientX - Input.mouse.x) * 0.008; // Normal drag feel
+                    Input.orbitAngleY += (e.clientY - Input.mouse.y) * 0.008;
                     Input.orbitAngleY = Math.max(0.05, Math.min(Math.PI/2.1, Input.orbitAngleY));
                     Input.mouse.x = e.clientX; Input.mouse.y = e.clientY;
                 }
@@ -625,21 +748,21 @@
             const target = player.group.position.clone();
             let camPos = new THREE.Vector3();
 
-            if(Input.camMode === 0) { // Chase Cam (Fixed to face the way we drive)
-                if(!Input.mouse.rightDown) {
-                    // Smoothly auto-align behind the car
-                    let diff = player.group.rotation.y - Input.orbitAngleX;
-                    // Normalize angle
-                    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                    Input.orbitAngleX += diff * 0.05;
+            if(Input.camMode === 0) { 
+                // --- FIXED TRUE CHASE CAM ---
+                if (!Input.mouse.rightDown) {
+                     let targetAngle = player.group.rotation.y;
+                     let diff = targetAngle - Input.orbitAngleX;
+                     // Normalize angle wrap-around
+                     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                     Input.orbitAngleX += diff * 0.08; 
                 }
                 
-                // Math standard: Car drives -Z. To place camera BEHIND it, we add Z.
-                camPos.set(
-                    target.x + Math.sin(Input.orbitAngleX) * Input.zoom * Math.cos(Input.orbitAngleY),
-                    target.y + Math.sin(Input.orbitAngleY) * Input.zoom,
-                    target.z + Math.cos(Input.orbitAngleX) * Input.zoom * Math.cos(Input.orbitAngleY)
-                );
+                // Base offset is behind (+Z locally)
+                let offset = new THREE.Vector3(0, Input.zoom * Math.sin(Input.orbitAngleY), Input.zoom * Math.cos(Input.orbitAngleY));
+                offset.applyAxisAngle(new THREE.Vector3(0,1,0), Input.orbitAngleX); 
+                camPos.copy(target).add(offset);
+
             } else if(Input.camMode === 1) { // Hood
                 camPos.set(target.x - Math.sin(player.group.rotation.y)*0.5, target.y + 2.5, target.z - Math.cos(player.group.rotation.y)*0.5);
                 target.set(target.x - Math.sin(player.group.rotation.y)*20, target.y + 2, target.z - Math.cos(player.group.rotation.y)*20);
@@ -689,21 +812,37 @@
             hudCtx.clearRect(0,0, hudCanvas.width, hudCanvas.height);
             hudCtx.font = '600 15px system-ui, sans-serif';
             
-            const mapSize = 160;
+            // --- TACTICAL MINI-MAP ---
+            const mapSize = 180;
             const mX = 25, mY = 25;
             hudCtx.fillStyle = 'rgba(15, 23, 42, 0.6)';
             roundRect(hudCtx, mX, mY, mapSize, mapSize, 12); hudCtx.fill();
             
             let px = (player.group.position.x / 3000) * mapSize + mapSize/2;
             let py = (player.group.position.z / 3000) * mapSize + mapSize/2;
-            hudCtx.fillStyle = '#3b82f6';
-            hudCtx.beginPath(); hudCtx.arc(mX+px, mY+py, 4, 0, Math.PI*2); hudCtx.fill();
-
+            
             let tx = (tornado.group.position.x / 3000) * mapSize + mapSize/2;
             let ty = (tornado.group.position.z / 3000) * mapSize + mapSize/2;
-            hudCtx.fillStyle = '#ef4444';
-            hudCtx.beginPath(); hudCtx.arc(mX+tx, mY+ty, 6 + (tStats.ef), 0, Math.PI*2); hudCtx.fill(); // Blip scales with EF
+            
+            // Draw Tornado Projected Path
+            hudCtx.beginPath();
+            hudCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+            hudCtx.lineWidth = 2;
+            hudCtx.setLineDash([6, 6]);
+            hudCtx.moveTo(mX+tx, mY+ty);
+            let targetX = tx + Math.cos(tornado.directionAngle) * mapSize;
+            let targetY = ty + Math.sin(tornado.directionAngle) * mapSize;
+            hudCtx.lineTo(mX+targetX, mY+targetY);
+            hudCtx.stroke();
+            hudCtx.setLineDash([]); // reset
 
+            // Draw Player & Tornado blips
+            hudCtx.fillStyle = '#3b82f6';
+            hudCtx.beginPath(); hudCtx.arc(mX+px, mY+py, 4, 0, Math.PI*2); hudCtx.fill();
+            hudCtx.fillStyle = '#ef4444';
+            hudCtx.beginPath(); hudCtx.arc(mX+tx, mY+ty, 6 + (tStats.ef), 0, Math.PI*2); hudCtx.fill(); 
+
+            // --- INFO PANELS ---
             const panelBg = 'rgba(15, 23, 42, 0.7)';
             
             hudCtx.textAlign = 'right'; hudCtx.fillStyle = panelBg;
@@ -741,10 +880,10 @@
 
             hudCtx.textAlign = 'center'; hudCtx.font = '800 24px system-ui, sans-serif';
             hudCtx.fillStyle = '#3b82f6';
-            hudCtx.fillText(`${Math.floor(dataPoints)}`, window.innerWidth/2, window.innerHeight - 35);
+            hudCtx.fillText(`${Math.floor(sessionDataPoints)}`, window.innerWidth/2, window.innerHeight - 35);
             hudCtx.font = '600 12px system-ui, sans-serif';
             hudCtx.fillStyle = '#94a3b8';
-            hudCtx.fillText(`DATA COLLECTED`, window.innerWidth/2, window.innerHeight - 60);
+            hudCtx.fillText(`SESSION DATA`, window.innerWidth/2, window.innerHeight - 60);
 
             if(tStats.dist < 250) {
                 let intensity = (1 - tStats.dist/250) * 0.4;
@@ -769,11 +908,12 @@
             let tStats = tornado.update(dt, player.group.position);
             
             let stormFactor = Math.max(0, 1 - tStats.dist / 1200);
-            skyMesh.material.color.setHex(0x60a5fa).lerp(new THREE.Color(0x1e293b), stormFactor); 
-            scene.fog.color.setHex(0x5c7a99).lerp(new THREE.Color(0x1e293b), stormFactor);
-            dirLight.intensity = 1.2 * (1 - stormFactor * 0.8);
+            skyMesh.material.color.setHex(0x60a5fa).lerp(new THREE.Color(0x111827), stormFactor); 
+            scene.fog.color.setHex(0x5c7a99).lerp(new THREE.Color(0x111827), stormFactor);
+            dirLight.intensity = 1.0 * (1 - stormFactor * 0.9);
             ambientLight.intensity = 0.5 * (1 - stormFactor * 0.5);
             
+            updateWeather(dt, stormFactor);
             AudioSys.updateWind(stormFactor);
             AudioSys.updateEngine(Math.abs(player.speed / player.maxSpeed));
 
@@ -782,12 +922,15 @@
             drawHUD(tStats);
         }
 
-        // --- BOOTSTRAP ---
+        // --- BOOTSTRAP / MENU ---
         function buildMenu() {
             const grid = document.getElementById('v-grid');
+            grid.innerHTML = '';
+            document.getElementById('career-data').innerText = `Career Data Collected: ${Math.floor(careerDataPoints)} TB`;
+
             VEHICLES.forEach(v => {
                 const card = document.createElement('div');
-                card.className = 'vehicle-card';
+                card.className = 'vehicle-card' + (selectedVehicleId === v.id ? ' selected' : '');
                 card.innerHTML = `
                     <div class="v-name">${v.name}</div>
                     <div class="v-stat"><span>SPEED</span><div class="v-bar"><div class="v-fill" style="width:${v.speed*10}%"></div></div></div>
@@ -803,11 +946,14 @@
                 };
                 grid.appendChild(card);
             });
+            
             document.getElementById('deploy-btn').onclick = () => startGame();
+            document.getElementById('return-btn').onclick = () => { togglePause(); endGame("MISSION ABORTED"); };
         }
 
         function startGame() {
             document.getElementById('ui-layer').classList.add('hidden');
+            sessionDataPoints = 0;
             initThree();
             AudioSys.init();
             
@@ -821,7 +967,27 @@
             requestAnimationFrame(animate);
         }
 
+        function endGame(title) {
+            gameState = 'menu';
+            careerDataPoints += sessionDataPoints;
+            const ui = document.getElementById('ui-layer');
+            ui.classList.remove('hidden');
+            
+            // Rebuild menu but show end screen overlay first
+            ui.innerHTML = `
+                <h1 style="color:${title.includes('DESTROYED') ? '#ef4444' : '#fbbf24'}">${title}</h1>
+                <p class="subtitle">Session Data Collected: ${Math.floor(sessionDataPoints)} TB</p>
+                <button id="deploy-btn" onclick="buildMenu(); document.getElementById('ui-layer').innerHTML=''; buildMenu(); document.getElementById('ui-layer').innerHTML=originalUI; buildMenu();">Return to Garage</button>
+            `;
+            
+            // Stash original UI so we can restore it easily
+            if(!window.originalUI) window.originalUI = document.getElementById('ui-layer').innerHTML;
+        }
+        
+        // Save base HTML for reset
+        window.originalUI = document.getElementById('ui-layer').innerHTML;
         window.onload = buildMenu;
+
     </script>
 </body>
 </html>

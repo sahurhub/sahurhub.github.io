@@ -350,8 +350,7 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
     <div class="sheet-loading" id="sheet-loading">Loading…</div>
     <iframe id="sheet-iframe" src="" allowfullscreen
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      style="opacity:0;transition:opacity 0.3s ease;"
-      onload="onFrameLoad()"></iframe>
+      style="opacity:0;transition:opacity 0.3s ease;"></iframe>
   </div>
 </div>
 
@@ -399,6 +398,7 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
 
 </div><!-- end #hub-wrap -->
 
+<script>
 /* ═══════════════════════════════════════════════
    SPRING PHYSICS ENGINE
    Simulates iOS UIKit spring animations:
@@ -702,13 +702,6 @@ function closeSheet(){
   sp.to(1, v => closeBtn.style.transform = `scale(${v})`);
 }
 
-function onFrameLoad(){
-  const iframe = document.getElementById('sheet-iframe');
-  if(!iframe.src || iframe.src === window.location.href) return;
-  document.getElementById('sheet-loading').style.display = 'none';
-  iframe.style.opacity = '1';
-}
-
 /* ── LAUNCH — open in sheet with spring ── */
 function launch(filename){
   const card = document.querySelector(`.acard[data-name="${filename}"]`);
@@ -741,6 +734,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   springBtn(document.getElementById('searchToggle'),{hoverScale:1.12,pressScale:0.9,stiffness:400,damping:15});
   springBtn(document.getElementById('sheet-close'),{hoverScale:1.15,pressScale:0.88,stiffness:420,damping:14});
   sheet.style.transform='translateY(100%)';
+
+  /* wire iframe load event here so function is guaranteed defined */
+  document.getElementById('sheet-iframe').addEventListener('load', function(){
+    if(!this.src || this.src === window.location.href) return;
+    document.getElementById('sheet-loading').style.display='none';
+    this.style.opacity='1';
+  });
+
   loadFiles();
 });</script>
 </body>

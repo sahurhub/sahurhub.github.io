@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sahur Hub</title>
+<link rel="icon" type="image/png" href="https://sahurhub.github.io/Objects/logo.png">
+<link rel="apple-touch-icon" href="https://sahurhub.github.io/Objects/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -49,8 +51,17 @@ header{
   font-size:1.25rem;font-weight:700;letter-spacing:-0.5px;
   background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.55) 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  /* logo bounces in */
   animation:logoPop 0.7s cubic-bezier(0.34,1.7,0.64,1) 0.1s both;
+  display:inline-flex;align-items:center;gap:0.4em;
+}
+.logo-img{
+  width:28px;height:28px;border-radius:7px;
+  object-fit:contain;
+  /* image doesn't inherit text clip, so reset */
+  -webkit-text-fill-color:initial;
+  filter:drop-shadow(0 0 8px rgba(167,139,250,0.35));
+  animation:logoPop 0.7s cubic-bezier(0.34,1.7,0.64,1) 0s both;
+  flex-shrink:0;
 }
 @keyframes logoPop{from{transform:scale(0.6);opacity:0;}to{transform:scale(1);opacity:1;}}
 .logo span{
@@ -362,7 +373,10 @@ main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 
 <div class="orb orb3"></div>
 
 <header class="glass">
-  <div class="logo">Sahur<span>Hub</span></div>
+  <div class="logo">
+    <img src="https://sahurhub.github.io/Objects/logo.png" alt="Sahur Hub" class="logo-img">
+    Sahur<span>Hub</span>
+  </div>
   <div class="header-right">
     <button class="search-toggle" id="searchToggle" onclick="toggleSearch()" title="Search">
       &#9906;

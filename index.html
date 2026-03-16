@@ -282,12 +282,6 @@ footer{position:relative;z-index:10;padding:0.8rem;border-top:1px solid rgba(255
       <div class="state-msg" id="loadMsg">Loading activities…</div>
     </div>
   </div>
-
-  <div id="av">
-    <button class="backbtn" onclick="goHome()">&#8592; Back</button>
-    <div class="stage" id="stage"></div>
-    <div class="hint" id="hint"></div>
-  </div>
 </main>
 
 <footer></footer>
@@ -451,7 +445,7 @@ function renderCards(){
       <div class="athumb">${f.emoji}</div>
       <div class="ainfo"><p class="aname">${f.display}</p><p class="aext">${f.name}</p></div>
       <div class="btnrow">
-        <button class="startbtn" onclick="launch('${f.name}')">&#9658; Here</button>
+        <button class="startbtn" onclick="launch('${f.name}')">&#9658; Play</button>
         <button class="popbtn" onclick="popout('${f.name}')">&#10696; Tab</button>
       </div>
     </div>`).join('');
@@ -508,79 +502,26 @@ function clearSearch(){
   renderCards();
 }
 
-/* ── NAV ── */
-function goHome(){
-  const av=document.getElementById('av');
-  const hv=document.getElementById('hv');
-  /* slide av out */
-  const sp=new Spring(280,22,1);sp.set(0);
-  sp.to(30,v=>{av.style.transform=`translateY(${v}px)`;av.style.opacity=String(1-v/30);});
-  setTimeout(()=>{
-    av.style.display='none';av.style.transform='';av.style.opacity='';
-    hv.style.display='';hv.style.opacity='0';hv.style.transform='translateY(-16px)';
-    const sp2=new Spring(300,22,1);sp2.set(-16);
-    sp2.to(0,v=>{hv.style.transform=`translateY(${v}px)`;hv.style.opacity=String(1+v/16);});
-    /* re-spring cards */
-    setTimeout(()=>document.querySelectorAll('.acard').forEach(springCard),100);
-  },220);
-}
-
+/* ── LAUNCH — direct link, new tab ── */
 function launch(filename){
-  const hv=document.getElementById('hv');
-  const av=document.getElementById('av');
-  /* spring hv out */
-  const sp=new Spring(280,22,1);sp.set(0);
-  sp.to(-20,v=>{hv.style.transform=`translateY(${v}px)`;hv.style.opacity=String(1+v/20);});
-  setTimeout(()=>{
-    hv.style.display='none';hv.style.transform='';hv.style.opacity='';
-    av.style.display='';
-    document.getElementById('hint').textContent='Use keyboard or touch to play · Press Back to return';
-    document.getElementById('stage').innerHTML=
-      `<iframe src="${BASE+filename}" allowfullscreen
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        title="Activity"></iframe>`;
-    /* spring av in */
-    av.style.opacity='0';av.style.transform='translateY(24px)';
-    const sp2=new Spring(300,20,1);sp2.set(24);
-    sp2.to(0,v=>{av.style.transform=`translateY(${v}px)`;
-      const blur=Math.min(Math.abs(sp2.vel)*0.45,10);
-      av.style.filter=blur>0.3?`blur(0px,${blur.toFixed(1)}px)`:'none';
-    });
-    av.style.opacity='1';
-  },200);
-  /* spring back button */
-  setTimeout(()=>{
-    const bb=document.querySelector('.backbtn');
-    if(bb){
-      springBtn(bb,{hoverScale:1.06,pressScale:0.93});
-      /* initial entrance */
-      const sp3=new Spring(340,18,1);sp3.set(0.7);
-      sp3.to(1,v=>{bb.style.transform=`scale(${v})`;motionBlur(bb,sp3.vel,'Y');});
-    }
-  },250);
+  window.open(BASE+filename,'_blank');
 }
 
+/* ── POPOUT — open in about:blank then immediately redirect ── */
 function popout(filename){
   const url=BASE+filename;
   const tab=window.open('about:blank','_blank');
   if(!tab){alert('Allow pop-ups to use Tab mode.');return;}
-  tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Loading…</title>
+  /* Write a redirect page — the tab starts as about:blank then navigates itself */
+  tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=${url}">
+<title>Loading…</title>
 <style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;
-font-family:system-ui,sans-serif;background:#080810;color:rgba(255,255,255,0.35);font-size:0.95rem;letter-spacing:0.5px;}</style>
-</head><body><p>Loading…</p></body></html>`);
+font-family:system-ui,sans-serif;background:#080810;color:rgba(255,255,255,0.35);font-size:0.9rem;letter-spacing:0.5px;}</style>
+</head><body><p>Loading…</p>
+<script>location.replace(${JSON.stringify(url)});<\/script>
+</body></html>`);
   tab.document.close();
-  fetch(url)
-    .then(r=>{if(!r.ok)throw new Error(r.status);return r.text();})
-    .then(html=>{tab.document.open();tab.document.write(html);tab.document.close();})
-    .catch(err=>{
-      tab.document.open();
-      tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Error</title>
-<style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-height:100vh;font-family:system-ui,sans-serif;background:#080810;color:#fff;gap:10px;text-align:center;padding:2rem;}
-h2{font-weight:600;font-size:1.3rem;}code{font-size:.75rem;color:rgba(255,255,255,.3);word-break:break-all;max-width:500px;}</style>
-</head><body><h2>Couldn't load</h2><code>${url}</code></body></html>`);
-      tab.document.close();
-    });
 }
 
 /* ── BOOT: spring in nav pills, then load files ── */

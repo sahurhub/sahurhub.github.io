@@ -4,354 +4,488 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sahur Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --cream:#F0F7F2;--card:#FFFFFF;--border:#A8D5B0;
-  --purple:#1E7A45;--rose:#D4690E;--green:#1A9950;
-  --blue:#1A6FA0;--gold:#B8820A;--mid:#2E6040;--dark:#122018;
-  --mint:#D0EDD8;--lav:#D0EDD8;--pink:#C5EDD0;--yel:#FFF0A0;--sky:#C8E8F8;--peach:#FFE0A0;
-}
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--dark);min-height:100vh;overflow-x:hidden;}
 
-/* ── GRASS ── */
-.grass{position:fixed;bottom:0;left:0;width:100%;height:52px;z-index:5;pointer-events:none;}
-.grass svg{width:100%;height:100%;}
+/* ── BACKGROUND ── */
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  background:#0a0a0f;
+  color:#fff;
+}
 
-/* ── FLOATING EGGS ── */
-#floaters{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
-.egg-f{position:absolute;bottom:-80px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;animation:riseEgg linear infinite;}
-@keyframes riseEgg{
-  0%{transform:translateY(0) rotate(0deg) scale(1);}
-  25%{transform:translateY(-25vh) rotate(90deg) scale(1.05);}
-  50%{transform:translateY(-50vh) rotate(180deg) scale(0.95);}
-  75%{transform:translateY(-75vh) rotate(270deg) scale(1.05);}
-  100%{transform:translateY(-110vh) rotate(360deg) scale(1);}
+/* Ambient gradient orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;animation:orbDrift ease-in-out infinite;}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(120,80,255,0.28),transparent 70%);top:-200px;left:-100px;animation-duration:18s;animation-delay:0s;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(0,180,255,0.2),transparent 70%);top:30%;right:-150px;animation-duration:22s;animation-delay:-6s;}
+.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(255,100,180,0.15),transparent 70%);bottom:10%;left:20%;animation-duration:16s;animation-delay:-10s;}
+@keyframes orbDrift{
+  0%,100%{transform:translate(0,0) scale(1);}
+  33%{transform:translate(40px,-30px) scale(1.05);}
+  66%{transform:translate(-30px,40px) scale(0.95);}
+}
+
+/* Glass mixin used everywhere */
+.glass{
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.13);
+}
+.glass-strong{
+  background:rgba(255,255,255,0.11);
+  backdrop-filter:blur(40px) saturate(200%);
+  -webkit-backdrop-filter:blur(40px) saturate(200%);
+  border:1px solid rgba(255,255,255,0.18);
 }
 
 /* ── HEADER ── */
-header{position:relative;z-index:10;text-align:center;padding:1.8rem 1rem 0.8rem;background:linear-gradient(180deg,#D0EDD8 0%,transparent 100%);}
-.ears{display:flex;justify-content:center;gap:12px;margin-bottom:-4px;}
-.ear{width:18px;height:42px;background:#C5EDD0;border-radius:50% 50% 30% 30%;border:2.5px solid var(--green);position:relative;animation:earWiggle 1.8s ease-in-out infinite;}
-.ear.l{transform-origin:bottom center;animation-delay:0s;}
-.ear.r{transform-origin:bottom center;animation-delay:0.15s;}
-@keyframes earWiggle{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
-.ear::after{content:'';position:absolute;top:7px;left:5px;width:7px;height:24px;background:var(--green);border-radius:50%;opacity:0.4;}
+header{
+  position:relative;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.2rem 1.8rem;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.logo{
+  font-size:1.3rem;font-weight:700;letter-spacing:-0.5px;
+  background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.6) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo span{
+  background:linear-gradient(135deg,#a78bfa,#60a5fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
 
-.logo{font-family:'Bubblegum Sans',cursive;font-size:clamp(2rem,7vw,3.8rem);color:var(--purple);letter-spacing:1px;display:inline-flex;align-items:center;gap:0.15em;animation:logoBounce 2.4s cubic-bezier(0.34,1.8,0.64,1) infinite;}
-@keyframes logoBounce{0%,100%{transform:translateY(0) scale(1);}40%{transform:translateY(-8px) scale(1.04);}60%{transform:translateY(-5px) scale(1.02);}}
-.logo .hi{color:var(--rose);}
-.eggico{display:inline-block;width:0.62em;height:0.75em;background:linear-gradient(135deg,#C5EDD0,#A8D8B8);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:2.5px solid var(--green);animation:eggSpin 3s ease-in-out infinite;}
-@keyframes eggSpin{0%,100%{transform:rotate(-10deg) scale(1);}50%{transform:rotate(10deg) scale(1.1);}}
+.header-right{display:flex;align-items:center;gap:10px;}
 
-.tagline{color:var(--mid);font-size:0.9rem;margin-top:0.3rem;font-weight:800;letter-spacing:0.5px;}
+/* Search toggle button */
+.search-toggle{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border:none;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.7);
+  font-size:1rem;
+  transition:all 0.2s cubic-bezier(0.34,1.6,0.64,1);
+}
+.search-toggle:hover{background:rgba(255,255,255,0.15);color:#fff;transform:scale(1.08);}
+.search-toggle.active{background:rgba(167,139,250,0.25);border-color:rgba(167,139,250,0.5);color:#a78bfa;}
 
-/* ── NAV ── */
-nav{display:flex;justify-content:center;gap:0.5rem;flex-wrap:wrap;padding:0.75rem 1rem;position:relative;z-index:10;}
-.fb{background:white;border:2.5px solid var(--border);color:var(--mid);padding:0.35rem 1.1rem;border-radius:999px;font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:900;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.7,0.64,1),background 0.15s,box-shadow 0.15s;}
-.fb:hover{transform:scale(1.1) translateY(-3px);}
-.fb.active{background:var(--green);border-color:var(--green);color:white;transform:scale(1.08) translateY(-2px);box-shadow:0 5px 16px rgba(26,153,80,0.4);}
+/* Collapsible search bar */
+.search-wrap{
+  overflow:hidden;
+  max-height:0;
+  opacity:0;
+  transition:max-height 0.35s cubic-bezier(0.34,1.4,0.64,1),opacity 0.25s ease,padding 0.25s ease;
+  position:relative;z-index:20;
+  padding:0 1.8rem;
+}
+.search-wrap.open{max-height:80px;opacity:1;padding:0.7rem 1.8rem;}
+.search-inner{
+  display:flex;align-items:center;gap:12px;
+  padding:0.6rem 1rem;
+  border-radius:14px;
+}
+.search-inner input{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:'Inter',sans-serif;font-size:0.95rem;font-weight:400;
+  color:#fff;
+}
+.search-inner input::placeholder{color:rgba(255,255,255,0.35);}
+.search-icon{color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;}
+.clear-search{
+  background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;
+  font-size:1rem;padding:0 2px;transition:color 0.15s;
+  display:none;
+}
+.clear-search.vis{display:block;}
+.clear-search:hover{color:rgba(255,255,255,0.8);}
+
+/* ── NAV PILLS ── */
+nav{
+  position:relative;z-index:20;
+  display:flex;align-items:center;gap:8px;
+  padding:1rem 1.8rem 0.5rem;
+  flex-wrap:wrap;
+}
+.pill{
+  padding:0.38rem 1rem;border-radius:999px;
+  font-size:0.78rem;font-weight:600;letter-spacing:0.2px;
+  cursor:pointer;border:none;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.55);
+  transition:all 0.18s cubic-bezier(0.34,1.6,0.64,1);
+}
+.pill:hover{background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.9);transform:scale(1.05);}
+.pill.active{
+  background:linear-gradient(135deg,rgba(167,139,250,0.35),rgba(96,165,250,0.3));
+  border-color:rgba(167,139,250,0.5);
+  color:#fff;
+  box-shadow:0 2px 12px rgba(167,139,250,0.25);
+}
 
 /* ── MAIN ── */
-main{position:relative;z-index:10;max-width:1100px;margin:0 auto;padding:1rem 1.5rem 5rem;}
+main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.2rem 1.8rem 4rem;}
 #hv{display:block;}
 #av{display:none;}
 
-.sec-title{font-family:'Bubblegum Sans',cursive;font-size:1.45rem;color:var(--green);margin-bottom:1.3rem;display:flex;align-items:center;gap:0.5rem;}
+/* Section label */
+.sec-label{
+  font-size:0.7rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,0.3);margin-bottom:1rem;margin-top:0.5rem;
+}
 
-/* ── ACTIVITY CARDS ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(192px,1fr));gap:1.3rem;margin-bottom:3rem;}
-.acard{background:var(--card);border:2.5px solid var(--border);border-radius:22px;overflow:hidden;cursor:pointer;transition:transform 0.2s cubic-bezier(0.34,1.7,0.64,1),box-shadow 0.2s,border-color 0.2s;position:relative;}
-.acard:hover{transform:translateY(-8px) scale(1.03) rotate(-1deg);box-shadow:0 14px 32px rgba(26,153,80,0.22);border-color:var(--green);}
-.acard:active{transform:scale(0.96);}
-.athumb{width:100%;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;}
-.bdg{position:absolute;top:8px;right:8px;color:white;font-size:0.62rem;font-weight:900;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:0.5px;z-index:2;animation:bdgPop 2s ease-in-out infinite;}
-@keyframes bdgPop{0%,100%{transform:scale(1);}50%{transform:scale(1.12);}}
-.bdg.hot{background:var(--rose);}
-.bdg.new{background:var(--green);}
-.bdg.cls{background:var(--purple);}
-.ainfo{padding:0.7rem 1rem 0.2rem;}
-.aname{font-family:'Bubblegum Sans',cursive;font-size:1.05rem;color:var(--dark);}
-.acat{font-size:0.72rem;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;margin-top:1px;}
-.btnrow{display:flex;gap:8px;padding:0 0.75rem 0.75rem;}
-.startbtn{flex:1;padding:0.52rem 0;background:linear-gradient(135deg,var(--green),var(--rose));border:none;border-radius:12px;color:white;font-family:'Bubblegum Sans',cursive;font-size:1rem;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.8,0.64,1),box-shadow 0.15s;letter-spacing:1px;}
-.startbtn:hover{transform:scale(1.06);box-shadow:0 5px 16px rgba(26,153,80,0.45);}
+/* Empty / loading states */
+.state-msg{
+  text-align:center;padding:3rem 1rem;
+  color:rgba(255,255,255,0.3);font-size:0.95rem;font-weight:400;
+}
+
+/* ── CARDS GRID ── */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:14px;margin-bottom:2rem;
+}
+
+.acard{
+  border-radius:20px;overflow:hidden;cursor:pointer;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  transition:transform 0.22s cubic-bezier(0.34,1.6,0.64,1),box-shadow 0.22s,border-color 0.22s;
+  position:relative;
+}
+.acard:hover{
+  transform:translateY(-6px) scale(1.02);
+  border-color:rgba(167,139,250,0.4);
+  box-shadow:0 16px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(167,139,250,0.15);
+}
+.acard:active{transform:scale(0.97);}
+
+.athumb{
+  width:100%;aspect-ratio:16/9;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.4rem;
+  position:relative;
+  background:linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+
+/* shimmer on thumb */
+.athumb::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.04) 50%,transparent 60%);
+  animation:shimmer 3s ease infinite;
+}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+
+.ainfo{padding:0.75rem 0.9rem 0.3rem;}
+.aname{font-size:0.9rem;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:-0.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aext{font-size:0.68rem;font-weight:500;color:rgba(255,255,255,0.3);margin-top:1px;letter-spacing:0.3px;}
+
+.btnrow{display:flex;gap:7px;padding:0.5rem 0.9rem 0.85rem;}
+.startbtn{
+  flex:1;padding:0.45rem 0;
+  background:linear-gradient(135deg,rgba(167,139,250,0.5),rgba(96,165,250,0.4));
+  border:1px solid rgba(167,139,250,0.4);
+  border-radius:10px;color:#fff;
+  font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+  cursor:pointer;letter-spacing:0.3px;
+  transition:all 0.15s cubic-bezier(0.34,1.8,0.64,1);
+  backdrop-filter:blur(8px);
+}
+.startbtn:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(167,139,250,0.35);}
 .startbtn:active{transform:scale(0.95);}
-.popbtn{padding:0.52rem 0.8rem;background:white;border:2.5px solid var(--border);border-radius:12px;color:var(--mid);font-family:'Bubblegum Sans',cursive;font-size:0.95rem;cursor:pointer;transition:transform 0.15s cubic-bezier(0.34,1.8,0.64,1),border-color 0.15s,color 0.15s;white-space:nowrap;}
-.popbtn:hover{transform:scale(1.08);border-color:var(--rose);color:var(--rose);}
+.popbtn{
+  padding:0.45rem 0.75rem;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;color:rgba(255,255,255,0.55);
+  font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;
+  cursor:pointer;white-space:nowrap;
+  transition:all 0.15s cubic-bezier(0.34,1.8,0.64,1);
+}
+.popbtn:hover{border-color:rgba(255,255,255,0.3);color:#fff;transform:scale(1.06);}
 .popbtn:active{transform:scale(0.94);}
 
+/* no results */
+.no-results{
+  grid-column:1/-1;
+  text-align:center;padding:2.5rem 1rem;
+  color:rgba(255,255,255,0.28);font-size:0.9rem;
+}
 
 /* ── ACTIVITY VIEW ── */
-.backbtn{display:inline-flex;align-items:center;gap:0.5rem;background:white;border:2.5px solid var(--border);color:var(--mid);padding:0.45rem 1.2rem;border-radius:999px;font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;font-size:0.9rem;margin-bottom:1.25rem;transition:transform 0.15s cubic-bezier(0.34,1.8,0.64,1),border-color 0.15s;}
-.backbtn:hover{border-color:var(--green);color:var(--green);transform:translateX(-4px) scale(1.04);}
-.stats{display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;}
-.stat{background:white;border:2.5px solid var(--border);border-radius:14px;padding:0.5rem 1.1rem;text-align:center;transition:transform 0.15s cubic-bezier(0.34,1.8,0.64,1);}
-.stat:hover{transform:scale(1.05);}
-.sl{font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--mid);margin-bottom:1px;}
-.sv{font-family:'Bubblegum Sans',cursive;font-size:1.4rem;color:var(--green);}
-.stage{background:#fff;border-radius:22px;overflow:hidden;border:2.5px solid var(--border);box-shadow:0 6px 24px rgba(26,153,80,0.12);display:flex;align-items:center;justify-content:center;position:relative;}
-.stage canvas{display:block;max-width:100%;}
-.hint{margin-top:0.85rem;padding:0.65rem 1rem;background:var(--mint);border-radius:12px;font-size:0.85rem;color:var(--mid);font-weight:800;}
+.backbtn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:0.45rem 1.1rem;border-radius:999px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.7);
+  font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:500;
+  cursor:pointer;margin-bottom:1.2rem;
+  transition:all 0.15s cubic-bezier(0.34,1.8,0.64,1);
+}
+.backbtn:hover{background:rgba(255,255,255,0.13);color:#fff;transform:translateX(-3px);}
 
-/* ── MEMORY ── */
-.mem-board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:18px;max-width:420px;margin:0 auto;width:100%;}
-.mc{aspect-ratio:1;border-radius:14px;cursor:pointer;perspective:700px;}
-.mci{width:100%;height:100%;position:relative;transition:transform 0.45s cubic-bezier(0.34,1.4,0.64,1);transform-style:preserve-3d;}
-.mc.fl .mci{transform:rotateY(180deg);}
-.mface{position:absolute;inset:0;border-radius:14px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-.mback{background:linear-gradient(135deg,var(--green),var(--rose));border:3px solid rgba(255,255,255,0.45);font-size:1.4rem;}
-.mback::after{content:'';width:52%;height:60%;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:rgba(255,255,255,0.22);position:absolute;top:16%;}
-.mfront{background:var(--card);border:2.5px solid var(--border);transform:rotateY(180deg);font-size:1.9rem;}
+.stage{
+  border-radius:20px;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+  min-height:520px;
+  background:rgba(0,0,0,0.3);
+  display:flex;align-items:stretch;
+}
+.stage iframe{width:100%;min-height:520px;border:none;border-radius:18px;display:block;flex:1;}
 
-/* ── 2048 BOARD ── */
-.b48{background:var(--mint);border-radius:14px;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 auto;max-width:380px;width:100%;}
-.t48{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Bubblegum Sans',cursive;font-size:1.3rem;background:rgba(255,255,255,0.5);color:var(--mid);border:2px solid rgba(255,255,255,0.7);transition:transform 0.08s cubic-bezier(0.34,1.8,0.64,1);}
-.t48.pop{animation:tilePop 0.15s cubic-bezier(0.34,2,0.64,1);}
-@keyframes tilePop{0%{transform:scale(0.85);}100%{transform:scale(1);}}
-.v2{background:#FFF0A0;color:#6B4A00;border-color:#F0D040;}
-.v4{background:#FFD878;color:#6B3200;border-color:#F0A820;}
-.v8{background:#FFB830;color:#5A2400;border-color:#E08000;}
-.v16{background:#FF8C00;color:#fff;border-color:#D06400;font-size:1.1rem;}
-.v32{background:#C5EDD0;color:#0A4A28;border-color:#52A872;font-size:1.1rem;}
-.v64{background:#90D4A8;color:#082A18;border-color:#1A9950;font-size:1.1rem;}
-.v128{background:#1A9950;color:#fff;border-color:#12763C;font-size:.95rem;}
-.v256{background:#D4690E;color:#fff;border-color:#A84A08;font-size:.95rem;}
-.v512{background:#1A6FA0;color:#fff;border-color:#0E4E72;font-size:.95rem;}
-.v1024{background:#122018;color:#fff;border-color:#0A1410;font-size:.8rem;}
-.v2048{background:linear-gradient(135deg,#1A9950,#D4690E);color:#fff;border-color:#D4690E;font-size:.8rem;}
+.hint{
+  margin-top:10px;padding:0.6rem 1rem;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;font-size:0.78rem;
+  color:rgba(255,255,255,0.35);font-weight:400;
+}
 
-/* ── OVERLAY ── */
-.ov{position:absolute;inset:0;background:rgba(230,248,235,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:20px;gap:1rem;z-index:20;animation:ovIn 0.35s cubic-bezier(0.34,1.6,0.64,1);}
-@keyframes ovIn{from{transform:scale(0.7);opacity:0;}to{transform:scale(1);opacity:1;}}
-.ov h2{font-family:'Bubblegum Sans',cursive;font-size:2.3rem;color:var(--green);}
-.ov p{color:var(--mid);font-size:1rem;font-weight:800;}
-.odeco{font-size:2rem;display:flex;gap:8px;animation:decorSpin 1s cubic-bezier(0.34,1.6,0.64,1);}
-@keyframes decorSpin{from{transform:scale(0) rotate(-180deg);}to{transform:scale(1) rotate(0deg);}}
-.rb{background:linear-gradient(135deg,var(--green),var(--rose));border:none;color:#fff;font-family:'Bubblegum Sans',cursive;font-size:1.15rem;padding:0.65rem 2.2rem;border-radius:999px;cursor:pointer;letter-spacing:1px;transition:transform 0.15s cubic-bezier(0.34,1.8,0.64,1),box-shadow 0.15s;animation:btnBounceIn 0.5s cubic-bezier(0.34,1.6,0.64,1);}
-@keyframes btnBounceIn{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
-.rb:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(26,153,80,0.45);}
-.rb:active{transform:scale(0.95);}
+footer{
+  position:relative;z-index:10;
+  text-align:center;padding:1rem;
+  border-top:1px solid rgba(255,255,255,0.05);
+}
 
-footer{text-align:center;padding:1.2rem 1rem 70px;color:var(--mid);font-size:0.8rem;font-weight:800;position:relative;z-index:10;}
-
-@media(max-width:500px){
-  .mem-board{gap:7px;padding:10px;max-width:300px;}
-  .mface{font-size:1.3rem;}
-  .mfront{font-size:1.5rem;}
-  .b48{gap:7px;padding:10px;}
-  .t48{font-size:.95rem;}
+@media(max-width:600px){
+  header{padding:1rem 1.2rem;}
+  nav,.search-wrap,main{padding-left:1.2rem;padding-right:1.2rem;}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
 }
 </style>
 </head>
 <body>
 
-<!-- Floating egg bg -->
-<div id="floaters"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
 
-<header>
-  <div class="ears"><div class="ear l"></div><div class="ear r"></div></div>
-  <div class="logo">
-    <div class="eggico"></div>
-    Sahur&nbsp;<span class="hi">Hub</span>
-    <div class="eggico"></div>
+<header class="glass">
+  <div class="logo">Sahur<span>Hub</span></div>
+  <div class="header-right">
+    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()" title="Search">
+      &#9906;
+    </button>
   </div>
-  <p class="tagline">🐣 Sahur Hub</p>
 </header>
 
+<div class="search-wrap glass" id="searchWrap">
+  <div class="search-inner glass">
+    <span class="search-icon">&#9906;</span>
+    <input type="text" id="searchInput" placeholder="Search activities..." oninput="onSearch(this.value)">
+    <button class="clear-search" id="clearBtn" onclick="clearSearch()">&#10005;</button>
+  </div>
+</div>
+
 <nav>
-  <button class="fb active" onclick="filt('all',this)">🥚 All</button>
-  <button class="fb" onclick="filt('action',this)">🐇 Action</button>
-  <button class="fb" onclick="filt('puzzle',this)">🌸 Puzzle</button>
-  <button class="fb" onclick="filt('classic',this)">🍬 Classic</button>
+  <button class="pill active" onclick="filt('all',this)">All</button>
+  <button class="pill" onclick="filt('action',this)">Action</button>
+  <button class="pill" onclick="filt('puzzle',this)">Puzzle</button>
+  <button class="pill" onclick="filt('classic',this)">Classic</button>
 </nav>
 
 <main>
-  <!-- HOME -->
   <div id="hv">
-    <p class="sec-title">🌷 Featured Activities</p>
-    <div class="grid">
-
-      <div class="acard" data-cat="action" data-id="snake">
-        <div class="athumb" style="background:linear-gradient(135deg,#C8F2DC,#A8E6C0)">🐍
-          <span class="bdg hot">Hot</span></div>
-        <div class="ainfo"><p class="aname">Spring Snake</p><p class="acat" style="color:var(--green)">Action</p></div>
-        <div class="btnrow">
-          <button class="startbtn" onclick="launch('snake')">▶ Here</button>
-          <button class="popbtn" onclick="popout('snake')">⧉ Tab</button>
-        </div>
-      </div>
-
-      <div class="acard" data-cat="classic" data-id="tetris">
-        <div class="athumb" style="background:linear-gradient(135deg,#D0EDD8,#B8DEC0)">🟩
-          <span class="bdg cls">Classic</span></div>
-        <div class="ainfo"><p class="aname">Egg Stacker</p><p class="acat" style="color:var(--green)">Classic</p></div>
-        <div class="btnrow">
-          <button class="startbtn" onclick="launch('tetris')">▶ Here</button>
-          <button class="popbtn" onclick="popout('tetris')">⧉ Tab</button>
-        </div>
-      </div>
-
-      <div class="acard" data-cat="classic" data-id="pong">
-        <div class="athumb" style="background:linear-gradient(135deg,#FFF0A0,#FFD878)">🏓
-          <span class="bdg hot">Hot</span></div>
-        <div class="ainfo"><p class="aname">Bunny Bounce</p><p class="acat" style="color:var(--gold)">Classic</p></div>
-        <div class="btnrow">
-          <button class="startbtn" onclick="launch('pong')">▶ Here</button>
-          <button class="popbtn" onclick="popout('pong')">⧉ Tab</button>
-        </div>
-      </div>
-
-      <div class="acard" data-cat="puzzle" data-id="memory">
-        <div class="athumb" style="background:linear-gradient(135deg,#C8E8F8,#A8D4F0)">🃏
-          <span class="bdg new">New</span></div>
-        <div class="ainfo"><p class="aname">Egg Hunt Match</p><p class="acat" style="color:var(--blue)">Puzzle</p></div>
-        <div class="btnrow">
-          <button class="startbtn" onclick="launch('memory')">▶ Here</button>
-          <button class="popbtn" onclick="popout('memory')">⧉ Tab</button>
-        </div>
-      </div>
-
-      <div class="acard" data-cat="puzzle" data-id="g2048">
-        <div class="athumb" style="background:linear-gradient(135deg,#FFF0A0,#FFE060)">🥚
-          <span class="bdg new">New</span></div>
-        <div class="ainfo"><p class="aname">Egg 2048</p><p class="acat" style="color:var(--gold)">Puzzle</p></div>
-        <div class="btnrow">
-          <button class="startbtn" onclick="launch('g2048')">▶ Here</button>
-          <button class="popbtn" onclick="popout('g2048')">⧉ Tab</button>
-        </div>
-      </div>
-
+    <p class="sec-label">Activities</p>
+    <div class="grid" id="grid">
+      <div class="state-msg" id="loadMsg">Loading activities…</div>
     </div>
   </div>
 
-  <!-- ACTIVITY VIEW -->
   <div id="av">
-    <button class="backbtn" onclick="goHome()">🐣 Back</button>
-    <div class="stats" id="stats"></div>
+    <button class="backbtn" onclick="goHome()">&#8592; Back</button>
     <div class="stage" id="stage"></div>
     <div class="hint" id="hint"></div>
   </div>
 </main>
 
-<div class="grass">
-<svg viewBox="0 0 1440 52" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M0,30 C10,10 18,2 26,28 C34,4 42,0 50,28 C58,6 66,1 74,28 C82,5 90,0 98,28 C106,4 114,2 122,30 C130,8 138,0 146,28 C154,5 162,1 170,28 C178,4 186,0 194,30 C202,8 210,2 218,28 C226,5 234,0 242,28 C250,4 258,2 266,30 C274,8 282,1 290,28 C298,5 306,0 314,28 C322,4 330,2 338,30 C346,6 354,0 362,28 C370,5 378,1 386,28 C394,4 402,0 410,30 C418,8 426,2 434,28 C442,5 450,0 458,28 C466,4 474,2 482,30 C490,6 498,1 506,28 C514,4 522,0 530,28 C538,5 546,2 554,30 C562,8 570,0 578,28 C586,5 594,1 602,28 C610,4 618,0 626,30 C634,6 642,2 650,28 C658,5 666,0 674,28 C682,4 690,2 698,30 C706,6 714,1 722,28 C730,4 738,0 746,28 C754,5 762,2 770,30 C778,8 786,0 794,28 C802,5 810,1 818,28 C826,4 834,0 842,30 C850,6 858,2 866,28 C874,5 882,0 890,28 C898,4 906,2 914,30 C922,8 930,1 938,28 C946,4 954,0 962,28 C970,5 978,2 986,30 C994,6 1002,0 1010,28 C1018,5 1026,1 1034,28 C1042,4 1050,0 1058,30 C1066,6 1074,2 1082,28 C1090,5 1098,0 1106,28 C1114,4 1122,2 1130,30 C1138,8 1146,0 1154,28 C1162,5 1170,1 1178,28 C1186,4 1194,0 1202,30 C1210,6 1218,2 1226,28 C1234,5 1242,0 1250,28 C1258,4 1266,2 1274,30 C1282,8 1290,1 1298,28 C1306,4 1314,0 1322,28 C1330,5 1338,2 1346,30 C1354,6 1362,0 1370,28 C1378,5 1386,1 1394,28 C1402,4 1410,0 1418,28 C1426,5 1434,2 1440,30 L1440,52 L0,52 Z" fill="#6BBF6E"/>
-<path d="M0,35 C12,14 22,5 32,33 C42,8 52,2 62,33 C72,7 82,1 92,33 C102,6 112,0 122,35 C132,10 142,3 152,33 C162,7 172,1 182,33 C192,6 202,0 212,35 C222,10 232,4 242,33 C252,8 262,1 272,33 C282,6 292,0 302,35 C312,8 322,3 332,33 C342,7 352,1 362,33 C372,5 382,0 392,35 C402,9 412,3 422,33 C432,7 442,1 452,33 C462,5 472,0 482,35 C492,9 502,4 512,33 C522,7 532,1 542,33 C552,5 562,0 572,35 C582,8 592,3 602,33 C612,7 622,1 632,33 C642,5 652,0 662,35 C672,9 682,4 692,33 C702,7 712,1 722,33 C732,5 742,0 752,35 C762,8 772,3 782,33 C792,7 802,1 812,33 C822,5 832,0 842,35 C852,9 862,4 872,33 C882,7 892,1 902,33 C912,5 922,0 932,35 C942,8 952,3 962,33 C972,7 982,1 992,33 C1002,5 1012,0 1022,35 C1032,9 1042,4 1052,33 C1062,7 1072,1 1082,33 C1092,5 1102,0 1112,35 C1122,8 1132,3 1142,33 C1152,7 1162,1 1172,33 C1182,5 1192,0 1202,35 C1212,9 1222,4 1232,33 C1242,7 1252,1 1262,33 C1272,5 1282,0 1292,35 C1302,8 1312,3 1322,33 C1332,7 1342,1 1352,33 C1362,5 1372,0 1382,35 C1392,9 1402,4 1412,33 C1422,7 1432,1 1440,33 L1440,52 L0,52 Z" fill="#52A872"/>
-</svg>
-</div>
-
-<footer>🐰 Sahur Hub · No login needed 🥚</footer>
+<footer></footer>
 
 <script>
-/* ── FLOATERS ── */
-(function(){
-  const c=['#C5EDD0','#A8D8B8','#FFF0A0','#D0EEDD','#C8E8F8','#FFD878'];
-  const fl=document.getElementById('floaters');
-  for(let i=0;i<20;i++){
-    const e=document.createElement('div');e.className='egg-f';
-    const s=16+Math.random()*36;
-    const left=Math.random()*100;
-    const dur=7+Math.random()*12;
-    const delay=-Math.random()*14;
-    e.style.cssText=`width:${s}px;height:${s*1.2}px;left:${left}%;background:${c[i%c.length]};animation-duration:${dur}s;animation-delay:${delay}s;`;
-    fl.appendChild(e);
-  }
-})();
-
 /* ── CONFIG ── */
-const BASE='https://sahurhub.github.io/Education/';
-const FILE={snake:'snake.html',tetris:'tetris.html',pong:'pong.html',memory:'memory.html',g2048:'2048.html'};
+const REPO_OWNER='sahurhub';
+const REPO_NAME='sahurhub.github.io';
+const FOLDER='Education';
+const BASE=`https://${REPO_OWNER}.github.io/${FOLDER}/`;
+const API=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER}`;
 
-/* ── ROUTING ── */
-let active=null;
-
-function filt(cat,btn){
-  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.acard').forEach(c=>{
-    c.style.display=(cat==='all'||c.dataset.cat===cat)?'':'none';
-  });
+/* Emoji assigned by filename hash for visual variety */
+const EMOJIS=['🎮','🕹️','🎯','🎲','🧩','⚡','🔥','🌀','🎪','🏆','💥','🎭','🚀','⭐','🎰','🌊'];
+function fileEmoji(name){
+  let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))&0xffff;
+  return EMOJIS[h%EMOJIS.length];
 }
 
+/* Category guess from filename */
+const ACTION_WORDS=['snake','shoot','run','jump','race','fight','dodge','ball','war','battle','flap','dash'];
+const PUZZLE_WORDS=['puzzle','match','memory','2048','slide','swap','block','tetris','word','sudoku','sort'];
+const CLASSIC_WORDS=['pong','chess','pac','space','breakout','brick','frogger','minesweeper','solitaire'];
+function guessCategory(name){
+  const n=name.toLowerCase();
+  if(ACTION_WORDS.some(w=>n.includes(w)))return'action';
+  if(PUZZLE_WORDS.some(w=>n.includes(w)))return'puzzle';
+  if(CLASSIC_WORDS.some(w=>n.includes(w)))return'classic';
+  return'action';
+}
+
+/* Pretty-print filename → display name */
+function prettyName(filename){
+  return filename
+    .replace(/\.html?$/i,'')
+    .replace(/[-_]/g,' ')
+    .replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+/* ── STATE ── */
+let allFiles=[];
+let currentCat='all';
+let currentSearch='';
+let searchOpen=false;
+
+/* ── FETCH FILES FROM GITHUB API ── */
+async function loadFiles(){
+  try{
+    const res=await fetch(API);
+    if(!res.ok)throw new Error('GitHub API error '+res.status);
+    const data=await res.json();
+    allFiles=data
+      .filter(f=>f.type==='file'&&/\.html?$/i.test(f.name))
+      .map(f=>({
+        name:f.name,
+        display:prettyName(f.name),
+        cat:guessCategory(f.name),
+        emoji:fileEmoji(f.name),
+        url:BASE+f.name
+      }));
+    if(allFiles.length===0){
+      document.getElementById('loadMsg').textContent='No activities found in Education/ yet.';
+    } else {
+      renderCards();
+    }
+  }catch(e){
+    document.getElementById('loadMsg').textContent='Could not load activities. Check your repo is public.';
+    console.error(e);
+  }
+}
+
+/* ── RENDER CARDS ── */
+function renderCards(){
+  const grid=document.getElementById('grid');
+  const q=currentSearch.toLowerCase().trim();
+  const filtered=allFiles.filter(f=>{
+    const catOk=currentCat==='all'||f.cat===currentCat;
+    const searchOk=!q||f.display.toLowerCase().includes(q)||f.name.toLowerCase().includes(q);
+    return catOk&&searchOk;
+  });
+
+  if(filtered.length===0){
+    grid.innerHTML=`<div class="no-results">No results for "${currentSearch || currentCat}"</div>`;
+    return;
+  }
+
+  grid.innerHTML=filtered.map(f=>`
+    <div class="acard" data-cat="${f.cat}" data-name="${f.name}">
+      <div class="athumb">${f.emoji}</div>
+      <div class="ainfo">
+        <p class="aname">${f.display}</p>
+        <p class="aext">${f.name}</p>
+      </div>
+      <div class="btnrow">
+        <button class="startbtn" onclick="launch('${f.name}')">&#9658; Here</button>
+        <button class="popbtn" onclick="popout('${f.name}')">&#10696; Tab</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ── FILTER ── */
+function filt(cat,btn){
+  currentCat=cat;
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+/* ── SEARCH ── */
+function toggleSearch(){
+  searchOpen=!searchOpen;
+  const wrap=document.getElementById('searchWrap');
+  const btn=document.getElementById('searchToggle');
+  wrap.classList.toggle('open',searchOpen);
+  btn.classList.toggle('active',searchOpen);
+  if(searchOpen)setTimeout(()=>document.getElementById('searchInput').focus(),200);
+  else clearSearch();
+}
+
+function onSearch(val){
+  currentSearch=val;
+  document.getElementById('clearBtn').classList.toggle('vis',val.length>0);
+  renderCards();
+}
+
+function clearSearch(){
+  currentSearch='';
+  document.getElementById('searchInput').value='';
+  document.getElementById('clearBtn').classList.remove('vis');
+  renderCards();
+}
+
+/* ── LAUNCH (iframe inline) ── */
 function goHome(){
-  stopAll();
   document.getElementById('hv').style.display='';
   document.getElementById('av').style.display='none';
 }
 
-/* Play inline — load file into an iframe inside the activity view */
-function launch(id){
-  stopAll();
-  const url=BASE+FILE[id];
+function launch(filename){
+  const url=BASE+filename;
   document.getElementById('hv').style.display='none';
-  const av=document.getElementById('av');
-  av.style.display='';
-  active=id;
-
-  const stage=document.getElementById('stage');
-  const stats=document.getElementById('stats');
-  const hint=document.getElementById('hint');
-  stats.innerHTML='';
-  hint.innerHTML='🕹️ Use keyboard or touch controls inside the activity';
-
-  // Build a full-viewport iframe
-  stage.innerHTML=`
-    <iframe
-      src="${url}"
-      style="width:100%;min-height:520px;border:none;border-radius:18px;display:block;"
-      allowfullscreen
+  document.getElementById('av').style.display='';
+  document.getElementById('hint').textContent='Use keyboard or touch to play · Press Back to return';
+  document.getElementById('stage').innerHTML=
+    `<iframe src="${url}" allowfullscreen
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      title="Activity"
-    ></iframe>`;
+      title="Activity"></iframe>`;
 }
 
-/* Pop out — fetch the HTML then write into about:blank so URL bar shows about:blank */
-function popout(id){
-  const url=BASE+FILE[id];
+/* ── POPOUT (about:blank) ── */
+function popout(filename){
+  const url=BASE+filename;
   const tab=window.open('about:blank','_blank');
-  if(!tab){alert('Allow pop-ups for this site to use Tab mode!');return;}
-
-  // Show a loading message immediately
-  tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Loading...</title>
-<style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#F0F7F2;color:#2E6040;font-size:1.2rem;font-weight:700;}</style>
-</head><body><p>Loading activity...</p></body></html>`);
+  if(!tab){alert('Allow pop-ups to use Tab mode.');return;}
+  tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Loading…</title>
+<style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;
+font-family:system-ui,sans-serif;background:#0a0a0f;color:rgba(255,255,255,0.4);font-size:1rem;}</style>
+</head><body><p>Loading…</p></body></html>`);
   tab.document.close();
-
-  // Fetch the game file and write it into the tab
   fetch(url)
-    .then(r=>{
-      if(!r.ok)throw new Error('File not found ('+r.status+')');
-      return r.text();
-    })
-    .then(html=>{
-      tab.document.open();
-      tab.document.write(html);
-      tab.document.close();
-    })
+    .then(r=>{if(!r.ok)throw new Error(r.status);return r.text();})
+    .then(html=>{tab.document.open();tab.document.write(html);tab.document.close();})
     .catch(err=>{
       tab.document.open();
       tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Error</title>
-<style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#F0F7F2;color:#122018;gap:12px;}
-h2{font-size:1.5rem;}p{color:#5a5a5a;font-size:0.9rem;}</style>
-</head><body><h2>😬 Couldn't load activity</h2>
-<p>Make sure the file exists at:<br><code>${url}</code></p>
-<p>${err.message}</p></body></html>`);
+<style>body{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+height:100vh;font-family:system-ui,sans-serif;background:#0a0a0f;color:#fff;gap:10px;text-align:center;padding:2rem;}
+code{font-size:.8rem;color:rgba(255,255,255,.4);word-break:break-all;}</style>
+</head><body><h2>Couldn't load</h2><code>${url}</code><p style="color:rgba(255,255,255,.4);font-size:.85rem">${err}</p></body></html>`);
       tab.document.close();
     });
 }
 
-function stopAll(){
-  clearInterval(window._SL);clearInterval(window._TL);
-  cancelAnimationFrame(window._PA);
-  window._SL=window._TL=window._PA=null;
-  active=null;
-}
-
-
+/* ── BOOT ── */
+loadFiles();
 </script>
 </body>
 </html>

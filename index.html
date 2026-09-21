@@ -1,846 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sahur Hub</title>
-<link rel="icon" type="image/png" href="https://sahurhub.github.io/Objects/logo.png">
-<link rel="apple-touch-icon" href="https://sahurhub.github.io/Objects/logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-
-body{
-  font-family:'Inter',system-ui,sans-serif;
-  min-height:100vh;overflow-x:hidden;
-  background:#080810;color:#fff;
-  /* smooth scroll inertia feel */
-  -webkit-overflow-scrolling:touch;
-}
-
-/* ── AMBIENT ORBS — slow, fluid, never stop ── */
-.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;will-change:transform;}
-.orb1{width:700px;height:700px;background:radial-gradient(circle,rgba(110,60,255,0.32),transparent 70%);top:-220px;left:-120px;animation:orb1Move 24s cubic-bezier(0.45,0.05,0.55,0.95) infinite alternate;}
-.orb2{width:560px;height:560px;background:radial-gradient(circle,rgba(0,160,255,0.22),transparent 70%);top:25%;right:-160px;animation:orb2Move 30s cubic-bezier(0.45,0.05,0.55,0.95) infinite alternate;}
-.orb3{width:480px;height:480px;background:radial-gradient(circle,rgba(240,80,180,0.18),transparent 70%);bottom:5%;left:15%;animation:orb3Move 20s cubic-bezier(0.45,0.05,0.55,0.95) infinite alternate;}
-@keyframes orb1Move{from{transform:translate(0,0) scale(1);}to{transform:translate(80px,60px) scale(1.12);}}
-@keyframes orb2Move{from{transform:translate(0,0) scale(1);}to{transform:translate(-60px,80px) scale(0.9);}}
-@keyframes orb3Move{from{transform:translate(0,0) scale(1);}to{transform:translate(50px,-70px) scale(1.08);}}
-
-/* ── GLASS ── */
-.glass{
-  background:rgba(255,255,255,0.065);
-  backdrop-filter:blur(28px) saturate(190%) brightness(1.08);
-  -webkit-backdrop-filter:blur(28px) saturate(190%) brightness(1.08);
-  border:1px solid rgba(255,255,255,0.13);
-}
-
-/* ── HEADER ── */
-header{
-  position:sticky;top:0;z-index:100;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:1.1rem 1.8rem;
-  border-bottom:1px solid rgba(255,255,255,0.07);
-  /* header itself slides in */
-  animation:headerIn 0.6s cubic-bezier(0.34,1.4,0.64,1) both;
-}
-@keyframes headerIn{from{transform:translateY(-100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
-
-.logo{
-  font-size:1.25rem;font-weight:700;letter-spacing:-0.5px;
-  background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.55) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:logoPop 0.7s cubic-bezier(0.34,1.7,0.64,1) 0.1s both;
-  display:inline-flex;align-items:center;gap:0.4em;
-}
-.logo-img{
-  width:28px;height:28px;border-radius:7px;
-  object-fit:contain;
-  /* image doesn't inherit text clip, so reset */
-  -webkit-text-fill-color:initial;
-  filter:drop-shadow(0 0 8px rgba(167,139,250,0.35));
-  animation:logoPop 0.7s cubic-bezier(0.34,1.7,0.64,1) 0s both;
-  flex-shrink:0;
-}
-@keyframes logoPop{from{transform:scale(0.6);opacity:0;}to{transform:scale(1);opacity:1;}}
-.logo span{
-  background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  background-size:200%;
-  animation:gradShift 4s ease infinite;
-}
-@keyframes gradShift{0%,100%{background-position:0%;}50%{background-position:100%;}}
-
-.header-right{display:flex;align-items:center;gap:8px;}
-
-/* ── NAV TABS ── */
-.nav-tab{
-  padding:0.32rem 0.85rem;border-radius:999px;
-  font-size:0.75rem;font-weight:600;letter-spacing:0.1px;
-  cursor:pointer;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.09);
-  color:rgba(255,255,255,0.45);
-  will-change:transform;
-  transition:background 0.18s,border-color 0.18s,color 0.18s;
-}
-.nav-tab.active{
-  background:linear-gradient(135deg,rgba(167,139,250,0.28),rgba(96,165,250,0.22));
-  border-color:rgba(167,139,250,0.4);
-  color:#fff;
-  box-shadow:0 2px 12px rgba(167,139,250,0.2);
-}
-
-/* page containers */
-#page-home,#page-credits{
-  transition:opacity 0.28s ease,transform 0.28s ease;
-}
-
-.search-toggle{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.07);
-  color:rgba(255,255,255,0.6);font-size:0.95rem;
-  /* will be spring-animated via JS */
-  will-change:transform;
-}
-.search-toggle.active{background:rgba(167,139,250,0.22);border-color:rgba(167,139,250,0.45);color:#c4b5fd;}
-
-/* ── SEARCH ── */
-.search-wrap{
-  overflow:hidden;max-height:0;opacity:0;
-  position:relative;z-index:90;padding:0 1.8rem;
-  transition:max-height 0.5s cubic-bezier(0.34,1.3,0.64,1),
-             opacity 0.3s cubic-bezier(0.34,1.3,0.64,1),
-             padding 0.3s ease;
-}
-.search-wrap.open{max-height:80px;opacity:1;padding:0.65rem 1.8rem;}
-.search-inner{
-  display:flex;align-items:center;gap:12px;
-  padding:0.55rem 1rem;border-radius:14px;
-}
-.search-inner input{
-  flex:1;background:transparent;border:none;outline:none;
-  font-family:'Inter',sans-serif;font-size:0.9rem;color:#fff;
-}
-.search-inner input::placeholder{color:rgba(255,255,255,0.3);}
-.search-icon{color:rgba(255,255,255,0.35);font-size:0.85rem;flex-shrink:0;}
-.clear-search{
-  background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;
-  font-size:0.95rem;padding:0 2px;display:none;
-  transition:color 0.15s,transform 0.15s cubic-bezier(0.34,1.8,0.64,1);
-}
-.clear-search.vis{display:block;}
-.clear-search:hover{color:#fff;transform:scale(1.2) rotate(90deg);}
-
-/* ── NAV ── */
-nav{
-  position:relative;z-index:80;
-  display:flex;align-items:center;gap:7px;
-  padding:0.9rem 1.8rem 0.4rem;flex-wrap:wrap;
-  /* stagger pills via JS */
-}
-.pill{
-  padding:0.35rem 0.95rem;border-radius:999px;
-  font-size:0.75rem;font-weight:600;letter-spacing:0.2px;
-  cursor:pointer;border:1px solid rgba(255,255,255,0.09);
-  background:rgba(255,255,255,0.06);
-  color:rgba(255,255,255,0.5);
-  will-change:transform;
-  /* spring handled in JS, CSS fallback: */
-  transition:background 0.2s,border-color 0.2s,color 0.2s;
-}
-.pill.active{
-  background:linear-gradient(135deg,rgba(167,139,250,0.3),rgba(96,165,250,0.25));
-  border-color:rgba(167,139,250,0.45);color:#fff;
-  box-shadow:0 2px 14px rgba(167,139,250,0.22);
-}
-
-/* ── MAIN ── */
-main{position:relative;z-index:10;max-width:1120px;margin:0 auto;padding:1.1rem 1.8rem 4rem;}
-
-.sec-label{
-  font-size:0.66rem;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;
-  color:rgba(255,255,255,0.25);margin-bottom:0.95rem;margin-top:0.4rem;
-}
-
-.state-msg{
-  grid-column:1/-1;text-align:center;padding:3rem 1rem;
-  color:rgba(255,255,255,0.28);font-size:0.9rem;
-}
-
-/* ── GRID ── */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(188px,1fr));
-  gap:13px;margin-bottom:2rem;
-}
-
-/* Cards — motion handled via JS springs */
-.acard{
-  border-radius:20px;overflow:hidden;cursor:pointer;
-  background:rgba(255,255,255,0.055);
-  border:1px solid rgba(255,255,255,0.09);
-  backdrop-filter:blur(22px) saturate(170%);
-  -webkit-backdrop-filter:blur(22px) saturate(170%);
-  will-change:transform;
-}
-
-.athumb{
-  width:100%;aspect-ratio:16/9;
-  display:flex;align-items:center;justify-content:center;
-  font-size:2.3rem;position:relative;
-  background:linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.015));
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  overflow:hidden;
-}
-/* travelling highlight — glass glint */
-.athumb::before{
-  content:'';position:absolute;
-  top:-60%;left:-60%;width:60%;height:220%;
-  background:linear-gradient(105deg,transparent,rgba(255,255,255,0.07),transparent);
-  transform:skewX(-15deg);
-  animation:glint 4s ease-in-out infinite;
-}
-@keyframes glint{0%,100%{left:-60%;}50%{left:160%;}}
-
-.ainfo{padding:0.7rem 0.85rem 0.25rem;}
-.aname{font-size:0.87rem;font-weight:600;color:rgba(255,255,255,0.88);letter-spacing:-0.2px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.aext{font-size:0.65rem;font-weight:500;color:rgba(255,255,255,0.28);margin-top:1px;letter-spacing:0.3px;}
-
-.btnrow{display:flex;gap:7px;padding:0.45rem 0.85rem 0.8rem;}
-.startbtn{
-  flex:1;padding:0.42rem 0;
-  background:linear-gradient(135deg,rgba(167,139,250,0.45),rgba(96,165,250,0.35));
-  border:1px solid rgba(167,139,250,0.35);
-  border-radius:10px;color:#fff;
-  font-family:'Inter',sans-serif;font-size:0.74rem;font-weight:600;
-  cursor:pointer;letter-spacing:0.3px;
-  will-change:transform;
-}
-.popbtn{
-  padding:0.42rem 0.72rem;
-  background:rgba(255,255,255,0.055);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:10px;color:rgba(255,255,255,0.5);
-  font-family:'Inter',sans-serif;font-size:0.74rem;font-weight:600;
-  cursor:pointer;white-space:nowrap;will-change:transform;
-}
-
-.no-results{
-  grid-column:1/-1;text-align:center;padding:2.5rem 1rem;
-  color:rgba(255,255,255,0.25);font-size:0.88rem;
-}
-
-/* ── ACTIVITY VIEW ── */
-.backbtn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:0.42rem 1.05rem;border-radius:999px;
-  background:rgba(255,255,255,0.065);
-  border:1px solid rgba(255,255,255,0.11);
-  color:rgba(255,255,255,0.65);
-  font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:500;
-  cursor:pointer;margin-bottom:1.1rem;
-  will-change:transform;
-}
-
-.stage{
-  border-radius:20px;overflow:hidden;
-  border:1px solid rgba(255,255,255,0.09);
-  box-shadow:0 10px 50px rgba(0,0,0,0.55);
-  min-height:520px;background:rgba(0,0,0,0.28);
-  display:flex;align-items:stretch;
-  /* stage entrance */
-  animation:stageIn 0.55s cubic-bezier(0.34,1.35,0.64,1) both;
-}
-@keyframes stageIn{from{opacity:0;transform:scale(0.94) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.stage iframe{width:100%;min-height:520px;border:none;display:block;flex:1;}
-
-.hint{
-  margin-top:9px;padding:0.55rem 0.95rem;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.07);
-  border-radius:10px;font-size:0.74rem;
-  color:rgba(255,255,255,0.3);font-weight:400;
-}
-
-/* ── GAME SHEET ── */
-/* Dim overlay behind sheet */
-#sheet-backdrop{
-  position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,0);
-  pointer-events:none;
-  transition:background 0.4s ease;
-}
-#sheet-backdrop.open{
-  background:rgba(0,0,0,0.55);
-  pointer-events:all;
-}
-
-/* The sheet itself — slides up from bottom */
-#game-sheet{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  height:92vh;
-  z-index:201;
-  border-radius:22px 22px 0 0;
-  background:rgba(12,12,22,0.82);
-  backdrop-filter:blur(40px) saturate(200%) brightness(1.1);
-  -webkit-backdrop-filter:blur(40px) saturate(200%) brightness(1.1);
-  border-top:1px solid rgba(255,255,255,0.13);
-  border-left:1px solid rgba(255,255,255,0.08);
-  border-right:1px solid rgba(255,255,255,0.08);
-  display:flex;flex-direction:column;
-  /* start offscreen */
-  transform:translateY(100%);
-  will-change:transform,filter;
-  box-shadow:0 -20px 80px rgba(0,0,0,0.6);
-}
-
-/* drag handle */
-.sheet-handle{
-  width:36px;height:5px;border-radius:999px;
-  background:rgba(255,255,255,0.22);
-  margin:10px auto 0;flex-shrink:0;
-  cursor:pointer;
-}
-
-/* sheet top bar */
-.sheet-bar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px 8px;flex-shrink:0;
-  border-bottom:1px solid rgba(255,255,255,0.07);
-}
-.sheet-title{
-  font-size:0.82rem;font-weight:600;
-  color:rgba(255,255,255,0.75);letter-spacing:-0.1px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:70%;
-}
-.sheet-close{
-  width:28px;height:28px;border-radius:50%;
-  background:rgba(255,255,255,0.1);
-  border:1px solid rgba(255,255,255,0.12);
-  color:rgba(255,255,255,0.6);
-  font-size:0.8rem;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  will-change:transform;flex-shrink:0;
-}
-
-/* iframe container */
-.sheet-frame{
-  flex:1;overflow:hidden;
-  border-radius:0 0 0 0;
-  position:relative;
-}
-.sheet-frame iframe{
-  width:100%;height:100%;border:none;display:block;
-}
-
-/* loading state inside sheet */
-.sheet-loading{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.85rem;color:rgba(255,255,255,0.3);
-  font-weight:400;letter-spacing:0.3px;
-}
-
-/* hub shrinks when sheet is open */
-#hub-wrap{
-  will-change:transform,filter;
-  transition:border-radius 0.5s ease;
-}
-#hub-wrap.sheet-open{
-  border-radius:16px;
-  overflow:hidden;
-}
-
-  header{padding:0.9rem 1.1rem;}
-  nav,.search-wrap,main{padding-left:1.1rem;padding-right:1.1rem;}
-  .grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
-  #game-sheet{height:96vh;}
-  .credit-card{padding:0.75rem 0.9rem;}
-}
-
-/* ── CREDITS ── */
-.credits-section{margin-top:0.5rem;padding-bottom:1rem;}
-.credits-grid{display:flex;flex-direction:column;gap:10px;}
-.credit-card{
-  display:flex;align-items:center;gap:14px;
-  padding:0.85rem 1.1rem;border-radius:16px;
-  transition:transform 0.2s cubic-bezier(0.34,1.6,0.64,1),box-shadow 0.2s;
-  will-change:transform;cursor:default;
-}
-.credit-card:hover{
-  transform:translateY(-3px) scale(1.01);
-  box-shadow:0 8px 28px rgba(0,0,0,0.35);
-}
-.credit-avatar{
-  width:38px;height:38px;border-radius:12px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,rgba(167,139,250,0.25),rgba(96,165,250,0.2));
-  border:1px solid rgba(255,255,255,0.1);
-  font-size:1.1rem;font-weight:700;color:rgba(255,255,255,0.8);letter-spacing:-0.5px;
-}
-.credit-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
-.credit-name{font-size:0.88rem;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:-0.1px;}
-.credit-desc{font-size:0.72rem;font-weight:400;color:rgba(255,255,255,0.35);line-height:1.4;}
-</style>
-</head>
-<body>
-
-<!-- Sheet backdrop -->
-<div id="sheet-backdrop" onclick="closeSheet()"></div>
-
-<!-- Game sheet panel -->
-<div id="game-sheet">
-  <div class="sheet-handle" onclick="closeSheet()"></div>
-  <div class="sheet-bar">
-    <span class="sheet-title" id="sheet-title">Activity</span>
-    <button class="sheet-close" id="sheet-close" onclick="closeSheet()">&#10005;</button>
-  </div>
-  <div class="sheet-frame">
-    <div class="sheet-loading" id="sheet-loading">Loading…</div>
-    <iframe id="sheet-iframe" src="" allowfullscreen
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      style="opacity:0;transition:opacity 0.3s ease;"></iframe>
-  </div>
-</div>
-
-<!-- Hub content wrapped so we can scale it -->
-<div id="hub-wrap">
-
-<div class="orb orb1"></div>
-<div class="orb orb2"></div>
-<div class="orb orb3"></div>
-
-<header class="glass">
-  <div class="logo">
-    <img src="https://sahurhub.github.io/Objects/logo.png" alt="Sahur Hub" class="logo-img">
-    Sahur<span>Hub</span>
-  </div>
-  <div class="header-right">
-    <button class="nav-tab active" id="tabHome" onclick="showPage('home')">Home</button>
-    <button class="nav-tab" id="tabCredits" onclick="showPage('credits')">Credits</button>
-    <button class="search-toggle" id="searchToggle" onclick="toggleSearch()" title="Search">&#9906;</button>
-  </div>
-</header>
-
-<div class="search-wrap glass" id="searchWrap">
-  <div class="search-inner glass">
-    <span class="search-icon">&#9906;</span>
-    <input type="text" id="searchInput" placeholder="Search honey pots..." oninput="onSearch(this.value)">
-    <button class="clear-search" id="clearBtn" onclick="clearSearch()">&#10005;</button>
-  </div>
-</div>
-
-
-
-<main>
-  <!-- HOME PAGE -->
-  <div id="page-home">
-    <p class="sec-label">Honey Pots</p>
-    <div class="grid" id="grid">
-      <div class="state-msg" id="loadMsg">Loading honey pots…</div>
-    </div>
-  </div>
-
-  <!-- CREDITS PAGE -->
-  <div id="page-credits" style="display:none;opacity:0;transform:translateY(16px);">
-    <p class="sec-label">Credits</p>
-    <div class="credits-grid">
-
-      <div class="credit-card glass">
-        <div class="credit-avatar">P</div>
-        <div class="credit-info">
-          <p class="credit-name">Plixy</p>
-          <p class="credit-desc">the biggest larper and vibe coder</p>
-        </div>
-      </div>
-
-      <div class="credit-card glass">
-        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(245,158,11,0.15));">
-          <img src="https://sahurhub.github.io/Objects/logo.png" alt="Claude" style="width:20px;height:20px;border-radius:4px;object-fit:contain;">
-        </div>
-        <div class="credit-info">
-          <p class="credit-name">Claude.ai</p>
-          <p class="credit-desc">main contributor</p>
-        </div>
-      </div>
-
-      <div class="credit-card glass">
-        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(251,146,60,0.25),rgba(234,88,12,0.15));">🍩</div>
-        <div class="credit-info">
-          <p class="credit-name">DrDonut</p>
-          <p class="credit-desc">making donutsmp and the only reason why i play minecraft</p>
-        </div>
-      </div>
-
-      <div class="credit-card glass">
-        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(220,38,38,0.25),rgba(185,28,28,0.15));">🍓</div>
-        <div class="credit-info">
-          <p class="credit-name">Raspberry Pi 5</p>
-          <p class="credit-desc">most useful tool</p>
-        </div>
-      </div>
-
-      <div class="credit-card glass">
-        <div class="credit-avatar" style="background:linear-gradient(135deg,rgba(16,185,129,0.25),rgba(5,150,105,0.15));">🍯</div>
-        <div class="credit-info">
-          <p class="credit-name">Opsec</p>
-          <p class="credit-desc">holy honey pot</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</main>
-
-
-<footer></footer>
-
-</div><!-- end #hub-wrap -->
-
-<script>
-/* ═══════════════════════════════════════════════
-   SPRING PHYSICS ENGINE
-   Simulates iOS UIKit spring animations:
-   - stiffness / damping / mass
-   - per-frame velocity tracking for motion blur
-   - requestAnimationFrame loop
-═══════════════════════════════════════════════ */
-class Spring{
-  constructor(stiffness=300,damping=24,mass=1){
-    this.k=stiffness;this.b=damping;this.m=mass;
-    this.pos=0;this.vel=0;this.target=0;this.cb=null;this._raf=null;
-  }
-  to(target,cb){
-    this.target=target;this.cb=cb;
-    if(!this._raf)this._tick();
-  }
-  set(val){this.pos=val;this.vel=0;this.target=val;if(this.cb)this.cb(val,0);}
-  _tick(){
-    const dt=1/120; // 120fps physics step (sub-steps real frame)
-    const f=-(this.k*(this.pos-this.target))-(this.b*this.vel);
-    this.vel+=f/this.m*dt;
-    this.pos+=this.vel*dt;
-    if(this.cb)this.cb(this.pos,this.vel);
-    const done=Math.abs(this.pos-this.target)<0.001&&Math.abs(this.vel)<0.001;
-    if(done){this.pos=this.target;this.vel=0;if(this.cb)this.cb(this.pos,0);this._raf=null;}
-    else this._raf=requestAnimationFrame(()=>this._tick());
-  }
-  stop(){if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;}}
-}
-
-/* Spring a button with bounce on hover/press */
-function springBtn(el,{hoverScale=1.08,pressScale=0.94,stiffness=380,damping=18}={}){
-  const sp=new Spring(stiffness,damping,1);
-  sp.set(1);
-  el.addEventListener('mouseenter',()=>sp.to(hoverScale,v=>{
-    el.style.transform=`scale(${v})`;
-  }));
-  el.addEventListener('mouseleave',()=>sp.to(1,v=>{
-    el.style.transform=`scale(${v})`;
-  }));
-  el.addEventListener('mousedown',()=>sp.to(pressScale,v=>{el.style.transform=`scale(${v})`;}));
-  el.addEventListener('mouseup',()=>sp.to(hoverScale,v=>{el.style.transform=`scale(${v})`;}));
-  el.addEventListener('touchstart',{passive:true},()=>sp.to(pressScale,v=>{el.style.transform=`scale(${v})`;}));
-  el.addEventListener('touchend',{passive:true},()=>sp.to(1,v=>{el.style.transform=`scale(${v})`;}));
-}
-
-/* Spring a card: lift + scale from centre + motion blur */
-function springCard(el){
-  const spY=new Spring(260,20,1);
-  const spS=new Spring(260,20,1);
-  spY.set(0);spS.set(1);
-  el.style.transformOrigin='center center';
-
-  function applyCard(){
-    el.style.transform=`translateY(${spY.pos.toFixed(2)}px) scale(${spS.pos.toFixed(4)})`;
-  }
-
-  el.addEventListener('mouseenter',()=>{
-    spY.to(-6,applyCard);
-    spS.to(1.02,applyCard);
-    el.style.borderColor='rgba(167,139,250,0.35)';
-    el.style.boxShadow='0 16px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(167,139,250,0.1)';
-  });
-  el.addEventListener('mouseleave',()=>{
-    spY.to(0,applyCard);
-    spS.to(1,applyCard);
-    el.style.borderColor='';
-    el.style.boxShadow='none';
-  });
-  el.addEventListener('mousedown',()=>{spY.to(-2,applyCard);spS.to(0.97,applyCard);});
-  el.addEventListener('mouseup',()=>{spY.to(-6,applyCard);spS.to(1.02,applyCard);});
-  el.addEventListener('touchstart',{passive:true},()=>{spY.to(-2,applyCard);spS.to(0.97,applyCard);});
-  el.addEventListener('touchend',{passive:true},()=>{spY.to(0,applyCard);spS.to(1,applyCard);});
-}
-
-/* Stagger-animate items into view from below with spring */
-function staggerIn(els,{delay=60,fromY=28,stiffness=280,damping=22}={}){
-  els.forEach((el,i)=>{
-    el.style.opacity='0';
-    el.style.transform=`translateY(${fromY}px)`;
-    setTimeout(()=>{
-      el.style.opacity='1';
-      const sp=new Spring(stiffness,damping,1);
-      sp.set(fromY);
-      sp.to(0,v=>{
-        el.style.transform=`translateY(${v.toFixed(2)}px)`;
-      });
-    },i*delay);
-  });
-}
-
-/* ── CONFIG ── */
-const REPO_OWNER='sahurhub';
-const REPO_NAME='sahurhub.github.io';
-const FOLDER='Education';
-const BASE=`https://${REPO_OWNER}.github.io/${FOLDER}/`;
-const API=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER}`;
-
-const EMOJIS=['🎮','🕹️','🎯','🎲','🧩','⚡','🔥','🌀','🎪','🏆','💥','🎭','🚀','⭐','🎰','🌊'];
-function fileEmoji(name){let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))&0xffff;return EMOJIS[h%EMOJIS.length];}
-
-const ACTION_WORDS=['snake','shoot','run','jump','race','fight','dodge','ball','war','battle','flap','dash'];
-const PUZZLE_WORDS=['puzzle','match','memory','2048','slide','swap','block','tetris','word','sudoku','sort'];
-const CLASSIC_WORDS=['pong','chess','pac','space','breakout','brick','frogger','minesweeper','solitaire'];
-function guessCategory(name){
-  const n=name.toLowerCase();
-  if(ACTION_WORDS.some(w=>n.includes(w)))return'action';
-  if(PUZZLE_WORDS.some(w=>n.includes(w)))return'puzzle';
-  if(CLASSIC_WORDS.some(w=>n.includes(w)))return'classic';
-  return'action';
-}
-function prettyName(f){return f.replace(/\.html?$/i,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
-
-let allFiles=[],currentSearch='',searchOpen=false;
-
-/* ── LOAD FILES ── */
-async function loadFiles(){
-  try{
-    const res=await fetch(API);
-    if(!res.ok)throw new Error('API '+res.status);
-    const data=await res.json();
-    allFiles=data.filter(f=>f.type==='file'&&/\.html?$/i.test(f.name))
-      .map(f=>({name:f.name,display:prettyName(f.name),cat:guessCategory(f.name),emoji:fileEmoji(f.name),url:BASE+f.name}));
-    if(!allFiles.length){document.getElementById('loadMsg').textContent='No honey pots in Education/ yet.';}
-    else renderCards();
-  }catch(e){document.getElementById('loadMsg').textContent='Could not reach repo. Make sure it\'s public.';console.error(e);}
-}
-
-/* ── RENDER ── */
-function renderCards(){
-  const grid=document.getElementById('grid');
-  const q=currentSearch.toLowerCase().trim();
-  const filtered=allFiles.filter(f=>{
-    return !q||f.display.toLowerCase().includes(q)||f.name.toLowerCase().includes(q);
-  });
-  if(!filtered.length){grid.innerHTML=`<div class="no-results">No honey pots found for "${currentSearch}"</div>`;return;}
-
-  grid.innerHTML=filtered.map(f=>`
-    <div class="acard" data-cat="${f.cat}" data-name="${f.name}">
-      <div class="athumb">${f.emoji}</div>
-      <div class="ainfo"><p class="aname">${f.display}</p><p class="aext">${f.name}</p></div>
-      <div class="btnrow">
-        <button class="startbtn" onclick="launch('${f.name}')">&#9658; Play</button>
-        <button class="popbtn" onclick="popout('${f.name}')">&#10696; Tab</button>
-      </div>
-    </div>`).join('');
-
-  /* Apply spring interactions to every new card and button */
-  document.querySelectorAll('.acard').forEach(springCard);
-  document.querySelectorAll('.startbtn').forEach(b=>springBtn(b,{hoverScale:1.06,pressScale:0.93,stiffness:400,damping:16}));
-  document.querySelectorAll('.popbtn').forEach(b=>springBtn(b,{hoverScale:1.08,pressScale:0.92,stiffness:400,damping:16}));
-
-  /* Stagger cards in */
-  staggerIn(document.querySelectorAll('.acard'),{delay:50,fromY:22});
-}
-
-/* ── PAGE SWITCHING ── */
-let currentPage='home';
-
-function showPage(page){
-  if(page===currentPage)return;
-  const fromEl=document.getElementById('page-'+currentPage);
-  const toEl=document.getElementById('page-'+page);
-  const dir=page==='credits'?1:-1;
-
-  // out
-  fromEl.style.transition='opacity 0.22s ease,transform 0.22s ease';
-  fromEl.style.opacity='0';
-  fromEl.style.transform=`translateY(${dir*-12}px)`;
-  setTimeout(()=>{fromEl.style.display='none';fromEl.style.transform='';},230);
-
-  // in
-  toEl.style.display='';
-  toEl.style.opacity='0';
-  toEl.style.transform=`translateY(${dir*14}px)`;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    toEl.style.transition='opacity 0.28s ease,transform 0.3s cubic-bezier(0.34,1.4,0.64,1)';
-    toEl.style.opacity='1';
-    toEl.style.transform='translateY(0)';
-  }));
-
-  // tab spring
-  document.getElementById('tabHome').classList.remove('active');
-  document.getElementById('tabCredits').classList.remove('active');
-  const newTab=document.getElementById(page==='home'?'tabHome':'tabCredits');
-  newTab.classList.add('active');
-  const sp=new Spring(400,15,1);sp.set(0.85);
-  sp.to(1,v=>{newTab.style.transform=`scale(${v})`;});
-
-  // stagger credit cards in
-  if(page==='credits'){
-    setTimeout(()=>{
-      const cards=document.querySelectorAll('#page-credits .credit-card');
-      staggerIn(cards,{delay:55,fromY:18,stiffness:300,damping:22});
-      cards.forEach(c=>springCard(c));
-    },80);
-  }
-
-  currentPage=page;
-}
-
-/* ── SEARCH ── */
-function toggleSearch(){
-  searchOpen=!searchOpen;
-  const wrap=document.getElementById('searchWrap');
-  const btn=document.getElementById('searchToggle');
-  wrap.classList.toggle('open',searchOpen);
-  btn.classList.toggle('active',searchOpen);
-  /* spring the toggle button */
-  const sp=new Spring(420,15,1);
-  sp.set(searchOpen?0.8:1.15);
-  sp.to(1,v=>{btn.style.transform=`scale(${v})`;});
-  if(searchOpen)setTimeout(()=>document.getElementById('searchInput').focus(),260);
-  else clearSearch();
-}
-
-function onSearch(val){
-  currentSearch=val;
-  document.getElementById('clearBtn').classList.toggle('vis',val.length>0);
-  renderCards();
-}
-function clearSearch(){
-  currentSearch='';
-  const inp=document.getElementById('searchInput');
-  if(inp)inp.value='';
-  document.getElementById('clearBtn').classList.remove('vis');
-  renderCards();
-}
-
-/* ── SHEET SPRINGS ── */
-const sheetSp = new Spring(320, 28, 1);
-const hubSp   = new Spring(300, 26, 1);
-sheetSp.set(100);
-hubSp.set(1);
-
-const sheet    = document.getElementById('game-sheet');
-const backdrop = document.getElementById('sheet-backdrop');
-const hubWrap  = document.getElementById('hub-wrap');
-let sheetOpen  = false;
-
-function applySheet(v){
-  sheet.style.transform = `translateY(${v.toFixed(2)}%)`;
-}
-
-function applyHub(scale){
-  hubWrap.style.transform = `scale(${scale.toFixed(4)})`;
-}
-
-function openSheet(filename, displayName){
-  if(sheetOpen) return;
-  sheetOpen = true;
-
-  const url = BASE + filename;
-  const iframe = document.getElementById('sheet-iframe');
-  document.getElementById('sheet-title').textContent = displayName;
-  document.getElementById('sheet-loading').style.display = 'flex';
-  iframe.style.opacity = '0';
-  iframe.src = url;
-
-  backdrop.classList.add('open');
-  hubWrap.classList.add('sheet-open');
-  document.body.style.overflow = 'hidden';
-
-  sheetSp.to(0, applySheet);
-  hubSp.to(0.92, v => applyHub(v));
-}
-
-function closeSheet(){
-  if(!sheetOpen) return;
-  sheetOpen = false;
-
-  backdrop.classList.remove('open');
-  document.body.style.overflow = '';
-
-  sheetSp.to(100, applySheet);
-
-  hubSp.to(1, v => {
-    applyHub(v);
-    if(Math.abs(v - 1) < 0.001){
-      hubWrap.classList.remove('sheet-open');
-      hubWrap.style.transform = '';
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cedar Clients</title>
+  <meta name="description" content="Cedar Clients — Minecraft client downloads and instructions.">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-  });
 
-  setTimeout(()=>{
-    const iframe = document.getElementById('sheet-iframe');
-    iframe.src = '';
-    iframe.style.opacity = '0';
-    document.getElementById('sheet-loading').style.display = 'flex';
-  }, 450);
+    :root {
+      --bg: #070b08;
+      --panel: rgba(15, 25, 18, 0.78);
+      --panel-hover: rgba(21, 35, 25, 0.9);
+      --border: rgba(112, 255, 151, 0.16);
+      --green: #39e66d;
+      --green-light: #86ffa5;
+      --text: #f1fff4;
+      --muted: #9caea1;
+    }
 
-  const closeBtn = document.getElementById('sheet-close');
-  const sp = new Spring(400, 14, 1); sp.set(0.8);
-  sp.to(1, v => closeBtn.style.transform = `scale(${v})`);
-}
+    html {
+      scroll-behavior: smooth;
+    }
 
-/* ── LAUNCH — open in sheet with spring ── */
-function launch(filename){
-  const card = document.querySelector(`.acard[data-name="${filename}"]`);
-  const displayName = card ? card.querySelector('.aname').textContent : filename;
-  openSheet(filename, displayName);
-}
+    body {
+      min-height: 100vh;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% -10%, rgba(42, 196, 88, 0.16), transparent 35%),
+        radial-gradient(circle at 10% 80%, rgba(24, 115, 52, 0.10), transparent 30%),
+        var(--bg);
+      overflow-x: hidden;
+    }
 
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, black, transparent 80%);
+    }
 
-/* ── POPOUT — open in about:blank then immediately redirect ── */
-function popout(filename){
-  const url=BASE+filename;
-  const tab=window.open('about:blank','_blank');
-  if(!tab){alert('Allow pop-ups to use Tab mode.');return;}
-  /* Write a redirect page — the tab starts as about:blank then navigates itself */
-  tab.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=${url}">
-<title>Loading…</title>
-<style>body{margin:0;display:flex;align-items:center;justify-content:center;height:100vh;
-font-family:system-ui,sans-serif;background:#080810;color:rgba(255,255,255,0.35);font-size:0.9rem;letter-spacing:0.5px;}</style>
-</head><body><p>Loading…</p>
-<script>location.replace(${JSON.stringify(url)});<\/script>
-</body></html>`);
-  tab.document.close();
-}
+    header {
+      min-height: 78vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 20px 60px;
+    }
 
-/* ── BOOT ── */
-window.addEventListener('DOMContentLoaded',()=>{
-  springBtn(document.getElementById('searchToggle'),{hoverScale:1.12,pressScale:0.9,stiffness:400,damping:15});
-  springBtn(document.getElementById('sheet-close'),{hoverScale:1.15,pressScale:0.88,stiffness:420,damping:14});
-  document.querySelectorAll('.credit-card').forEach(c=>springCard(c));
-  sheet.style.transform='translateY(100%)';
+    .hero {
+      max-width: 900px;
+      animation: fadeUp 0.8s ease both;
+    }
 
-  /* wire iframe load event here so function is guaranteed defined */
-  document.getElementById('sheet-iframe').addEventListener('load', function(){
-    if(!this.src || this.src === window.location.href) return;
-    document.getElementById('sheet-loading').style.display='none';
-    this.style.opacity='1';
-  });
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      margin-bottom: 22px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(57, 230, 109, 0.06);
+      color: var(--green-light);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-  loadFiles();
-});</script>
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(57, 230, 109, 0.8);
+    }
+
+    h1 {
+      font-size: clamp(3.4rem, 9vw, 7.5rem);
+      line-height: 0.9;
+      letter-spacing: -0.065em;
+      font-weight: 900;
+    }
+
+    h1 span {
+      color: var(--green);
+      text-shadow: 0 0 40px rgba(57, 230, 109, 0.18);
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin: 28px auto 34px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      line-height: 1.7;
+    }
+
+    .hero-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 13px 20px;
+      border-radius: 12px;
+      color: #061008;
+      background: var(--green);
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 8px 30px rgba(57, 230, 109, 0.16);
+    }
+
+    .hero-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 38px rgba(57, 230, 109, 0.25);
+    }
+
+    main {
+      width: min(1050px, calc(100% - 32px));
+      margin: 0 auto;
+      padding-bottom: 90px;
+    }
+
+    section {
+      scroll-margin-top: 30px;
+      margin-bottom: 80px;
+    }
+
+    .section-heading {
+      margin-bottom: 26px;
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    .downloads {
+      display: grid;
+      gap: 14px;
+    }
+
+    .download-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      text-decoration: none;
+      color: var(--text);
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .download-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(57, 230, 109, 0.07), transparent 55%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .download-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(112, 255, 151, 0.38);
+      background: var(--panel-hover);
+    }
+
+    .download-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-content,
+    .arrow {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+
+    .card-description {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .recommended {
+      color: var(--green-light);
+    }
+
+    .arrow {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      background: rgba(57, 230, 109, 0.09);
+      color: var(--green);
+      font-size: 20px;
+    }
+
+    .instructions-box {
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      padding: 35px;
+      text-align: center;
+      border: 1px dashed rgba(112, 255, 151, 0.2);
+      border-radius: 18px;
+      background: rgba(15, 25, 18, 0.45);
+      color: var(--muted);
+    }
+
+    .instructions-box strong {
+      display: block;
+      color: var(--text);
+      font-size: 1.05rem;
+      margin-bottom: 7px;
+    }
+
+    footer {
+      padding: 35px 20px 45px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      color: #68776d;
+      font-size: 0.85rem;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 620px) {
+      header {
+        min-height: 70vh;
+      }
+
+      .download-card {
+        padding: 18px;
+      }
+
+      .card-description {
+        line-height: 1.4;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="hero">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Cedar Clients
+      </div>
+
+      <h1>Cedar <span>Clients</span></h1>
+
+      <p class="subtitle">
+        Download the Cedar clients for your Minecraft server and find everything
+        you need to get started.
+      </p>
+
+      <a class="hero-button" href="#downloads">
+        View Downloads
+        <span>↓</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <section id="downloads">
+      <div class="section-heading">
+        <div class="eyebrow">Clients</div>
+        <h2>Downloads</h2>
+      </div>
+
+      <div class="downloads">
+        <a
+          class="download-card"
+          href="https://drive.google.com/file/d/1DKdwnV8KAp35biOoWgJEz5xgb-zPOt0-/view"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="card-content">
+            <div class="card-title">
+              26.2 <span class="recommended">(RECOMMENDED FOR LIFESTEAL)</span>
+            </div>
+            <div class="card-description">Recommended Cedar client for Lifesteal.</div>
+          </div>
+          <div class="arrow">→</div>
+        </a>
+
+        <a
+          class="download-card"
+          href="https://drive.google.com/file/d/16V2LBDbOlib1yfqOUdYfWAvat6Gt3-PZ/view?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="card-content">
+            <div class="card-title">
+              1.21.11 <span class="recommended">(RECOMMENDED FOR CEDARSMP)</span>
+            </div>
+            <div class="card-description">Recommended Cedar client for CedarSMP.</div>
+          </div>
+          <div class="arrow">→</div>
+        </a>
+
+        <a
+          class="download-card"
+          href="https://drive.google.com/file/d/1zoT-w4DZFKjZ5QCAgbAnaYd6kF8C3TAi/view?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="card-content">
+            <div class="card-title">CEDAR CLIENT (NO LAG)</div>
+            <div class="card-description">Cedar client focused on a smooth, low-lag experience.</div>
+          </div>
+          <div class="arrow">→</div>
+        </a>
+      </div>
+    </section>
+
+    <section id="instructions">
+      <div class="section-heading">
+        <div class="eyebrow">Getting Started</div>
+        <h2>Instructions</h2>
+      </div>
+
+      <div class="instructions-box">
+        <div>
+          <strong>Instructions coming soon.</strong>
+          This section is ready for the setup instructions you'll provide.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © 2026 Cedar Clients. All rights reserved.
+  </footer>
 </body>
 </html>

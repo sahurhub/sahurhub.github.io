@@ -2,51 +2,147 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>SahurHub</title>
-  <meta name="description" content="SahurHub is coming soon.">
-  <style>
-    :root {
-      --bg: #f6f6f4;
-      --text: #1d1d1f;
-      --muted: #6b6b70;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #121214;
-        --text: #f2f2f4;
-        --muted: #9a9aa2;
-      }
-    }
-    html, body { height: 100%; margin: 0; }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 16px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      text-align: center;
-    }
-    p.name {
-      margin: 0 0 8px;
-      font-size: 14px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(36px, 8vw, 64px);
-      font-weight: 700;
-    }
-  </style>
+  <meta name="description" content="SahurHub: all my games in one place.">
+  <meta name="theme-color" content="#eef1fb">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Pick light or dark before the page draws, so it never flashes the wrong colors.
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('sahurhub.theme'); } catch (e) {}
+      var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    })();
+  </script>
 </head>
 <body>
-  <main>
-    <p class="name">SahurHub</p>
-    <h1>Coming soon</h1>
-  </main>
+  <div id="app">
+    <canvas id="wallpaper" aria-hidden="true"></canvas>
+
+    <div id="content">
+      <main id="views">
+
+        <section class="view is-active" id="view-home" data-title="SahurHub" aria-labelledby="home-title">
+          <header class="view-header">
+            <p class="eyebrow" id="today"></p>
+            <h1 class="large-title" id="home-title">SahurHub</h1>
+            <p class="subtitle">All my games in one place.</p>
+          </header>
+
+          <div id="featured-slot"></div>
+
+          <div id="recent-block" hidden>
+            <div class="section-head">
+              <h2 class="section-title">Jump Back In</h2>
+              <button class="link-btn" type="button" data-goto="recent">See All</button>
+            </div>
+            <div class="row-scroll" id="recent-row"></div>
+          </div>
+
+          <div class="section-head">
+            <h2 class="section-title">All Games</h2>
+            <span class="section-meta" id="home-count"></span>
+          </div>
+          <div class="chips" id="home-chips" role="toolbar" aria-label="Filter games by category"></div>
+          <div class="grid" id="home-grid"></div>
+          <div class="empty" id="home-empty" hidden>
+            <div class="empty-icon" data-icon="controller"></div>
+            <h3>No games yet</h3>
+            <p>Games added to games.js will show up here.</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-favorites" data-title="Favorites" aria-labelledby="fav-title">
+          <header class="view-header">
+            <h1 class="large-title" id="fav-title">Favorites</h1>
+            <p class="subtitle" id="fav-count"></p>
+          </header>
+          <div class="grid" id="fav-grid"></div>
+          <div class="empty" id="fav-empty" hidden>
+            <div class="empty-icon" data-icon="heart"></div>
+            <h3>No favorites yet</h3>
+            <p>Tap the heart on any game and it will show up here.</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-recent" data-title="Recently Played" aria-labelledby="recent-title">
+          <header class="view-header view-header-row">
+            <div>
+              <h1 class="large-title" id="recent-title">Recently Played</h1>
+              <p class="subtitle" id="recent-count"></p>
+            </div>
+            <button class="btn btn-tinted" type="button" id="clear-recent">Clear</button>
+          </header>
+          <div class="list" id="recent-list"></div>
+          <div class="empty" id="recent-empty" hidden>
+            <div class="empty-icon" data-icon="clock"></div>
+            <h3>Nothing played yet</h3>
+            <p>Games you play will appear here, newest first.</p>
+          </div>
+        </section>
+
+        <section class="view" id="view-search" data-title="Search" aria-labelledby="search-title">
+          <header class="view-header">
+            <h1 class="large-title" id="search-title">Search</h1>
+            <p class="subtitle" id="search-summary" aria-live="polite"></p>
+          </header>
+          <div class="chips" id="search-chips" role="toolbar" aria-label="Filter results by category"></div>
+          <div class="suggest" id="search-suggest"></div>
+          <div class="grid" id="search-grid"></div>
+          <div class="empty" id="search-empty" hidden>
+            <div class="empty-icon" data-icon="search"></div>
+            <h3 id="search-empty-title">No results</h3>
+            <p id="search-empty-text">Check the spelling or try a different word.</p>
+            <button class="btn btn-tinted" type="button" id="search-all-cats" hidden>Search all categories</button>
+          </div>
+        </section>
+
+      </main>
+      <footer class="footer">SahurHub</footer>
+    </div>
+
+    <div id="topedge" aria-hidden="true"><span class="compact-title" id="compact-title">SahurHub</span></div>
+
+    <canvas id="scrim" aria-hidden="true"></canvas>
+
+    <button class="glass glass-circle" id="theme-btn" type="button" aria-label="Switch to dark mode">
+      <span class="theme-icon icon-sun" data-icon="sun"></span>
+      <span class="theme-icon icon-moon" data-icon="moon"></span>
+    </button>
+
+    <nav class="glass glass-bottom" id="tabbar" aria-label="Sections">
+      <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+      <button class="tab" type="button" data-view="home"><span data-icon="house"></span><span class="tab-label">Home</span></button>
+      <button class="tab" type="button" data-view="favorites"><span data-icon="heart"></span><span class="tab-label">Favorites</span></button>
+      <button class="tab" type="button" data-view="recent"><span data-icon="clock"></span><span class="tab-label">Recent</span></button>
+    </nav>
+
+    <div class="glass glass-bottom" id="searchbar" role="search" inert>
+      <span class="search-icon" data-icon="search"></span>
+      <input id="search-input" type="search" placeholder="Search games" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Search games">
+      <button id="search-clear" type="button" aria-label="Clear search" tabindex="-1"><span data-icon="close"></span></button>
+    </div>
+
+    <button class="glass glass-circle glass-bottom" id="search-btn" type="button" aria-label="Search games (press /)" title="Search (/)">
+      <span class="sb-icon sb-search" data-icon="search"></span>
+      <span class="sb-icon sb-close" data-icon="close"></span>
+    </button>
+
+    <div class="glass" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" inert>
+      <div class="sheet-grabber" aria-hidden="true"></div>
+      <button class="sheet-close" id="sheet-close" type="button" aria-label="Close"><span data-icon="close"></span></button>
+      <div class="sheet-body" id="sheet-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="games.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

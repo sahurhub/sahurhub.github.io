@@ -12,8 +12,10 @@
   var MAX_RECENT = 12;
   var SPRING = 'cubic-bezier(.34, 1.56, .64, 1)';
   var EASE_OUT = 'cubic-bezier(.22, 1, .36, 1)';
+  var EASE_SOFT = 'cubic-bezier(.2, .9, .25, 1)';
   var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
   // ---------------------------------------------------------------------------
   // Small helpers
@@ -22,6 +24,8 @@
   function $(id) { return document.getElementById(id); }
   function reduceMotion() { return motionQuery.matches; }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  var idle = window.requestIdleCallback || function (fn) { return setTimeout(fn, 200); };
 
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -53,6 +57,54 @@
   };
 
   // ---------------------------------------------------------------------------
+  // Motion: one shared animation loop and a small spring
+  // ---------------------------------------------------------------------------
+
+  var tickers = [];
+  var tickFrame = 0;
+  var tickLast = 0;
+
+  // fn(dt) runs every frame until it returns false.
+  function startTick(fn) {
+    if (tickers.indexOf(fn) === -1) tickers.push(fn);
+    if (!tickFrame) {
+      tickLast = performance.now();
+      tickFrame = requestAnimationFrame(runTick);
+    }
+  }
+  function runTick(now) {
+    var dt = clamp((now - tickLast) / 1000, 0.001, 0.05);
+    tickLast = now;
+    tickers = tickers.filter(function (fn) { return fn(dt) !== false; });
+    tickFrame = tickers.length ? requestAnimationFrame(runTick) : 0;
+  }
+
+  function Spring(value, stiffness, damping) {
+    this.x = value;
+    this.t = value;
+    this.v = 0;
+    this.k = stiffness;
+    this.c = damping;
+  }
+  // Moves toward the target; returns false once it has settled.
+  Spring.prototype.step = function (dt, eps) {
+    var n = Math.max(1, Math.ceil(dt / 0.006));
+    var h = dt / n;
+    for (var i = 0; i < n; i++) {
+      var a = -this.k * (this.x - this.t) - this.c * this.v;
+      this.v += a * h;
+      this.x += this.v * h;
+    }
+    if (Math.abs(this.x - this.t) < eps && Math.abs(this.v) < eps * 30) {
+      this.x = this.t;
+      this.v = 0;
+      return false;
+    }
+    return true;
+  };
+  Spring.prototype.snap = function (x) { this.x = this.t = x; this.v = 0; };
+
+  // ---------------------------------------------------------------------------
   // Icons (drawn for SahurHub)
   // ---------------------------------------------------------------------------
 
@@ -66,6 +118,7 @@
     moon: '<path d="M19.6 14.6A8 8 0 0 1 9.4 4.4a8 8 0 1 0 10.2 10.2Z"/>',
     play: '<path d="M8 5.6v12.8a.8.8 0 0 0 1.2.7l10.3-6.4a.8.8 0 0 0 0-1.4L9.2 4.9A.8.8 0 0 0 8 5.6Z" fill="currentColor" stroke="none"/>',
     chevron: '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
+    desktop: '<rect x="2.8" y="4" width="18.4" height="12.6" rx="2.6"/><path d="M8.6 20.2h6.8M12 16.6v3.6M7.6 13.2h8.8"/>',
     controller: '<path d="M7.5 7.5h9a4.6 4.6 0 0 1 4.5 5.6l-.7 3.4a2.4 2.4 0 0 1-4.1 1.1L14.4 15.7H9.6l-1.8 1.9a2.4 2.4 0 0 1-4.1-1.1L3 13.1a4.6 4.6 0 0 1 4.5-5.6Z"/><path d="M8 10.4v3.2M6.4 12h3.2"/>'
   };
 
@@ -160,6 +213,7 @@
     query: '',
     searchOpen: false,
     sheetGame: null,
+    desktopOpen: false,
     favorites: storage.get(KEYS.favorites, []).filter(function (id) { return BY_ID[id]; }),
     recent: storage.get(KEYS.recent, []).filter(function (r) { return r && BY_ID[r.id]; })
   };
@@ -177,9 +231,11 @@
   var compactTitle = $('compact-title');
   var scrim = $('scrim');
   var themeBtn = $('theme-btn');
+  var desktopBtn = $('desktop-btn');
   var tabbar = $('tabbar');
   var tabIndicator = $('tab-indicator');
   var tabs = Array.prototype.slice.call(tabbar.querySelectorAll('.tab'));
+  var lensEl = $('tab-lens');
   var searchbar = $('searchbar');
   var searchInput = $('search-input');
   var searchClear = $('search-clear');
@@ -194,13 +250,14 @@
     recent: $('view-recent'),
     search: $('view-search')
   };
+  var VIEW_ORDER = { home: 0, favorites: 1, recent: 2, search: 3 };
 
   // ---------------------------------------------------------------------------
   // Liquid glass
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [themeBtn, tabbar, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, themeBtn, tabbar, lensEl, searchbar, searchBtn, sheet];
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -219,8 +276,9 @@
       shadowOffsetY: 4
     };
     var extra;
-    if (el === themeBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
+    if (el === themeBtn || el === desktopBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
+    else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
     else if (el === sheet) extra = { blurAmount: 1, refraction: 0.55, cornerRadius: 36, zRadius: 30, brightness: dark ? -0.36 : 0.26, saturation: 0.35, shadowOpacity: dark ? 0.55 : 0.24, shadowSpread: 30, shadowOffsetY: 10 };
     else extra = { blurAmount: 0.6, brightness: dark ? -0.36 : 0.32, saturation: dark ? 0.2 : -0.15, cornerRadius: 31, zRadius: 22 };
     return Object.assign(base, extra);
@@ -233,7 +291,8 @@
   }
 
   function visibleGlass() {
-    var list = [themeBtn, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [themeBtn, desktopBtn, searchBtn, state.searchOpen ? searchbar : tabbar];
+    if (lens.shown) list.push(lensEl);
     if (state.sheetGame) list.push(sheet);
     return list;
   }
@@ -244,23 +303,31 @@
     visibleGlass().forEach(function (el) { lg.markChanged(el); });
   }
 
+  // Ask the library to re-take a glass element's own picture (labels, icons).
+  function refreshGlassContent(el) {
+    if (!lg) return;
+    var t = document.createTextNode('');
+    el.appendChild(t);
+    t.remove();
+  }
+
   // The library only re-draws glass that is marked as changed. When a glass
   // element slides or fades (CSS transitions), mark it on every frame until the
   // movement ends so it never shows an old picture.
   function watchGlassMotion(el) {
     var running = 0;
-    var frame = 0;
     var startedAt = 0;
     function tick() {
       if (lg) lg.markChanged(el);
-      if (running > 0 && performance.now() - startedAt < 2000) frame = requestAnimationFrame(tick);
-      else { frame = 0; running = 0; }
+      if (running > 0 && performance.now() - startedAt < 2000) return true;
+      running = 0;
+      return false;
     }
     el.addEventListener('transitionrun', function (e) {
       if (e.target !== el) return;
       running++;
       startedAt = performance.now();
-      if (!frame) frame = requestAnimationFrame(tick);
+      startTick(tick);
     });
     function finished(e) {
       if (e.target !== el) return;
@@ -281,7 +348,7 @@
     });
   }
   function recapture(target) {
-    if (!lg) return;
+    if (!lg || state.desktopOpen) return;
     var capture = lg.capture;
     if (capture && typeof capture.captureElement === 'function') {
       Promise.resolve(capture.captureElement(target, true)).catch(function () {});
@@ -292,26 +359,33 @@
 
   async function initGlass() {
     applyGlassConfigs();
-    GLASS_ELEMENTS.forEach(watchGlassMotion);
+    GLASS_ELEMENTS.forEach(function (el) { if (el !== lensEl) watchGlassMotion(el); });
     try {
       var modulePromise = import(LIQUID_GLASS_URL);
-      await Promise.all([document.fonts ? document.fonts.ready : null, wait(reduceMotion() ? 0 : 900)]);
+      // Let the opening animation finish first, so the glass sees the final page.
+      await Promise.all([document.fonts ? document.fonts.ready : null, wait(reduceMotion() ? 0 : 950)]);
+      await new Promise(function (r) { idle(r, { timeout: 600 }); });
       var mod = await modulePromise;
       lg = await mod.LiquidGlass.init({ root: app, glassElements: GLASS_ELEMENTS });
       document.documentElement.classList.add('lg-ready');
-      // Re-take each glass element's own picture now that the temporary frosted
-      // look is gone (a tiny DOM change makes the library notice).
-      GLASS_ELEMENTS.forEach(function (el) {
-        var t = document.createTextNode('');
-        el.appendChild(t);
-        t.remove();
-      });
+      GLASS_ELEMENTS.forEach(refreshGlassContent);
       scheduleCapture(150, [content, topedge]);
     } catch (err) {
       console.warn('SahurHub: liquid glass could not start, using the simple frosted look instead.', err);
       document.documentElement.classList.add('lg-fallback');
       lg = null;
     }
+    // Quietly fetch Desktop Mode in the background, so it opens instantly later.
+    idle(function () {
+      var js = document.createElement('link');
+      js.rel = 'modulepreload';
+      js.href = 'desktop.js';
+      document.head.appendChild(js);
+      var css = document.createElement('link');
+      css.rel = 'prefetch';
+      css.href = 'desktop.css';
+      document.head.appendChild(css);
+    }, { timeout: 5000 });
   }
 
   // ---------------------------------------------------------------------------
@@ -371,7 +445,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Theme (light / dark)
+  // Theme (light / dark), with a circular reveal from the button
   // ---------------------------------------------------------------------------
 
   function setThemeAttr(theme) {
@@ -386,14 +460,28 @@
     applyGlassConfigs();
     paintScrim(!!state.sheetGame);
     scheduleCapture(420, [content, topedge]);
+    document.dispatchEvent(new CustomEvent('sahurhub:theme'));
   }
 
-  function toggleTheme() {
-    var next = isDark() ? 'light' : 'dark';
+  function setTheme(next, originEl) {
+    if (next === (isDark() ? 'dark' : 'light')) return;
     storage.setRaw(KEYS.theme, next);
-    setThemeAttr(next);
-    onThemeChanged();
+    var apply = function () { setThemeAttr(next); onThemeChanged(); };
+    if (!document.startViewTransition || reduceMotion()) { apply(); return; }
+    var r = originEl && originEl.getBoundingClientRect();
+    var x = r ? r.left + r.width / 2 : window.innerWidth - 40;
+    var y = r ? r.top + r.height / 2 : 40;
+    var radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    var transition = document.startViewTransition(apply);
+    transition.ready.then(function () {
+      document.documentElement.animate(
+        { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + radius + 'px at ' + x + 'px ' + y + 'px)'] },
+        { duration: 760, easing: 'cubic-bezier(.65, 0, .35, 1)', pseudoElement: '::view-transition-new(root)' }
+      );
+    }).catch(function () {});
   }
+
+  function toggleTheme(originEl) { setTheme(isDark() ? 'light' : 'dark', originEl); }
 
   function followSystemTheme() {
     if (storage.getRaw(KEYS.theme)) return; // the visitor picked one themselves
@@ -461,7 +549,7 @@
   var gridCaches = new WeakMap();
 
   // Show `games` in `grid`. Reuses card elements and animates them:
-  // entering = staggered fade-in, otherwise cards glide to their new spots.
+  // entering = staggered rise-in, otherwise cards glide to their new spots.
   function updateGrid(grid, games, opts) {
     opts = opts || {};
     var cache = gridCaches.get(grid);
@@ -492,28 +580,46 @@
         if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
           card.animate(
             [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }],
-            { duration: 560, easing: SPRING }
+            { duration: 620, easing: SPRING }
           );
         }
       } else {
         card.animate(
-          [{ opacity: 0, transform: 'translateY(18px) scale(.94)' }, { opacity: 1, transform: 'none' }],
-          { duration: 560, delay: Math.min(enterIndex++, 14) * 40, easing: EASE_OUT, fill: 'backwards' }
+          [
+            { opacity: 0, transform: 'perspective(800px) translateY(28px) rotateX(16deg) scale(.92)' },
+            { opacity: 1, transform: 'none' }
+          ],
+          { duration: 760, delay: Math.min(enterIndex++, 14) * 45, easing: EASE_SOFT, fill: 'backwards' }
         );
       }
     });
   }
 
+  // Category chips, with a pill that slides to the selected chip.
   function renderChips(container) {
-    container.innerHTML = CATEGORIES.map(function (c) {
-      return '<button class="chip" type="button" data-category="' + escapeHtml(c) + '" aria-pressed="' + (c === state.category) + '">' + escapeHtml(c) + '</button>';
+    container.innerHTML = '<span class="chip-pill" aria-hidden="true"></span>' + CATEGORIES.map(function (c) {
+      return '<button class="chip" type="button" data-category="' + escapeHtml(c) + '" aria-pressed="' + (c === state.category) + '"><span>' + escapeHtml(c) + '</span></button>';
     }).join('');
   }
 
-  function syncChips() {
+  function placePill(container, animate) {
+    var pill = container.querySelector('.chip-pill');
+    var sel = container.querySelector('.chip[aria-pressed="true"]');
+    if (!pill || !sel || !sel.offsetWidth) return;
+    if (!animate) pill.classList.add('no-anim');
+    pill.style.width = sel.offsetWidth + 'px';
+    pill.style.transform = 'translate(' + sel.offsetLeft + 'px,' + sel.offsetTop + 'px)';
+    if (!animate) {
+      pill.getBoundingClientRect();
+      pill.classList.remove('no-anim');
+    }
+  }
+
+  function syncChips(animate) {
     document.querySelectorAll('.chip').forEach(function (chip) {
       chip.setAttribute('aria-pressed', chip.dataset.category === state.category ? 'true' : 'false');
     });
+    document.querySelectorAll('.chips').forEach(function (c) { placePill(c, animate); });
   }
 
   function inCategory(g) { return state.category === 'All' || g.category === state.category; }
@@ -526,7 +632,8 @@
     if (!g) { slot.innerHTML = ''; return; }
     slot.innerHTML =
       '<article class="featured" style="' + artStyle(g) + '">' +
-        '<button class="featured-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', featured game. Open details') + '"></button>' +
+        '<span class="featured-shine" aria-hidden="true"></span>' +
+        '<button class="featured-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', featured opsec. Open details') + '"></button>' +
         '<div class="featured-art">' + glyph(g.icon) + '</div>' +
         '<div class="featured-text">' +
           '<p class="featured-kicker">FEATURED</p>' +
@@ -570,7 +677,7 @@
 
   function renderHome(entering) {
     var list = GAMES.filter(inCategory);
-    $('home-count').textContent = state.category === 'All' ? plural(list.length, 'game') : plural(list.length, 'game') + ' in ' + state.category;
+    $('home-count').textContent = state.category === 'All' ? plural(list.length, 'opsec') : plural(list.length, 'opsec') + ' in ' + state.category;
     $('home-empty').hidden = GAMES.length > 0;
     renderRecentRow();
     updateGrid($('home-grid'), list, { entering: entering });
@@ -578,29 +685,29 @@
 
   function renderFavorites(entering) {
     var list = GAMES.filter(function (g) { return isFavorite(g.id); });
-    $('fav-count').textContent = list.length ? plural(list.length, 'game') : '';
+    $('fav-count').textContent = list.length ? plural(list.length, 'opsec') : '';
     $('fav-empty').hidden = list.length > 0;
     updateGrid($('fav-grid'), list, { entering: entering });
   }
 
   function renderRecent() {
     var listEl = $('recent-list');
-    $('recent-count').textContent = state.recent.length ? plural(state.recent.length, 'game') : '';
+    $('recent-count').textContent = state.recent.length ? plural(state.recent.length, 'opsec') : '';
     $('recent-empty').hidden = state.recent.length > 0;
     $('clear-recent').hidden = state.recent.length === 0;
     listEl.innerHTML = state.recent.map(function (r) {
       var g = BY_ID[r.id];
       return '<button class="list-row" type="button" data-open="' + escapeHtml(g.id) + '" style="' + artStyle(g) + '">' +
         '<span class="list-icon">' + glyph(g.icon) + '</span>' +
-        '<span class="list-text"><span class="list-title" style="display:block">' + escapeHtml(g.title) + '</span>' +
-        '<span class="list-sub" style="display:block">' + escapeHtml(g.category + ' · ' + timeAgo(r.t)) + '</span></span>' +
+        '<span class="list-text"><span class="list-title">' + escapeHtml(g.title) + '</span>' +
+        '<span class="list-sub">' + escapeHtml(g.category + ' · ' + timeAgo(r.t)) + '</span></span>' +
         '<span class="list-chev">' + uiIcon('chevron') + '</span>' +
       '</button>';
     }).join('');
     if (!reduceMotion()) {
       Array.prototype.forEach.call(listEl.children, function (row, i) {
-        row.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
-          { duration: 420, delay: Math.min(i, 10) * 35, easing: EASE_OUT, fill: 'backwards' });
+        row.animate([{ opacity: 0, transform: 'translateX(-16px)' }, { opacity: 1, transform: 'none' }],
+          { duration: 560, delay: Math.min(i, 10) * 40, easing: EASE_SOFT, fill: 'backwards' });
       });
     }
   }
@@ -666,7 +773,7 @@
     var list = terms.length ? searchGames(terms).filter(inCategory) : GAMES.filter(inCategory);
     var summary = $('search-summary');
     if (!terms.length) {
-      summary.textContent = state.category === 'All' ? 'Search ' + plural(GAMES.length, 'game') : plural(list.length, 'game') + ' in ' + state.category;
+      summary.textContent = state.category === 'All' ? 'Search ' + plural(GAMES.length, 'opsec') : plural(list.length, 'opsec') + ' in ' + state.category;
     } else {
       summary.textContent = plural(list.length, 'result') + ' for “' + q + '”' + (state.category === 'All' ? '' : ' in ' + state.category);
     }
@@ -714,7 +821,7 @@
     searchInput.blur();
     searchbar.inert = true;
     tabbar.inert = false;
-    searchBtn.setAttribute('aria-label', 'Search games (press /)');
+    searchBtn.setAttribute('aria-label', 'Search opsecs (press /)');
     showView(state.lastTab);
   }
 
@@ -729,19 +836,43 @@
     else if (name === 'search') renderSearch(entering);
   }
 
+  // Slide the new view in from the side of the tab it came from.
+  function animateViewIn(name, prev) {
+    if (reduceMotion()) return;
+    var dir = VIEW_ORDER[name] >= VIEW_ORDER[prev] ? 1 : -1;
+    var from = (name === 'search' || prev === 'search')
+      ? 'translateY(22px) scale(.985)'
+      : 'translateX(' + (dir * 48) + 'px)';
+    views[name].animate(
+      [{ opacity: 0, transform: from, filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }],
+      { duration: 580, easing: EASE_SOFT }
+    );
+  }
+
   function showView(name) {
-    var changed = state.view !== name;
+    var prev = state.view;
+    var changed = prev !== name;
     if (name !== 'search') state.lastTab = name;
     if (changed) {
-      views[state.view].classList.remove('is-active');
+      views[prev].classList.remove('is-active');
       views[name].classList.add('is-active');
       state.view = name;
       app.scrollTop = 0;
+      animateViewIn(name, prev);
     }
     renderView(name, changed);
+    views[name].querySelectorAll('.chips').forEach(function (c) { placePill(c, false); });
     updateTabs(true);
     compactTitle.textContent = views[name].getAttribute('data-title');
     scheduleCapture(700, [content, topedge]);
+  }
+
+  function selectTab(name) {
+    if (name === state.view) {
+      app.scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' });
+      return;
+    }
+    showView(name);
   }
 
   function updateTabs(animate) {
@@ -767,14 +898,246 @@
   function bounce(node) {
     if (!node || reduceMotion()) return;
     node.animate(
-      [{ transform: 'scale(1)' }, { transform: 'scale(.82)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }],
-      { duration: 520, easing: EASE_OUT }
+      [{ transform: 'scale(1)' }, { transform: 'scale(.78)' }, { transform: 'scale(1.18)' }, { transform: 'scale(.96)' }, { transform: 'scale(1)' }],
+      { duration: 620, easing: EASE_OUT }
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab bar lens: press and hold the tab bar and the selection grows into a
+  // liquid glass lens that follows the pointer, then snaps to a tab on release.
+  // ---------------------------------------------------------------------------
+
+  var lens = {
+    x: new Spring(0, 560, 38),
+    s: new Spring(0.62, 460, 26),
+    active: false,
+    shown: false,
+    pointerId: null,
+    downX: 0,
+    moved: false,
+    suppressClick: false,
+    geo: null
+  };
+
+  function lensGeometry() {
+    var bar = tabbar.getBoundingClientRect();
+    var centers = tabs.map(function (t) { var r = t.getBoundingClientRect(); return r.left + r.width / 2; });
+    var w = Math.round(tabs[0].offsetWidth + 30);
+    var h = 80;
+    return { centers: centers, w: w, h: h, cy: bar.top + bar.height / 2 };
+  }
+
+  function sizeLens(geo) {
+    if (Math.abs(lensEl.offsetWidth - geo.w) > 0.5) lensEl.style.width = geo.w + 'px';
+  }
+
+  function clampLens(x) {
+    var c = lens.geo.centers;
+    var lo = c[0] - 8;
+    var hi = c[c.length - 1] + 8;
+    if (x < lo) return lo - Math.min(28, (lo - x) * 0.25);
+    if (x > hi) return hi + Math.min(28, (x - hi) * 0.25);
+    return x;
+  }
+
+  function nearestTab(x) {
+    var c = lens.geo.centers;
+    var best = 0;
+    for (var i = 1; i < c.length; i++) if (Math.abs(c[i] - x) < Math.abs(c[best] - x)) best = i;
+    return best;
+  }
+
+  function tabIndex(name) {
+    for (var i = 0; i < tabs.length; i++) if (tabs[i].dataset.view === name) return i;
+    return 0;
+  }
+
+  function lensTick(dt) {
+    var g = lens.geo;
+    if (!g) return false;
+    var movingX = lens.x.step(dt, 0.05);
+    var movingS = lens.s.step(dt, 0.001);
+    var stretch = Math.min(Math.abs(lens.x.v) / 2200, 0.24);
+    var s = lens.s.x;
+    var opacity = clamp((s - 0.62) / 0.18, 0, 1);
+    if (!lens.active && !movingX && !movingS && opacity < 0.02) {
+      // Done: park it off-screen so no other glass ever sees it.
+      lens.shown = false;
+      lensEl.style.opacity = '0';
+      lensEl.style.transform = 'translate3d(-400px,' + (window.innerHeight + 200) + 'px,0)';
+      if (lg) lg.markChanged(lensEl);
+      return false;
+    }
+    lensEl.style.opacity = opacity.toFixed(3);
+    lensEl.style.transform = 'translate3d(' + (lens.x.x - g.w / 2).toFixed(2) + 'px,' + (g.cy - g.h / 2).toFixed(2) + 'px,0) scale(' +
+      (s * (1 + stretch)).toFixed(4) + ',' + (s * (1 - stretch * 0.45)).toFixed(4) + ')';
+    if (lg) lg.markChanged(lensEl);
+    return true;
+  }
+
+  function lensDown(e) {
+    if (e.button !== 0 || state.searchOpen || state.desktopOpen || reduceMotion()) return;
+    lens.geo = lensGeometry();
+    sizeLens(lens.geo);
+    lens.active = true;
+    lens.pointerId = e.pointerId;
+    lens.downX = e.clientX;
+    lens.moved = false;
+    try { tabbar.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    if (!lens.shown) {
+      lens.x.snap(lens.geo.centers[tabIndex(state.lastTab)]);
+      lens.s.snap(0.62);
+    }
+    lens.shown = true;
+    lens.x.t = clampLens(e.clientX);
+    lens.s.t = 1;
+    tabIndicator.classList.add('lens-on');
+    refreshGlassContent(tabbar);
+    startTick(lensTick);
+  }
+
+  function lensMove(e) {
+    if (!lens.active || e.pointerId !== lens.pointerId) return;
+    if (Math.abs(e.clientX - lens.downX) > 5) lens.moved = true;
+    lens.x.t = clampLens(e.clientX);
+  }
+
+  function lensUp(e) {
+    if (!lens.active || e.pointerId !== lens.pointerId) return;
+    lens.active = false;
+    var idx = nearestTab(lens.moved ? lens.x.x : lens.downX);
+    var name = tabs[idx].dataset.view;
+    lens.x.t = lens.geo.centers[idx];
+    lens.suppressClick = true;
+    setTimeout(function () { lens.suppressClick = false; }, 450);
+    if (e.type !== 'pointercancel') {
+      bounce(tabs[idx].querySelector('[data-icon]'));
+      selectTab(name);
+    }
+    setTimeout(function () {
+      if (lens.active) return;
+      lens.s.t = 0.62;
+      tabIndicator.classList.remove('lens-on');
+      startTick(lensTick);
+    }, 170);
+    startTick(lensTick);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cards and the featured banner tilt toward the mouse, with a moving reflection
+  // ---------------------------------------------------------------------------
+
+  var tilts = new Map();
+  var hoverTilt = null;
+
+  function tiltState(el) {
+    var s = tilts.get(el);
+    if (!s) {
+      s = { rx: 0, ry: 0, lift: 0, mx: 50, my: 0, trx: 0, try_: 0, tlift: 0, tmx: 50, tmy: 0, featured: el.classList.contains('featured') };
+      tilts.set(el, s);
+    }
+    return s;
+  }
+
+  function onTiltMove(e) {
+    if (e.pointerType !== 'mouse' || reduceMotion() || !finePointer.matches) return;
+    var el = e.target.closest('.card, .featured');
+    if (el !== hoverTilt) {
+      if (hoverTilt) endTilt(hoverTilt);
+      hoverTilt = el;
+      if (el) el.classList.add('is-tilting');
+    }
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    var px = clamp((e.clientX - r.left) / r.width, 0, 1);
+    var py = clamp((e.clientY - r.top) / r.height, 0, 1);
+    var s = tiltState(el);
+    var max = s.featured ? 4 : 10;
+    s.trx = (0.5 - py) * max;
+    s.try_ = (px - 0.5) * max;
+    s.tlift = 1;
+    s.tmx = px * 100;
+    s.tmy = py * 100;
+    startTick(tiltTick);
+  }
+
+  function endTilt(el) {
+    var s = tiltState(el);
+    s.trx = 0;
+    s.try_ = 0;
+    s.tlift = 0;
+    el.classList.remove('is-tilting');
+    startTick(tiltTick);
+  }
+
+  function tiltTick(dt) {
+    var k = 1 - Math.exp(-dt * 11);
+    var running = false;
+    tilts.forEach(function (s, el) {
+      s.rx += (s.trx - s.rx) * k;
+      s.ry += (s.try_ - s.ry) * k;
+      s.lift += (s.tlift - s.lift) * k;
+      s.mx += (s.tmx - s.mx) * k;
+      s.my += (s.tmy - s.my) * k;
+      if (s.featured) {
+        el.style.transform = 'perspective(1400px) rotateX(' + s.rx.toFixed(2) + 'deg) rotateY(' + s.ry.toFixed(2) + 'deg) translateY(' + (-3 * s.lift).toFixed(2) + 'px)';
+        el.style.setProperty('--px', (s.ry / 4).toFixed(3));
+        el.style.setProperty('--py', (-s.rx / 4).toFixed(3));
+      } else {
+        el.style.transform = 'perspective(800px) rotateX(' + s.rx.toFixed(2) + 'deg) rotateY(' + s.ry.toFixed(2) + 'deg) translateY(' + (-6 * s.lift).toFixed(2) + 'px) scale(' + (1 + 0.025 * s.lift).toFixed(4) + ')';
+      }
+      el.style.setProperty('--mx', s.mx.toFixed(1) + '%');
+      el.style.setProperty('--my', s.my.toFixed(1) + '%');
+      var settled = Math.abs(s.trx - s.rx) < 0.02 && Math.abs(s.try_ - s.ry) < 0.02 && Math.abs(s.tlift - s.lift) < 0.004;
+      if (settled && s.tlift === 0) {
+        el.style.removeProperty('transform');
+        el.style.removeProperty('--px');
+        el.style.removeProperty('--py');
+        tilts.delete(el);
+      } else {
+        running = true;
+      }
+    });
+    return running;
   }
 
   // ---------------------------------------------------------------------------
   // Favorites and recently played
   // ---------------------------------------------------------------------------
+
+  // Little burst of colored dots when something is added to Favorites.
+  function burst(btn) {
+    if (!btn || reduceMotion()) return;
+    var r = btn.getBoundingClientRect();
+    var cx = r.left + r.width / 2;
+    var cy = r.top + r.height / 2;
+    var colors = ['#ff2d55', '#ff9f0a', '#bf5af2', '#ff375f', '#ffd60a', '#ff6482'];
+    var ring = document.createElement('span');
+    ring.className = 'burst-ring';
+    ring.style.left = cx + 'px';
+    ring.style.top = cy + 'px';
+    document.body.appendChild(ring);
+    ring.animate([{ transform: 'scale(.3)', opacity: 0.9 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 560, easing: EASE_OUT }).onfinish = function () { ring.remove(); };
+    for (var i = 0; i < 12; i++) {
+      var p = document.createElement('span');
+      p.className = 'burst';
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      p.style.background = colors[i % colors.length];
+      document.body.appendChild(p);
+      var angle = (i / 12) * Math.PI * 2 + Math.random() * 0.4;
+      var dist = 28 + Math.random() * 26;
+      var size = 0.6 + Math.random() * 0.8;
+      p.animate(
+        [
+          { transform: 'translate(0,0) scale(' + size + ')', opacity: 1 },
+          { transform: 'translate(' + (Math.cos(angle) * dist).toFixed(1) + 'px,' + (Math.sin(angle) * dist).toFixed(1) + 'px) scale(0)', opacity: 0 }
+        ],
+        { duration: 650 + Math.random() * 300, easing: 'cubic-bezier(.15, .8, .3, 1)' }
+      ).onfinish = (function (node) { return function () { node.remove(); }; })(p);
+    }
+  }
 
   function toggleFavorite(id, sourceBtn) {
     var was = isFavorite(id);
@@ -784,10 +1147,11 @@
     storage.set(KEYS.favorites, state.favorites);
     document.querySelectorAll('.fav-btn[data-fav="' + CSS.escape(id) + '"]').forEach(function (btn) { favButtonState(btn, id); });
     if (state.sheetGame && state.sheetGame.id === id) syncSheetFav();
-    if (!was) bounce(sourceBtn);
+    if (!was && sourceBtn) { bounce(sourceBtn); burst(sourceBtn); }
     if (state.view === 'favorites') renderFavorites(false);
     showToast(was ? 'Removed from Favorites' : 'Added to Favorites');
     scheduleCapture(500);
+    document.dispatchEvent(new CustomEvent('sahurhub:favorites'));
   }
 
   function addRecent(id) {
@@ -808,6 +1172,7 @@
   }
 
   function playGame(g) {
+    if (!g) return;
     addRecent(g.id);
     if (!g.url) {
       showToast(g.title + ' is coming soon');
@@ -872,6 +1237,14 @@
     sheet.classList.add('open');
     scrim.classList.add('open');
     paintScrim(true);
+    if (!reduceMotion()) {
+      Array.prototype.forEach.call(sheetBody.children, function (child, i) {
+        child.animate(
+          [{ opacity: 0, transform: i === 0 ? 'scale(.9)' : 'translateY(16px)' }, { opacity: 1, transform: 'none' }],
+          { duration: 600, delay: 70 + i * 45, easing: EASE_SOFT, fill: 'backwards' }
+        );
+      });
+    }
     setTimeout(function () { sheetClose.focus({ preventScroll: true }); }, 80);
   }
 
@@ -881,9 +1254,9 @@
     sheet.classList.remove('open');
     scrim.classList.remove('open');
     sheet.inert = true;
-    setTimeout(function () { if (!state.sheetGame) paintScrim(false); }, 380);
+    setTimeout(function () { if (!state.sheetGame) paintScrim(false); }, 420);
     // If it was swiped down, let it slide away from where the finger left it.
-    setTimeout(function () { if (!state.sheetGame) sheet.style.removeProperty('translate'); }, 600);
+    setTimeout(function () { if (!state.sheetGame) sheet.style.removeProperty('translate'); }, 650);
     if (!skipFocus && lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
   }
 
@@ -921,9 +1294,9 @@
       if (dy > 120 || velocity > 0.7) {
         closeSheet();
       } else {
-        sheet.style.transition = 'translate .45s ' + SPRING;
+        sheet.style.transition = 'translate .5s ' + SPRING;
         sheet.style.translate = '0 0';
-        setTimeout(function () { sheet.style.removeProperty('transition'); }, 460);
+        setTimeout(function () { sheet.style.removeProperty('transition'); }, 520);
       }
     }
     window.addEventListener('pointerup', end);
@@ -950,10 +1323,86 @@
   var toastTimer = 0;
   function showToast(text) {
     toast.textContent = text;
+    toast.classList.remove('show');
+    toast.getBoundingClientRect();
     toast.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2200);
   }
+
+  // ---------------------------------------------------------------------------
+  // Desktop Mode (its code loads only when someone opens it)
+  // ---------------------------------------------------------------------------
+
+  var desktopModule = null;
+  var desktopLoading = false;
+
+  function loadDesktopCss() {
+    return new Promise(function (resolve) {
+      if (document.getElementById('desktop-css')) { resolve(); return; }
+      var link = document.createElement('link');
+      link.id = 'desktop-css';
+      link.rel = 'stylesheet';
+      link.href = 'desktop.css';
+      link.onload = resolve;
+      link.onerror = resolve;
+      document.head.appendChild(link);
+    });
+  }
+
+  async function openDesktop() {
+    if (state.desktopOpen || desktopLoading) return;
+    desktopLoading = true;
+    desktopBtn.classList.add('is-loading');
+    try {
+      await loadDesktopCss();
+      desktopModule = desktopModule || await import('./desktop.js');
+    } catch (err) {
+      console.warn('SahurHub: Desktop Mode could not load.', err);
+      showToast('Desktop Mode could not load. Check your connection.');
+      desktopLoading = false;
+      desktopBtn.classList.remove('is-loading');
+      return;
+    }
+    desktopLoading = false;
+    desktopBtn.classList.remove('is-loading');
+    if (state.sheetGame) closeSheet(true);
+    if (state.searchOpen) closeSearch();
+    state.desktopOpen = true;
+    app.inert = true;
+    desktopModule.open({
+      onExit: function () {
+        state.desktopOpen = false;
+        app.inert = false;
+        refreshGlass();
+        desktopBtn.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  // What Desktop Mode (desktop.js) is allowed to use from here.
+  window.SahurHub = {
+    games: GAMES,
+    byId: BY_ID,
+    glyph: glyph,
+    icon: uiIcon,
+    escapeHtml: escapeHtml,
+    search: function (query) {
+      var terms = normalize(query).split(/\s+/).filter(Boolean);
+      return terms.length ? searchGames(terms) : GAMES.slice();
+    },
+    isFavorite: isFavorite,
+    toggleFavorite: function (id, sourceEl) { toggleFavorite(id, sourceEl || null); },
+    favorites: function () { return state.favorites.slice(); },
+    recent: function () { return state.recent.slice(); },
+    play: function (id) { playGame(BY_ID[id]); },
+    isDark: isDark,
+    setTheme: setTheme,
+    toggleTheme: toggleTheme,
+    toast: showToast,
+    reduceMotion: reduceMotion,
+    glassUrl: LIQUID_GLASS_URL
+  };
 
   // ---------------------------------------------------------------------------
   // Events
@@ -968,7 +1417,10 @@
     var favSheet = target.closest('[data-fav-sheet]');
     if (favSheet) {
       toggleFavorite(favSheet.getAttribute('data-fav-sheet'), null);
-      if (favSheet.classList.contains('is-fav')) bounce(favSheet.querySelector('[data-icon]'));
+      if (favSheet.classList.contains('is-fav')) {
+        bounce(favSheet.querySelector('[data-icon]'));
+        burst(favSheet.querySelector('[data-icon]'));
+      }
       return;
     }
 
@@ -982,9 +1434,9 @@
     if (chip) {
       if (chip.dataset.category === state.category) return;
       state.category = chip.dataset.category;
-      syncChips();
+      syncChips(true);
       if (state.view === 'search') renderSearch(false); else renderHome(false);
-      scheduleCapture(650);
+      scheduleCapture(700);
       return;
     }
 
@@ -1000,6 +1452,7 @@
     if (go) { showView(go.getAttribute('data-goto')); return; }
   }
 
+  // Large title fades and shrinks a little as the page scrolls (like iOS).
   var scrollFrame = 0;
   var edgeShown = false;
   function onScroll() {
@@ -1007,12 +1460,23 @@
     if (scrollFrame) return;
     scrollFrame = requestAnimationFrame(function () {
       scrollFrame = 0;
-      var show = app.scrollTop > 64;
+      var y = app.scrollTop;
+      var show = y > 64;
       if (show !== edgeShown) {
         edgeShown = show;
         topedge.classList.toggle('show', show);
         scheduleCapture(380, [topedge]);
       }
+      var header = views[state.view].querySelector('.view-header');
+      if (!header) return;
+      if (y <= 0 || reduceMotion()) {
+        header.style.removeProperty('opacity');
+        header.style.removeProperty('transform');
+        return;
+      }
+      var p = clamp(y / 140, 0, 1);
+      header.style.opacity = (1 - p * 0.75).toFixed(3);
+      header.style.transform = 'translateY(' + (y * 0.22).toFixed(1) + 'px) scale(' + (1 - p * 0.05).toFixed(4) + ')';
     });
   }
 
@@ -1023,6 +1487,7 @@
       drawWallpaper();
       if (state.sheetGame) paintScrim(true);
       moveIndicator(false);
+      document.querySelectorAll('.chips').forEach(function (c) { placePill(c, false); });
     }, 120);
   }
 
@@ -1043,20 +1508,33 @@
     app.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
 
-    themeBtn.addEventListener('click', function () {
-      toggleTheme();
-      bounce(themeBtn.querySelector(isDark() ? '.icon-moon' : '.icon-sun'));
+    content.addEventListener('pointermove', onTiltMove, { passive: true });
+    content.addEventListener('pointerleave', function () { if (hoverTilt) { endTilt(hoverTilt); hoverTilt = null; } });
+    content.addEventListener('pointerdown', function (e) {
+      var card = e.target.closest('.card');
+      if (card && !e.target.closest('.fav-btn')) card.classList.add('is-pressed');
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
+      content.addEventListener(type, function () {
+        content.querySelectorAll('.card.is-pressed').forEach(function (c) { c.classList.remove('is-pressed'); });
+      });
     });
 
+    themeBtn.addEventListener('click', function () {
+      toggleTheme(themeBtn);
+      bounce(themeBtn.querySelector(isDark() ? '.icon-moon' : '.icon-sun'));
+    });
+    desktopBtn.addEventListener('click', openDesktop);
+
+    tabbar.addEventListener('pointerdown', lensDown);
+    tabbar.addEventListener('pointermove', lensMove);
+    tabbar.addEventListener('pointerup', lensUp);
+    tabbar.addEventListener('pointercancel', lensUp);
     tabs.forEach(function (tab) {
       tab.addEventListener('click', function () {
-        var name = tab.dataset.view;
+        if (lens.suppressClick) { lens.suppressClick = false; return; }
         bounce(tab.querySelector('[data-icon]'));
-        if (name === state.view) {
-          app.scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' });
-          return;
-        }
-        showView(name);
+        selectTab(tab.dataset.view);
       });
     });
 
@@ -1078,7 +1556,7 @@
     });
     $('search-all-cats').addEventListener('click', function () {
       state.category = 'All';
-      syncChips();
+      syncChips(true);
       renderSearch(false);
     });
     $('clear-recent').addEventListener('click', clearRecent);
@@ -1090,6 +1568,7 @@
     setupSheetDrag();
 
     document.addEventListener('keydown', function (e) {
+      if (state.desktopOpen) return; // Desktop Mode has its own shortcuts
       if (e.key === 'Escape') {
         if (state.sheetGame) { closeSheet(); return; }
         if (state.searchOpen) { closeSearch(); return; }
@@ -1111,20 +1590,49 @@
   // Start
   // ---------------------------------------------------------------------------
 
+  function intro() {
+    if (reduceMotion()) return;
+    var header = views.home.querySelector('.view-header');
+    header.animate(
+      [{ opacity: 0, transform: 'translateY(26px)', filter: 'blur(12px)' }, { opacity: 1, transform: 'none', filter: 'blur(0px)' }],
+      { duration: 950, easing: EASE_SOFT, fill: 'backwards' }
+    );
+    var featured = document.querySelector('.featured');
+    if (featured) {
+      featured.animate(
+        [{ opacity: 0, transform: 'translateY(34px) scale(.95)' }, { opacity: 1, transform: 'none' }],
+        { duration: 1000, delay: 120, easing: EASE_SOFT, fill: 'backwards' }
+      );
+    }
+    views.home.querySelectorAll('.section-head, .chip').forEach(function (el, i) {
+      el.animate(
+        [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 700, delay: 220 + i * 35, easing: EASE_SOFT, fill: 'backwards' }
+      );
+    });
+  }
+
   function start() {
     fillIcons(document);
     setThemeAttr(isDark() ? 'dark' : 'light');
     $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
     drawWallpaper();
-    document.documentElement.classList.add('wallpaper-ready');
+    requestAnimationFrame(function () { document.documentElement.classList.add('wallpaper-ready'); });
 
     renderFeatured();
     renderChips($('home-chips'));
     renderChips($('search-chips'));
     renderHome(true);
+    placePill($('home-chips'), false);
     updateTabs(false);
-    if (document.fonts) document.fonts.ready.then(function () { moveIndicator(false); });
+    intro();
+    if (document.fonts) {
+      document.fonts.ready.then(function () {
+        moveIndicator(false);
+        document.querySelectorAll('.chips').forEach(function (c) { placePill(c, false); });
+      });
+    }
     setupEvents();
 
     requestAnimationFrame(function () {

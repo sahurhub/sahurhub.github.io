@@ -4,10 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>SahurHub</title>
-  <meta name="description" content="SahurHub: all my games in one place.">
+  <meta name="description" content="SahurHub: all my opsecs in one place.">
   <meta name="theme-color" content="#eef1fb">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:title" content="SahurHub">
+  <meta property="og:description" content="All my opsecs in one place.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sahurhub.github.io/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.2.8/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <script>
@@ -31,7 +37,7 @@
           <header class="view-header">
             <p class="eyebrow" id="today"></p>
             <h1 class="large-title" id="home-title">SahurHub</h1>
-            <p class="subtitle">All my games in one place.</p>
+            <p class="subtitle">All my opsecs in one place.</p>
           </header>
 
           <div id="featured-slot"></div>
@@ -45,15 +51,15 @@
           </div>
 
           <div class="section-head">
-            <h2 class="section-title">All Games</h2>
+            <h2 class="section-title">All Opsecs</h2>
             <span class="section-meta" id="home-count"></span>
           </div>
-          <div class="chips" id="home-chips" role="toolbar" aria-label="Filter games by category"></div>
+          <div class="chips" id="home-chips" role="toolbar" aria-label="Filter opsecs by category"></div>
           <div class="grid" id="home-grid"></div>
           <div class="empty" id="home-empty" hidden>
             <div class="empty-icon" data-icon="controller"></div>
-            <h3>No games yet</h3>
-            <p>Games added to games.js will show up here.</p>
+            <h3>No opsecs yet</h3>
+            <p>Opsecs added to games.js will show up here.</p>
           </div>
         </section>
 
@@ -66,7 +72,7 @@
           <div class="empty" id="fav-empty" hidden>
             <div class="empty-icon" data-icon="heart"></div>
             <h3>No favorites yet</h3>
-            <p>Tap the heart on any game and it will show up here.</p>
+            <p>Tap the heart on any opsec and it will show up here.</p>
           </div>
         </section>
 
@@ -82,7 +88,7 @@
           <div class="empty" id="recent-empty" hidden>
             <div class="empty-icon" data-icon="clock"></div>
             <h3>Nothing played yet</h3>
-            <p>Games you play will appear here, newest first.</p>
+            <p>Opsecs you play will appear here, newest first.</p>
           </div>
         </section>
 
@@ -110,7 +116,11 @@
 
     <canvas id="scrim" aria-hidden="true"></canvas>
 
-    <button class="glass glass-circle" id="theme-btn" type="button" aria-label="Switch to dark mode">
+    <button class="glass glass-top" id="desktop-btn" type="button" aria-label="Open Desktop Mode" title="Desktop Mode">
+      <span data-icon="desktop"></span><span class="desktop-label">Desktop</span>
+    </button>
+
+    <button class="glass glass-circle glass-top" id="theme-btn" type="button" aria-label="Switch to dark mode">
       <span class="theme-icon icon-sun" data-icon="sun"></span>
       <span class="theme-icon icon-moon" data-icon="moon"></span>
     </button>
@@ -122,13 +132,15 @@
       <button class="tab" type="button" data-view="recent"><span data-icon="clock"></span><span class="tab-label">Recent</span></button>
     </nav>
 
+    <div class="glass" id="tab-lens" aria-hidden="true"></div>
+
     <div class="glass glass-bottom" id="searchbar" role="search" inert>
       <span class="search-icon" data-icon="search"></span>
-      <input id="search-input" type="search" placeholder="Search games" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Search games">
+      <input id="search-input" type="search" placeholder="Search opsecs" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Search opsecs">
       <button id="search-clear" type="button" aria-label="Clear search" tabindex="-1"><span data-icon="close"></span></button>
     </div>
 
-    <button class="glass glass-circle glass-bottom" id="search-btn" type="button" aria-label="Search games (press /)" title="Search (/)">
+    <button class="glass glass-circle glass-bottom" id="search-btn" type="button" aria-label="Search opsecs (press /)" title="Search (/)">
       <span class="sb-icon sb-search" data-icon="search"></span>
       <span class="sb-icon sb-close" data-icon="close"></span>
     </button>
@@ -139,6 +151,8 @@
       <div class="sheet-body" id="sheet-body"></div>
     </div>
   </div>
+
+  <div id="desktop" hidden aria-label="Desktop Mode"></div>
 
   <div id="toast" role="status" aria-live="polite"></div>
 

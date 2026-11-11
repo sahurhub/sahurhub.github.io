@@ -27,7 +27,7 @@ window.SAHURHUB_GAMES = [
     title: "Sky Runner",
     category: "Arcade",
     tags: ["runner", "endless", "jump", "one tap"],
-    description: "Placeholder game. Dash across floating islands and see how far you can get before you fall.",
+    description: "Placeholder opsec. Dash across floating islands and see how far you can get before you fall.",
     icon: "rocket",
     colors: ["#5ac8fa", "#3a5bff"],
     url: "",
@@ -38,7 +38,7 @@ window.SAHURHUB_GAMES = [
     title: "Neon Drift",
     category: "Racing",
     tags: ["cars", "drift", "speed", "night"],
-    description: "Placeholder game. Slide through glowing city streets and chain drifts for a high score.",
+    description: "Placeholder opsec. Slide through glowing city streets and chain drifts for a high score.",
     icon: "car",
     colors: ["#ff2d55", "#8e3cff"],
     url: "",
@@ -49,7 +49,7 @@ window.SAHURHUB_GAMES = [
     title: "Block Builder",
     category: "Puzzle",
     tags: ["blocks", "building", "relaxing"],
-    description: "Placeholder game. Fit falling blocks together and clear the board.",
+    description: "Placeholder opsec. Fit falling blocks together and clear the board.",
     icon: "cube",
     colors: ["#ff9f0a", "#ff375f"],
     url: ""
@@ -59,7 +59,7 @@ window.SAHURHUB_GAMES = [
     title: "Pixel Quest",
     category: "Action",
     tags: ["adventure", "retro", "rpg", "sword"],
-    description: "Placeholder game. A small retro adventure with dungeons, loot and a big final boss.",
+    description: "Placeholder opsec. A small retro adventure with dungeons, loot and a big final boss.",
     icon: "sword",
     colors: ["#30d158", "#0a84ff"],
     url: ""
@@ -69,7 +69,7 @@ window.SAHURHUB_GAMES = [
     title: "Tower Stack",
     category: "Arcade",
     tags: ["stacking", "timing", "one tap"],
-    description: "Placeholder game. Drop each floor at the perfect moment and build the tallest tower.",
+    description: "Placeholder opsec. Drop each floor at the perfect moment and build the tallest tower.",
     icon: "castle",
     colors: ["#ffd60a", "#ff9f0a"],
     url: ""
@@ -79,7 +79,7 @@ window.SAHURHUB_GAMES = [
     title: "Star Hopper",
     category: "Action",
     tags: ["space", "platformer", "stars"],
-    description: "Placeholder game. Jump from planet to planet and collect every star.",
+    description: "Placeholder opsec. Jump from planet to planet and collect every star.",
     icon: "star",
     colors: ["#5e5ce6", "#bf5af2"],
     url: "",
@@ -90,7 +90,7 @@ window.SAHURHUB_GAMES = [
     title: "Maze Master",
     category: "Puzzle",
     tags: ["maze", "brain", "logic"],
-    description: "Placeholder game. Find the way out of mazes that get trickier every level.",
+    description: "Placeholder opsec. Find the way out of mazes that get trickier every level.",
     icon: "target",
     colors: ["#64d2ff", "#30d158"],
     url: ""
@@ -100,7 +100,7 @@ window.SAHURHUB_GAMES = [
     title: "Turbo Kart",
     category: "Racing",
     tags: ["karts", "boost", "multiplayer"],
-    description: "Placeholder game. Short, chaotic kart races with boosts on every corner.",
+    description: "Placeholder opsec. Short, chaotic kart races with boosts on every corner.",
     icon: "bolt",
     colors: ["#ff453a", "#ff9f0a"],
     url: ""
@@ -110,7 +110,7 @@ window.SAHURHUB_GAMES = [
     title: "Bubble Pop",
     category: "Puzzle",
     tags: ["match", "casual", "colors"],
-    description: "Placeholder game. Match three bubbles of the same color to pop them.",
+    description: "Placeholder opsec. Match three bubbles of the same color to pop them.",
     icon: "bubbles",
     colors: ["#ff6482", "#ffb340"],
     url: ""
@@ -120,7 +120,7 @@ window.SAHURHUB_GAMES = [
     title: "Castle Siege",
     category: "Strategy",
     tags: ["tower defense", "castles", "waves"],
-    description: "Placeholder game. Build defenses and hold your castle against wave after wave.",
+    description: "Placeholder opsec. Build defenses and hold your castle against wave after wave.",
     icon: "crown",
     colors: ["#8e8e93", "#5e5ce6"],
     url: ""
@@ -130,7 +130,7 @@ window.SAHURHUB_GAMES = [
     title: "Space Miner",
     category: "Strategy",
     tags: ["idle", "mining", "space", "upgrades"],
-    description: "Placeholder game. Mine asteroids, upgrade your ship and expand your space station.",
+    description: "Placeholder opsec. Mine asteroids, upgrade your ship and expand your space station.",
     icon: "gem",
     colors: ["#00c7be", "#5856d6"],
     url: ""
@@ -140,7 +140,7 @@ window.SAHURHUB_GAMES = [
     title: "Arena Clash",
     category: "Multiplayer",
     tags: ["pvp", "online", "friends"],
-    description: "Placeholder game. Quick online battles against friends.",
+    description: "Placeholder opsec. Quick online battles against friends.",
     icon: "controller",
     colors: ["#bf5af2", "#ff375f"],
     url: ""

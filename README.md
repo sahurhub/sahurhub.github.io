@@ -13,13 +13,15 @@ Save the file to the `main` branch. The site updates by itself after about a min
 | File | What it is |
 |---|---|
 | `index.html` | The page layout |
-| `styles.css` | Colors, sizes and animations (light and dark colors are at the top) |
-| `app.js` | Search, filters, favorites, recently played and the glass effect |
+| `styles.css` | Colors, sizes, fonts and animations (light and dark colors are at the top) |
+| `app.js` | Search, filters, favorites, recently played, the tab bar lens and the glass effect |
 | `games.js` | The list of games (the only file you normally edit) |
+| `desktop.js`, `desktop.css` | Desktop Mode: the Mac-style desktop with the magnifying Dock. Only loaded when someone opens it |
 | `favicon.svg` | The little icon in the browser tab |
 
-Favorites and recently played are saved in each visitor's own browser, so there are no accounts.
+Favorites, recently played and Desktop Mode settings are saved in each visitor's own browser, so there are no accounts.
 
 ## Credits
 
-Liquid glass effect: [LiquidGlass](https://liquid-glass.ybouane.com/) by @ybouane (MIT license), loaded from jsDelivr.
+- Liquid glass effect: [LiquidGlass](https://liquid-glass.ybouane.com/) by @ybouane (MIT license), loaded from jsDelivr.
+- Font: [Inter](https://rsms.me/inter/) (SIL Open Font License), loaded from jsDelivr.

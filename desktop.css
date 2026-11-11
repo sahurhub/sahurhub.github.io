@@ -180,6 +180,26 @@
 .dt-menu-label { flex: 1; white-space: nowrap; }
 .dt-menu-key { opacity: 0.55; font-size: 12.5px; margin-left: 16px; }
 .dt-menu-sep { height: 1px; margin: 5px 10px; background: var(--dt-sep); }
+.dt-menu-head { padding: 6px 10px 4px 24px; font-size: 13.5px; font-weight: 700; }
+.dt-menu-head-small { padding-top: 2px; font-size: 12px; font-weight: 600; opacity: 0.6; }
+.dt-menu-info { cursor: default; }
+.dt-menu-item.dt-menu-info:hover:not(:disabled) { background: var(--dt-mb-hover); color: inherit; }
+.dt-menu-dim { opacity: 0.45; }
+
+/* "Next up" countdown in the menu bar */
+.dt-mb-nextup { font-weight: 600; font-variant-numeric: tabular-nums; max-width: 46vw; }
+.dt-mb-nextup .dt-nu-text { overflow: hidden; text-overflow: ellipsis; }
+.dt-nu-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--nu-color, #0a84ff); }
+.dt-mb-nextup[data-type="tutor"] { --nu-color: #af52de; }
+.dt-mb-nextup[data-type="break"] { --nu-color: #30d158; }
+.dt-mb-nextup[data-type="lunch"] { --nu-color: #ff9f0a; }
+.dt-mb-nextup[data-type="passing"] { --nu-color: #8e8e93; }
+.dt-mb-nextup[data-type="out"] { --nu-color: #7d7aff; }
+@media (max-width: 640px) {
+  .dt-mb-app { max-width: 26vw; }
+  .dt-mb-nextup { max-width: 44vw; }
+}
+@media (max-width: 420px) { .dt-mb-status[data-action="settings"] { display: none; } }
 
 /* ---------- The Dock ---------- */
 

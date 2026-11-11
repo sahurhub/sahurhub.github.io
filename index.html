@@ -42,6 +42,13 @@
 
           <div id="featured-slot"></div>
 
+          <aside class="promo" aria-label="Advertisement">
+            <span class="promo-flag" aria-hidden="true"></span>
+            <span class="promo-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.8a1 1 0 0 1 1 1v.7c2.1-1 4.1-.9 6 .1 1.8.9 3.6 1 5.6.1a.9.9 0 0 1 1.3.8v8.4a1 1 0 0 1-.6.9c-2.4 1.1-4.7 1-6.9-.1-1.8-.9-3.6-1-5.4-.1v6.6a1 1 0 0 1-2 0V3.8a1 1 0 0 1 1-1Z"/><path fill="#000" fill-opacity=".28" d="M6 6.3c1.1-.4 2.2-.5 3.3-.3v3.2C8.2 9 7.1 9.1 6 9.5Zm3.3 2.9c1.1.2 2.1.6 3.2 1.1v3.2c-1-.5-2.1-.9-3.2-1.1Zm3.2-3c1.1.5 2.2.7 3.3.6v3.2c-1.1.1-2.2-.1-3.3-.6Zm3.3 3.8c.8-.1 1.6-.3 2.5-.6v3.2c-.8.3-1.7.5-2.5.6Z"/></svg></span>
+            <span class="promo-text">Play Formula Mini on Roblox!</span>
+            <span class="promo-badge">AD</span>
+          </aside>
+
           <div id="recent-block" hidden>
             <div class="section-head">
               <h2 class="section-title">Jump Back In</h2>
@@ -125,6 +132,15 @@
       <span class="theme-icon icon-moon" data-icon="moon"></span>
     </button>
 
+    <!-- "Next up" school countdown (times are in countdown.js) -->
+    <div class="glass glass-top" id="nextup-glass" aria-hidden="true"></div>
+    <button id="nextup" type="button" aria-expanded="false" aria-controls="nextup-panel" aria-label="Next up. Show schedule">
+      <span class="nu-dot" aria-hidden="true"></span>
+      <span class="nu-text"><span class="nu-label"></span> <span class="nu-time"></span></span>
+      <span class="nu-bar" aria-hidden="true"><span class="nu-fill"></span></span>
+    </button>
+    <div class="nu-panel" id="nextup-panel" role="dialog" aria-label="School schedule" hidden></div>
+
     <nav class="glass glass-bottom" id="tabbar" aria-label="Sections">
       <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
       <button class="tab" type="button" data-view="home"><span data-icon="house"></span><span class="tab-label">Home</span></button>
@@ -157,6 +173,7 @@
   <div id="toast" role="status" aria-live="polite"></div>
 
   <script src="games.js"></script>
+  <script src="countdown.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,394 +1,52 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cedar Clients</title>
-  <meta name="description" content="Cedar Clients — Minecraft client downloads and instructions.">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SahurHub</title>
+  <meta name="description" content="SahurHub is coming soon.">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     :root {
-      --bg: #070b08;
-      --panel: rgba(15, 25, 18, 0.78);
-      --panel-hover: rgba(21, 35, 25, 0.9);
-      --border: rgba(112, 255, 151, 0.16);
-      --green: #39e66d;
-      --green-light: #86ffa5;
-      --text: #f1fff4;
-      --muted: #9caea1;
+      --bg: #f6f6f4;
+      --text: #1d1d1f;
+      --muted: #6b6b70;
     }
-
-    html {
-      scroll-behavior: smooth;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121214;
+        --text: #f2f2f4;
+        --muted: #9a9aa2;
+      }
     }
-
+    html, body { height: 100%; margin: 0; }
     body {
-      min-height: 100vh;
-      font-family: Inter, Arial, Helvetica, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 50% -10%, rgba(42, 196, 88, 0.16), transparent 35%),
-        radial-gradient(circle at 10% 80%, rgba(24, 115, 52, 0.10), transparent 30%),
-        var(--bg);
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-      background-size: 40px 40px;
-      mask-image: linear-gradient(to bottom, black, transparent 80%);
-    }
-
-    header {
-      min-height: 78vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       text-align: center;
-      padding: 80px 20px 60px;
     }
-
-    .hero {
-      max-width: 900px;
-      animation: fadeUp 0.8s ease both;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      margin-bottom: 22px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: rgba(57, 230, 109, 0.06);
-      color: var(--green-light);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+    p.name {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
+      color: var(--muted);
     }
-
-    .badge-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 14px rgba(57, 230, 109, 0.8);
-    }
-
     h1 {
-      font-size: clamp(3.4rem, 9vw, 7.5rem);
-      line-height: 0.9;
-      letter-spacing: -0.065em;
-      font-weight: 900;
-    }
-
-    h1 span {
-      color: var(--green);
-      text-shadow: 0 0 40px rgba(57, 230, 109, 0.18);
-    }
-
-    .subtitle {
-      max-width: 620px;
-      margin: 28px auto 34px;
-      color: var(--muted);
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      line-height: 1.7;
-    }
-
-    .hero-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      padding: 13px 20px;
-      border-radius: 12px;
-      color: #061008;
-      background: var(--green);
-      text-decoration: none;
-      font-weight: 800;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 8px 30px rgba(57, 230, 109, 0.16);
-    }
-
-    .hero-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 38px rgba(57, 230, 109, 0.25);
-    }
-
-    main {
-      width: min(1050px, calc(100% - 32px));
-      margin: 0 auto;
-      padding-bottom: 90px;
-    }
-
-    section {
-      scroll-margin-top: 30px;
-      margin-bottom: 80px;
-    }
-
-    .section-heading {
-      margin-bottom: 26px;
-    }
-
-    .eyebrow {
-      color: var(--green);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    h2 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      letter-spacing: -0.04em;
-    }
-
-    .downloads {
-      display: grid;
-      gap: 14px;
-    }
-
-    .download-card {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 22px 24px;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: var(--panel);
-      backdrop-filter: blur(14px);
-      text-decoration: none;
-      color: var(--text);
-      overflow: hidden;
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .download-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(57, 230, 109, 0.07), transparent 55%);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .download-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(112, 255, 151, 0.38);
-      background: var(--panel-hover);
-    }
-
-    .download-card:hover::before {
-      opacity: 1;
-    }
-
-    .card-content,
-    .arrow {
-      position: relative;
-      z-index: 1;
-    }
-
-    .card-title {
-      font-size: 1.05rem;
-      font-weight: 800;
-      margin-bottom: 5px;
-    }
-
-    .card-description {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .recommended {
-      color: var(--green-light);
-    }
-
-    .arrow {
-      flex: 0 0 auto;
-      width: 40px;
-      height: 40px;
-      display: grid;
-      place-items: center;
-      border-radius: 11px;
-      background: rgba(57, 230, 109, 0.09);
-      color: var(--green);
-      font-size: 20px;
-    }
-
-
-    .instructions-list { display: grid; gap: 14px; }
-    .instruction-step { display: flex; gap: 18px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 18px; background: var(--panel); backdrop-filter: blur(14px); }
-    .step-number { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: rgba(57, 230, 109, 0.10); color: var(--green); font-weight: 900; }
-    .step-content { min-width: 0; }
-    .step-content h3 { margin: 2px 0 7px; font-size: 1.05rem; }
-    .step-content p { color: var(--muted); font-size: 0.94rem; line-height: 1.6; }
-    .step-content strong { color: var(--text); }
-    .server-address { display: inline-block; margin: 13px 0; padding: 11px 14px; border: 1px solid rgba(57, 230, 109, 0.28); border-radius: 10px; background: rgba(57, 230, 109, 0.08); color: var(--green-light); font-family: "Courier New", monospace; font-size: 0.95rem; font-weight: 700; user-select: all; }
-
-    .instructions-box {
-      min-height: 180px;
-      display: grid;
-      place-items: center;
-      padding: 35px;
-      text-align: center;
-      border: 1px dashed rgba(112, 255, 151, 0.2);
-      border-radius: 18px;
-      background: rgba(15, 25, 18, 0.45);
-      color: var(--muted);
-    }
-
-    .instructions-box strong {
-      display: block;
-      color: var(--text);
-      font-size: 1.05rem;
-      margin-bottom: 7px;
-    }
-
-    footer {
-      padding: 35px 20px 45px;
-      text-align: center;
-      border-top: 1px solid rgba(255,255,255,0.05);
-      color: #68776d;
-      font-size: 0.85rem;
-    }
-
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(18px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @media (max-width: 620px) {
-      header {
-        min-height: 70vh;
-      }
-
-      .download-card {
-        padding: 18px;
-      }
-
-      .card-description {
-        line-height: 1.4;
-      }
+      margin: 0;
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 700;
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="hero">
-      <div class="badge">
-        <span class="badge-dot"></span>
-        Cedar Clients
-      </div>
-
-      <h1>Cedar <span>Clients</span></h1>
-
-      <p class="subtitle">
-        Download the Cedar clients for your Minecraft server and find everything
-        you need to get started.
-      </p>
-
-      <a class="hero-button" href="#downloads">
-        View Downloads
-        <span>↓</span>
-      </a>
-    </div>
-  </header>
-
   <main>
-    <section id="downloads">
-      <div class="section-heading">
-        <div class="eyebrow">Clients</div>
-        <h2>Downloads</h2>
-      </div>
-
-      <div class="downloads">
-        <a
-          class="download-card"
-          href="https://drive.google.com/file/d/1DKdwnV8KAp35biOoWgJEz5xgb-zPOt0-/view"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="card-content">
-            <div class="card-title">
-              26.2 <span class="recommended">(RECOMMENDED FOR LIFESTEAL)</span>
-            </div>
-            <div class="card-description">Recommended Cedar client for Lifesteal.</div>
-          </div>
-          <div class="arrow">→</div>
-        </a>
-
-        <a
-          class="download-card"
-          href="https://drive.google.com/file/d/16V2LBDbOlib1yfqOUdYfWAvat6Gt3-PZ/view?usp=sharing"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="card-content">
-            <div class="card-title">
-              1.21.11 <span class="recommended">(RECOMMENDED FOR CEDARSMP)</span>
-            </div>
-            <div class="card-description">Recommended Cedar client for CedarSMP.</div>
-          </div>
-          <div class="arrow">→</div>
-        </a>
-
-        <a
-          class="download-card"
-          href="https://drive.google.com/file/d/1zoT-w4DZFKjZ5QCAgbAnaYd6kF8C3TAi/view?usp=sharing"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="card-content">
-            <div class="card-title">CEDAR CLIENT (NO LAG)</div>
-            <div class="card-description">Cedar client focused on a smooth, low-lag experience.</div>
-          </div>
-          <div class="arrow">→</div>
-        </a>
-      </div>
-    </section>
-
-    <section id="instructions">
-      <div class="section-heading">
-        <div class="eyebrow">Getting Started</div>
-        <h2>Instructions</h2>
-      </div>
-
-      <div class="instructions-list">
-        <div class="instruction-step"><div class="step-number">1</div><div class="step-content"><h3>Download the files</h3><p>First, download the required files. Depending on your internet connection, this may take some time.</p></div></div>
-        <div class="instruction-step"><div class="step-number">2</div><div class="step-content"><h3>Open the file</h3><p>Once the download is complete, open the file you downloaded.</p></div></div>
-        <div class="instruction-step"><div class="step-number">3</div><div class="step-content"><h3>Add the server</h3><p>Click <strong>Multiplayer</strong>, then click <strong>Add Server</strong>.</p></div></div>
-        <div class="instruction-step"><div class="step-number">4</div><div class="step-content"><h3>Enter the server address</h3><p>The server name can be anything you want. For the server address, enter:</p><code class="server-address">ws://79.72.86.205:25565</code><p>Then click <strong>Done</strong>.</p></div></div>
-        <div class="instruction-step"><div class="step-number">5</div><div class="step-content"><h3>Join the server</h3><p>Join the server, then either log in to your account or register a new one.</p></div></div>
-        <div class="instruction-step"><div class="step-number">6</div><div class="step-content"><h3>Choose a server</h3><p>Right-click one of the NPCs to join the server you want to play on.</p></div></div>
-      </div>
-    </section>
+    <p class="name">SahurHub</p>
+    <h1>Coming soon</h1>
   </main>
-
-  <footer>
-    © 2026 Cedar Clients. All rights reserved.
-  </footer>
 </body>
 </html>

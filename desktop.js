@@ -111,6 +111,7 @@ function build() {
         <button class="dt-mb dt-mb-extra" type="button" data-menu="help">Help</button>
       </div>
       <div class="dt-mb-side">
+        <button class="dt-mb dt-mb-nextup" type="button" data-menu="nextup" aria-label="School schedule"><span class="dt-nu-dot" aria-hidden="true"></span><span class="dt-nu-text"></span></button>
         <span class="dt-mb-status dt-mb-extra" aria-hidden="true">${BATTERY_SVG}</span>
         <span class="dt-mb-status dt-mb-extra" aria-hidden="true">${WIFI_SVG}</span>
         <button class="dt-mb dt-mb-status" type="button" data-action="spotlight" aria-label="Search">${H.icon('search')}</button>
@@ -1242,8 +1243,43 @@ const MENUS = {
   },
   help: () => [
     { label: 'Desktop Mode Help', action: openWelcome }
-  ]
+  ],
+  nextup: () => {
+    const C = H.countdown;
+    if (!C) return [{ header: 'Schedule unavailable' }];
+    const now = new Date();
+    const st = C.getStatus(now);
+    const d = C.describe(st, now);
+    const sched = C.scheduleRows(st, now);
+    const items = [{ header: d.label.replace(/,$/, '') + ', ' + d.time }];
+    if (sched.day) {
+      items.push({ header: (sched.listingToday ? 'Today, ' : '') + sched.day.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }), small: true });
+    }
+    sched.rows.forEach((r) => {
+      if (r.gap) {
+        if (r.state === 'current') items.push({ label: 'Passing time', shortcut: C.minutesText(r.from) + '–' + C.minutesText(r.to), checked: true, info: true });
+        return;
+      }
+      items.push({
+        label: r.period.name + (r.state === 'next' ? ' (next)' : ''),
+        shortcut: r.period.startText + '–' + r.period.endText,
+        checked: r.state === 'current',
+        dim: r.state === 'past',
+        info: true
+      });
+    });
+    return items;
+  }
 };
+
+function updateNextup(st, d) {
+  const btn = menubar && menubar.querySelector('.dt-mb-nextup');
+  if (!btn) return;
+  const text = d.label + ' ' + d.time;
+  const label = btn.querySelector('.dt-nu-text');
+  if (label.textContent !== text) label.textContent = text;
+  if (btn.getAttribute('data-type') !== d.type) btn.setAttribute('data-type', d.type);
+}
 
 function showMenu(btn) {
   closeMenu();
@@ -1253,12 +1289,13 @@ function showMenu(btn) {
   const el = document.createElement('div');
   el.className = 'dt-menu';
   el.setAttribute('role', 'menu');
-  el.innerHTML = items.map((it, i) => it === 'sep'
-    ? '<div class="dt-menu-sep" role="separator"></div>'
-    : `<button class="dt-menu-item" type="button" role="menuitem" data-i="${i}"${it.disabled ? ' disabled' : ''}>
+  el.innerHTML = items.map((it, i) => {
+    if (it === 'sep') return '<div class="dt-menu-sep" role="separator"></div>';
+    if (it.header) return `<div class="dt-menu-head${it.small ? ' dt-menu-head-small' : ''}">${esc(it.header)}</div>`;
+    return `<button class="dt-menu-item${it.info ? ' dt-menu-info' : ''}${it.dim ? ' dt-menu-dim' : ''}" type="button" role="menuitem" data-i="${i}"${it.disabled ? ' disabled' : ''}>
          <span class="dt-check">${it.checked ? '✓' : ''}</span><span class="dt-menu-label">${esc(it.label)}</span>${it.shortcut ? `<span class="dt-menu-key">${esc(it.shortcut)}</span>` : ''}
-       </button>`
-  ).join('');
+       </button>`;
+  }).join('');
   root.appendChild(el);
   const r = btn.getBoundingClientRect();
   el.style.left = clamp(r.left, 6, window.innerWidth - el.offsetWidth - 6) + 'px';
@@ -1416,6 +1453,7 @@ export function open(options) {
   listen(document, 'sahurhub:theme', onTheme);
   listen(document, 'sahurhub:favorites', onFavorites);
   listen(root, 'pointerdown', onRootPointerDown, true);
+  if (H.countdown) unlisten.push(H.countdown.subscribe(updateNextup));
   intro().then(() => { if (isOpen) initGlass(); });
   let seen = false;
   try { seen = !!localStorage.getItem(WELCOME_KEY); } catch (e) { /* private mode */ }

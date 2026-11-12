@@ -119,6 +119,7 @@
     play: '<path d="M8 5.6v12.8a.8.8 0 0 0 1.2.7l10.3-6.4a.8.8 0 0 0 0-1.4L9.2 4.9A.8.8 0 0 0 8 5.6Z" fill="currentColor" stroke="none"/>',
     chevron: '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
     desktop: '<rect x="2.8" y="4" width="18.4" height="12.6" rx="2.6"/><path d="M8.6 20.2h6.8M12 16.6v3.6M7.6 13.2h8.8"/>',
+    chat: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5Z"/><path d="M8.2 9.4h7.6M8.2 12.6h4.6"/>',
     controller: '<path d="M7.5 7.5h9a4.6 4.6 0 0 1 4.5 5.6l-.7 3.4a2.4 2.4 0 0 1-4.1 1.1L14.4 15.7H9.6l-1.8 1.9a2.4 2.4 0 0 1-4.1-1.1L3 13.1a4.6 4.6 0 0 1 4.5-5.6Z"/><path d="M8 10.4v3.2M6.4 12h3.2"/>'
   };
 
@@ -233,6 +234,9 @@
   var themeBtn = $('theme-btn');
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
+  var chatGlass = $('chat-glass');
+  var chatBtn = $('chat-btn');
+  var chatBadge = chatBtn.querySelector('.chat-badge');
   var tabbar = $('tabbar');
   var tabIndicator = $('tab-indicator');
   var tabs = Array.prototype.slice.call(tabbar.querySelectorAll('.tab'));
@@ -258,7 +262,7 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, themeBtn, nextupGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, themeBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -278,7 +282,7 @@
     };
     var extra;
     if (el === themeBtn || el === desktopBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
-    else if (el === nextupGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
+    else if (el === nextupGlass || el === chatGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
     else if (el === sheet) extra = { blurAmount: 1, refraction: 0.55, cornerRadius: 36, zRadius: 30, brightness: dark ? -0.36 : 0.26, saturation: 0.35, shadowOpacity: dark ? 0.55 : 0.24, shadowSpread: 30, shadowOffsetY: 10 };
@@ -293,7 +297,7 @@
   }
 
   function visibleGlass() {
-    var list = [themeBtn, desktopBtn, nextupGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [themeBtn, desktopBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
     if (state.sheetGame) list.push(sheet);
     return list;
@@ -1388,6 +1392,7 @@
     if (state.sheetGame) closeSheet(true);
     if (state.searchOpen) closeSearch();
     if (window.SahurHubCountdown) window.SahurHubCountdown.closePanel();
+    if (chatModule) chatModule.close();
     state.desktopOpen = true;
     app.inert = true;
     desktopModule.open({
@@ -1397,6 +1402,73 @@
         refreshGlass();
         desktopBtn.focus({ preventScroll: true });
       }
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // SahurHub Chat (chat.js and chat.css load only when needed)
+  // ---------------------------------------------------------------------------
+
+  var CHAT_SESSION_KEY = 'sahurhub.chat.session';
+  // The chat window's files live on the chat server (so the chat can be
+  // updated without republishing this site). The local preview uses the
+  // copies in this folder.
+  var CHAT_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var CHAT_FILES = CHAT_LOCAL ? './' : 'https://chat-79-72-86-205.sslip.io/client/';
+  var chatModule = null;
+  var chatLoading = null;
+  var chatInfo = { mentions: 0, unread: false, status: 'idle', signedIn: false };
+
+  function loadChatCss() {
+    return new Promise(function (resolve, reject) {
+      if (document.getElementById('chat-css')) { resolve(); return; }
+      var link = document.createElement('link');
+      link.id = 'chat-css';
+      link.rel = 'stylesheet';
+      if (!CHAT_LOCAL) link.crossOrigin = 'anonymous';
+      link.href = CHAT_FILES + 'chat.css';
+      link.onload = resolve;
+      link.onerror = function () { link.remove(); reject(new Error('chat.css did not load')); };
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadChat() {
+    if (chatModule) return Promise.resolve(chatModule);
+    if (!chatLoading) {
+      chatLoading = Promise.all([loadChatCss(), import(CHAT_FILES + 'chat.js')]).then(function (res) {
+        chatModule = res[1];
+        chatModule.onBadge(updateChatBadge);
+        return chatModule;
+      }).catch(function (err) {
+        chatLoading = null;
+        throw err;
+      });
+    }
+    return chatLoading;
+  }
+
+  // Red number on the Chat button: unread mentions and direct messages.
+  function updateChatBadge(info) {
+    chatInfo = info;
+    var n = info.mentions || 0;
+    var dot = !n && info.unread;
+    chatBadge.hidden = !n && !dot;
+    chatBadge.classList.toggle('is-dot', dot);
+    chatBadge.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
+    chatBtn.setAttribute('aria-label', 'Open SahurHub Chat' + (n ? ', ' + n + ' unread' : ''));
+    document.dispatchEvent(new CustomEvent('sahurhub:chat', { detail: info }));
+  }
+
+  function openChat() {
+    chatBtn.classList.add('is-loading');
+    loadChat().then(function (m) {
+      chatBtn.classList.remove('is-loading');
+      m.toggle(chatBtn);
+    }).catch(function (err) {
+      chatBtn.classList.remove('is-loading');
+      console.warn('SahurHub: the chat could not load.', err);
+      showToast('The chat could not load. Check your connection.');
     });
   }
 
@@ -1422,7 +1494,11 @@
     toast: showToast,
     reduceMotion: reduceMotion,
     glassUrl: LIQUID_GLASS_URL,
-    countdown: window.SahurHubCountdown || null
+    countdown: window.SahurHubCountdown || null,
+    chat: {
+      load: loadChat,
+      info: function () { return chatInfo; }
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -1547,6 +1623,18 @@
     });
     desktopBtn.addEventListener('click', openDesktop);
 
+    chatBtn.addEventListener('click', openChat);
+    chatBtn.addEventListener('pointerdown', function () {
+      chatBtn.classList.add('is-pressed');
+      chatGlass.classList.add('is-pressed');
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
+      chatBtn.addEventListener(type, function () {
+        chatBtn.classList.remove('is-pressed');
+        chatGlass.classList.remove('is-pressed');
+      });
+    });
+
     tabbar.addEventListener('pointerdown', lensDown);
     tabbar.addEventListener('pointermove', lensMove);
     tabbar.addEventListener('pointerup', lensUp);
@@ -1590,6 +1678,7 @@
 
     document.addEventListener('keydown', function (e) {
       if (state.desktopOpen) return; // Desktop Mode has its own shortcuts
+      if (e.target && e.target.closest && e.target.closest('#chat-root')) return; // typing in the chat
       if (e.key === 'Escape') {
         if (state.sheetGame) { closeSheet(); return; }
         if (state.searchOpen) { closeSearch(); return; }
@@ -1668,6 +1757,12 @@
     });
 
     initGlass();
+
+    // If this device already has a chat account, connect quietly so the
+    // Chat button can show unread messages.
+    if (storage.getRaw(CHAT_SESSION_KEY)) {
+      idle(function () { loadChat().catch(function () {}); }, { timeout: 4000 });
+    }
   }
 
   start();

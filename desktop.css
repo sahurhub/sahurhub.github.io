@@ -305,6 +305,27 @@
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22));
 }
 .dt-icon-apps { background: linear-gradient(160deg, #ffffff, #d7d9e2); }
+.dt-icon-chat { background: linear-gradient(150deg, #6ea8ff, #5b5ce6); }
+.dt-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 2;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: #ff3b30;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+.dt-win-chat .dt-win-body { overflow: hidden; }
 .dt-icon-apps > svg { width: 68%; height: 68%; filter: none; }
 .dt-icon-stack { background: linear-gradient(150deg, #ff8db0, #ff2d55); }
 .dt-icon-settings { background: linear-gradient(160deg, #d0d2da, #7b7e89); }

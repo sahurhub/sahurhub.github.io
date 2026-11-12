@@ -1145,8 +1145,14 @@ body.ready #nextup { translate: 0 0; }
   align-items: center;
   gap: 12px;
   color: #fff;
+  text-decoration: none;
   background: linear-gradient(110deg, #e10600, #ff5a1f 55%, #ff9f0a);
   box-shadow: var(--shadow);
+  transition: transform 0.45s var(--spring), box-shadow 0.35s var(--ease-out);
+}
+.promo:active { transform: scale(0.97); transition-duration: 0.12s; }
+@media (hover: hover) {
+  .promo:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
 }
 .promo::after {
   content: "";

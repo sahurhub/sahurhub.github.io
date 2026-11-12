@@ -53,6 +53,8 @@ const GEAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="curren
 
 const POWER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3.6v7.2"/><path d="M7 6.8a7.2 7.2 0 1 0 10 0"/></svg>';
 
+const CHAT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.6A2.6 2.6 0 0 1 6.6 4h10.8A2.6 2.6 0 0 1 20 6.6v7.8a2.6 2.6 0 0 1-2.6 2.6H10.2l-4.3 3.4c-.5.4-1.2 0-1.2-.6V17A2.6 2.6 0 0 1 4 14.4Z"/><circle cx="8.6" cy="10.5" r="1.2" fill="#000" fill-opacity=".28"/><circle cx="12" cy="10.5" r="1.2" fill="#000" fill-opacity=".28"/><circle cx="15.4" cy="10.5" r="1.2" fill="#000" fill-opacity=".28"/></svg>';
+
 const HEART_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20.4s-7.8-4.7-7.8-10.6A4.4 4.4 0 0 1 12 7.1a4.4 4.4 0 0 1 7.8 2.7c0 5.9-7.8 10.6-7.8 10.6Z"/></svg>';
 
 const WIFI_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M2.6 9a14 14 0 0 1 18.8 0"/><path d="M5.9 12.5a9.2 9.2 0 0 1 12.2 0"/><path d="M9.2 16a4.5 4.5 0 0 1 5.6 0"/><circle cx="12" cy="19.2" r="1.3" fill="currentColor" stroke="none"/></svg>';
@@ -302,7 +304,7 @@ function orderedGames() {
 // Pick an icon size and how many opsecs fit on this screen.
 function fitDock() {
   const games = orderedGames();
-  const fixed = 4; // Apps, Favorites, Settings, Exit
+  const fixed = 5; // Apps, Chat, Favorites, Settings, Exit
   const M = settings.magnify ? settings.magnification : 1;
   const avail = window.innerWidth - 20;
   // leave room for the magnified icons to spread out
@@ -318,6 +320,7 @@ function fitDock() {
 function iconFor(it) {
   if (it.kind === 'game') return gameIcon(it.game);
   if (it.kind === 'apps') return `<span class="dt-icon dt-icon-apps">${APPS_SVG}</span>`;
+  if (it.kind === 'chat') return `<span class="dt-icon dt-icon-chat">${CHAT_SVG}</span>`;
   if (it.kind === 'stack') return `<span class="dt-icon dt-icon-stack">${HEART_SVG}</span>`;
   if (it.kind === 'settings') return `<span class="dt-icon dt-icon-settings">${GEAR_SVG}</span>`;
   return `<span class="dt-icon dt-icon-exit">${POWER_SVG}</span>`;
@@ -345,7 +348,7 @@ function dockGlassConfig() {
 function buildDock() {
   const fit = fitDock();
   dock.base = fit.base;
-  const items = [{ id: 'apps', kind: 'apps', label: 'Apps' }];
+  const items = [{ id: 'apps', kind: 'apps', label: 'Apps' }, { id: 'chat', kind: 'chat', label: 'Chat' }];
   fit.games.forEach((g) => items.push({ id: 'game:' + g.id, kind: 'game', label: g.title, game: g }));
   items.push({ kind: 'sep' });
   items.push({ id: 'favorites', kind: 'stack', label: 'Favorites' });
@@ -395,6 +398,18 @@ function buildDock() {
   dock.left = baseLeft;
   dockEl.style.transform = `translate3d(${baseLeft.toFixed(2)}px,0,0)`;
   updateRunning();
+  updateDockChat(H.chat ? H.chat.info() : null);
+}
+
+// Red number on the Dock's Chat icon (unread mentions and direct messages)
+function updateDockChat(info) {
+  const it = dockItem('chat');
+  if (!it || !it.el) return;
+  const n = info ? info.mentions || 0 : 0;
+  let badge = it.el.querySelector('.dt-badge');
+  if (!n) { if (badge) badge.remove(); return; }
+  if (!badge) { badge = document.createElement('span'); badge.className = 'dt-badge'; it.el.appendChild(badge); }
+  badge.textContent = n > 99 ? '99+' : String(n);
 }
 
 function dockItem(id) { return dock.items.find((it) => it.id === id); }
@@ -573,7 +588,7 @@ function bounceIcon(it) {
 function updateRunning() {
   dock.items.forEach((it) => {
     if (it.kind === 'sep') return;
-    const running = (it.kind === 'game' && wins.has(it.id)) || (it.kind === 'settings' && wins.has('settings'));
+    const running = (it.kind === 'game' && wins.has(it.id)) || (it.kind === 'settings' && wins.has('settings')) || (it.kind === 'chat' && wins.has('chat'));
     it.el.classList.toggle('is-running', running);
   });
 }
@@ -583,6 +598,7 @@ function launch(it) {
   closeMenu();
   if (spot.open) toggleSpotlight(false);
   if (it.kind === 'apps') toggleApps();
+  else if (it.kind === 'chat') openChat(it);
   else if (it.kind === 'game') openGame(it.game, it);
   else if (it.kind === 'stack') toggleStack(it);
   else if (it.kind === 'settings') openSettings(it);
@@ -724,6 +740,7 @@ function closeWindow(w) {
   if (!w || w.closing) return;
   w.closing = true;
   wins.delete(w.appId);
+  if (w.onClose) w.onClose();
   const done = () => { w.el.remove(); if (lg) lg.markChanged(); };
   if (H.reduceMotion()) done();
   else w.el.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.9)', opacity: 0 }], { duration: 200, easing: 'cubic-bezier(.4, 0, 1, 1)' }).onfinish = done;
@@ -842,6 +859,39 @@ function openGame(g, fromItem, fromEl) {
   });
 }
 
+// SahurHub Chat in a window (the same chat as on the normal site)
+let chatOpening = false;
+async function openChat(fromItem) {
+  const existing = wins.get('chat');
+  if (existing) {
+    if (existing.minimized) restoreWindow(existing);
+    focusWindow(existing);
+    return;
+  }
+  if (chatOpening || !H.chat) return;
+  const item = fromItem || dockItem('chat');
+  if (item) bounceIcon(item);
+  chatOpening = true;
+  let mod;
+  try { mod = await H.chat.load(); } catch (e) { H.toast('The chat could not load. Check your connection.'); return; } finally { chatOpening = false; }
+  if (!isOpen || wins.get('chat')) return;
+  const area = workArea();
+  openWindow({
+    appId: 'chat',
+    title: 'SahurHub Chat',
+    width: Math.min(1000, area.w),
+    height: Math.min(680, area.h),
+    className: 'dt-win-chat',
+    from: item ? item.el : null,
+    body: '<div class="dt-chat-host"></div>',
+    onMount: (w) => {
+      const host = w.el.querySelector('.dt-chat-host');
+      mod.mountInto(host);
+      w.onClose = () => mod.unmount(host);
+    }
+  });
+}
+
 function openSettings(fromItem) {
   const existing = wins.get('settings');
   if (existing) {
@@ -943,6 +993,7 @@ function openWelcome() {
           <li><b>Move the pointer along the Dock</b> at the bottom. Icons grow as you pass over them.</li>
           <li><b>Click an opsec</b> in the Dock to open it in a window. Drag windows by their top bar. The red, yellow and green buttons close, minimize and zoom.</li>
           <li><b>Apps</b> (the first Dock icon) shows every opsec. <b>Favorites</b> pops up the ones you liked.</li>
+          <li><b>Chat</b> (the speech bubble next to Apps) opens SahurHub Chat in a window.</li>
           <li><b>Search</b> with the magnifier in the menu bar, or press <kbd>/</kbd>.</li>
           <li><b>Settings</b> changes the Dock size, the magnification and light or dark mode.</li>
         </ul>
@@ -1222,6 +1273,7 @@ const MENUS = {
   },
   file: () => [
     { label: 'Open Apps', action: () => toggleApps(true) },
+    { label: 'Open Chat', action: () => openChat() },
     { label: 'Search Opsecs…', shortcut: '/', action: () => toggleSpotlight(true) },
     'sep',
     { label: 'Close Window', disabled: !activeWin, action: () => closeWindow(activeWin) }
@@ -1454,6 +1506,7 @@ export function open(options) {
   listen(document, 'sahurhub:favorites', onFavorites);
   listen(root, 'pointerdown', onRootPointerDown, true);
   if (H.countdown) unlisten.push(H.countdown.subscribe(updateNextup));
+  listen(document, 'sahurhub:chat', (e) => updateDockChat(e.detail));
   intro().then(() => { if (isOpen) initGlass(); });
   let seen = false;
   try { seen = !!localStorage.getItem(WELCOME_KEY); } catch (e) { /* private mode */ }
@@ -1463,6 +1516,8 @@ export function open(options) {
 export function exit() {
   if (!isOpen) return;
   isOpen = false;
+  const chatWin = wins.get('chat');
+  if (chatWin) closeWindow(chatWin);
   closeMenu();
   closeStack();
   if (spot.open) toggleSpotlight(false);

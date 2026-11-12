@@ -232,6 +232,7 @@
   var scrim = $('scrim');
   var themeBtn = $('theme-btn');
   var desktopBtn = $('desktop-btn');
+  var nextupGlass = $('nextup-glass');
   var tabbar = $('tabbar');
   var tabIndicator = $('tab-indicator');
   var tabs = Array.prototype.slice.call(tabbar.querySelectorAll('.tab'));
@@ -257,7 +258,7 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, themeBtn, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, themeBtn, nextupGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -277,6 +278,7 @@
     };
     var extra;
     if (el === themeBtn || el === desktopBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
+    else if (el === nextupGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
     else if (el === sheet) extra = { blurAmount: 1, refraction: 0.55, cornerRadius: 36, zRadius: 30, brightness: dark ? -0.36 : 0.26, saturation: 0.35, shadowOpacity: dark ? 0.55 : 0.24, shadowSpread: 30, shadowOffsetY: 10 };
@@ -291,7 +293,7 @@
   }
 
   function visibleGlass() {
-    var list = [themeBtn, desktopBtn, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [themeBtn, desktopBtn, nextupGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
     if (state.sheetGame) list.push(sheet);
     return list;
@@ -369,6 +371,23 @@
       lg = await mod.LiquidGlass.init({ root: app, glassElements: GLASS_ELEMENTS });
       document.documentElement.classList.add('lg-ready');
       GLASS_ELEMENTS.forEach(refreshGlassContent);
+      // The library clears a glass element when its size changes but does not
+      // redraw it by itself, so ask for a redraw whenever one is resized
+      // (for example the countdown pill when its text gets longer).
+      if (window.ResizeObserver) {
+        var resized = new ResizeObserver(function (entries) {
+          entries.forEach(function (entry) {
+            var el = entry.target;
+            if (!lg) return;
+            lg.markChanged(el);
+            requestAnimationFrame(function () {
+              if (lg) lg.markChanged(el);
+              requestAnimationFrame(function () { if (lg) lg.markChanged(el); });
+            });
+          });
+        });
+        GLASS_ELEMENTS.forEach(function (el) { resized.observe(el); });
+      }
       scheduleCapture(150, [content, topedge]);
     } catch (err) {
       console.warn('SahurHub: liquid glass could not start, using the simple frosted look instead.', err);
@@ -1368,6 +1387,7 @@
     desktopBtn.classList.remove('is-loading');
     if (state.sheetGame) closeSheet(true);
     if (state.searchOpen) closeSearch();
+    if (window.SahurHubCountdown) window.SahurHubCountdown.closePanel();
     state.desktopOpen = true;
     app.inert = true;
     desktopModule.open({
@@ -1401,7 +1421,8 @@
     toggleTheme: toggleTheme,
     toast: showToast,
     reduceMotion: reduceMotion,
-    glassUrl: LIQUID_GLASS_URL
+    glassUrl: LIQUID_GLASS_URL,
+    countdown: window.SahurHubCountdown || null
   };
 
   // ---------------------------------------------------------------------------
@@ -1602,6 +1623,13 @@
       featured.animate(
         [{ opacity: 0, transform: 'translateY(34px) scale(.95)' }, { opacity: 1, transform: 'none' }],
         { duration: 1000, delay: 120, easing: EASE_SOFT, fill: 'backwards' }
+      );
+    }
+    var promo = document.querySelector('.promo');
+    if (promo) {
+      promo.animate(
+        [{ opacity: 0, transform: 'translateY(24px) scale(.97)' }, { opacity: 1, transform: 'none' }],
+        { duration: 900, delay: 200, easing: EASE_SOFT, fill: 'backwards' }
       );
     }
     views.home.querySelectorAll('.section-head, .chip').forEach(function (el, i) {

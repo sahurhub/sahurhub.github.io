@@ -151,11 +151,19 @@
     return d.toLocaleDateString(undefined, { weekday: 'long' });
   }
 
-  // Short text for the pill (and Desktop Mode's menu bar).
+  // "23m left", or "45s left" in the last minute (phones have less room).
+  function shortLeft(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    return s < 60 ? s + 's left' : Math.ceil(s / 60) + 'm left';
+  }
+
+  // Short text for the pill (and Desktop Mode's menu bar). `short` is an even
+  // shorter version for small phone screens.
   function describe(st, now) {
     now = now || new Date();
     if (st.kind === 'in') {
-      return { type: st.period.type, label: st.period.name + ',', time: left(st.left), progress: 1 - st.left / st.total };
+      return { type: st.period.type, label: st.period.name + ',', time: left(st.left), progress: 1 - st.left / st.total,
+        short: { label: st.period.name + ',', time: shortLeft(st.left) } };
     }
     if (st.kind === 'passing') {
       return { type: 'passing', label: st.next.name, time: 'in ' + until(st.until), progress: 1 - st.until / st.total };
@@ -163,7 +171,8 @@
     if (st.kind === 'before') {
       return { type: st.next.type, label: st.next.name, time: 'in ' + until(st.until), progress: null };
     }
-    return { type: 'out', label: 'School’s out,', time: st.until === null ? 'no school days set' : 'back in ' + until(st.until), progress: null };
+    if (st.until === null) return { type: 'out', label: 'School’s out,', time: 'no school days set', progress: null, short: { label: 'No school', time: 'days set' } };
+    return { type: 'out', label: 'School’s out,', time: 'back in ' + until(st.until), progress: null, short: { label: 'Back in', time: until(st.until) } };
   }
 
   // The day's list with gaps, marked past / current / next.
@@ -202,6 +211,7 @@
   var panelKey = '';
   var timer = 0;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var smallScreen = window.matchMedia('(max-width: 520px)');
 
   function esc(v) {
     return String(v).replace(/[&<>"']/g, function (c) {
@@ -222,10 +232,11 @@
       };
     }
     var d = describe(st, now);
+    var shown = smallScreen.matches && d.short ? d.short : d;
     if (pill.getAttribute('data-type') !== d.type) pill.setAttribute('data-type', d.type);
     if (pill.getAttribute('data-kind') !== st.kind) pill.setAttribute('data-kind', st.kind);
-    if (pillParts.label.textContent !== d.label) pillParts.label.textContent = d.label;
-    if (pillParts.time.textContent !== d.time) pillParts.time.textContent = d.time;
+    if (pillParts.label.textContent !== shown.label) pillParts.label.textContent = shown.label;
+    if (pillParts.time.textContent !== shown.time) pillParts.time.textContent = shown.time;
     pill.classList.toggle('has-progress', d.progress !== null);
     if (d.progress !== null) pillParts.fill.style.width = (Math.min(1, Math.max(0, d.progress)) * 100).toFixed(2) + '%';
     var spoken = d.label + ' ' + d.time + '. Show schedule';

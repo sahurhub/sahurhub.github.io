@@ -72,6 +72,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // A Unity game on Google Apps Script (files from jsDelivr); it allows being
+    // shown inside other pages.
+    id: "dune-dash",
+    title: "Dune Dash",
+    category: "Arcade",
+    tags: ["dunes", "desert", "ball", "one tap", "jump", "endless", "skins"],
+    description: "Hold to speed down the dunes, let go to fly and hold again to dive. Unlock skins and beat challenges.",
+    icon: "bolt",
+    colors: ["#ffcf6e", "#1fb5bf"],
+    url: "https://script.google.com/macros/s/AKfycbxif2sgdRNG-zqSFKUNZ60ZABnsdBYug037DeKlnuXY1XYyveJlFQK6YHpCX-KiWnC6/exec",
+    cover: "covers/dune-dash.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

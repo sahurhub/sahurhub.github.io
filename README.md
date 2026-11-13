@@ -29,8 +29,8 @@ Messages are deleted after 90 days. The database is copied to `~/sahurhub-chat/b
 | File | What it is |
 |---|---|
 | `index.html` | The page layout |
-| `styles.css` | Colors, sizes, fonts and animations (light and dark colors are at the top) |
-| `app.js` | Search, filters, favorites, recently played, the tab bar lens and the glass effect |
+| `styles.css` | Colors, sizes, fonts and animations (light and dark colors are at the top, the Christmas theme near the end) |
+| `app.js` | Search, filters, favorites, recently played, the tab bar lens, Settings (theme, glass, how opsecs open), the Christmas snow and lights, and the glass effect |
 | `games.js` | The list of games (the only file you normally edit) |
 | `play.html` | Plays a game full screen on SahurHub (used when a visitor picks "Open in: SahurHub") |
 | `covers/` | Cover pictures for games (landscape 16:9, set with `cover` in `games.js`) |
@@ -43,5 +43,5 @@ Favorites, recently played and Desktop Mode settings are saved in each visitor's
 
 ## Credits
 
-- Liquid glass effect: [LiquidGlass](https://liquid-glass.ybouane.com/) by @ybouane (MIT license), loaded from jsDelivr.
+- Liquid glass effect: [LiquidGlass](https://liquid-glass.ybouane.com/) by @ybouane (MIT license), loaded from jsDelivr only when a visitor picks "Liquid glass" in Settings (the default is the lighter "Simple" glass).
 - Font: [Inter](https://rsms.me/inter/) (SIL Open Font License), loaded from jsDelivr.

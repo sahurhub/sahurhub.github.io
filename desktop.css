@@ -740,6 +740,27 @@
 .dt-spot-row.sel .dt-spot-sub { color: rgba(255, 255, 255, 0.82); }
 .dt-spot-empty { margin: 8px 10px; color: var(--dt-text-2); }
 
+/* ---------- Simple glass (Settings > Glass, the default) ----------
+   No blur anywhere, so Desktop Mode stays smooth on slow devices. Panels that
+   relied on the blur are made more solid so they stay readable. */
+html[data-glass="simple"] #desktop * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-glass="simple"] #desktop {
+  --dt-menu: rgba(246, 246, 250, 0.94);
+  --dt-spot: rgba(250, 250, 253, 0.96);
+  --dt-tip: rgba(248, 248, 252, 0.96);
+  --dt-dock-fallback: rgba(255, 255, 255, 0.62);
+}
+html[data-glass="simple"][data-theme="dark"] #desktop {
+  --dt-menu: rgba(40, 40, 46, 0.94);
+  --dt-spot: rgba(38, 38, 44, 0.96);
+  --dt-tip: rgba(46, 46, 52, 0.96);
+  --dt-dock-fallback: rgba(40, 40, 48, 0.66);
+}
+html[data-glass="simple"] .dt-apps { background: rgba(12, 10, 30, 0.82); }
+
 @media (prefers-reduced-motion: reduce) {
   #desktop *, #desktop *::before, #desktop *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

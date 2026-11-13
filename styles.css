@@ -28,6 +28,9 @@
   --shadow-hover: 0 26px 56px rgba(24, 32, 72, 0.2), 0 8px 18px rgba(24, 32, 72, 0.1);
   --edge: rgba(238, 241, 251, 0.94);
   --glass-fallback: rgba(255, 255, 255, 0.6);
+  --glass-simple: rgba(255, 255, 255, 0.8);
+  --glass-simple-edge: rgba(255, 255, 255, 0.6);
+  --panel-solid: rgba(248, 249, 253, 0.97);
   --glass-label: rgba(0, 0, 0, 0.84);
   --mark: rgba(0, 122, 255, 0.18);
   --sheet-tint: rgba(250, 250, 255, 0.62);
@@ -72,6 +75,9 @@
   --shadow-hover: 0 26px 56px rgba(0, 0, 0, 0.6), 0 8px 18px rgba(0, 0, 0, 0.4);
   --edge: rgba(5, 6, 12, 0.86);
   --glass-fallback: rgba(44, 44, 52, 0.6);
+  --glass-simple: rgba(38, 38, 46, 0.78);
+  --glass-simple-edge: rgba(255, 255, 255, 0.12);
+  --panel-solid: rgba(30, 30, 36, 0.97);
   --glass-label: rgba(255, 255, 255, 0.92);
   --mark: rgba(10, 132, 255, 0.32);
   --sheet-tint: rgba(22, 22, 30, 0.6);
@@ -779,6 +785,21 @@ html:not(.lg-ready) .glass {
   backdrop-filter: blur(24px) saturate(1.8);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
+/* Simple glass (Settings > Glass, the default): plain see-through panels with no
+   blur and no WebGL, so it stays smooth on slow devices. */
+html[data-glass="simple"] .glass,
+html[data-glass="simple"] #toast,
+html[data-glass="simple"] .nu-panel {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-glass="simple"] .glass {
+  background: var(--glass-simple);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), inset 0 0 0 1px var(--glass-simple-edge);
+}
+html[data-glass="simple"] #toast { background: var(--panel-solid); }
+html[data-glass="simple"] .nu-panel { background: var(--panel-solid); }
+html[data-glass="simple"] #sheet { background: var(--panel-solid); }
 html.lg-ready .glass > canvas:first-child { animation: glassIn 0.6s var(--ease-out) both; }
 @keyframes glassIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -788,19 +809,13 @@ html.lg-ready .glass > canvas:first-child { animation: glassIn 0.6s var(--ease-o
 .glass-top { top: calc(var(--safe-top) + 12px); translate: 0 -90px; }
 body.ready .glass-top { translate: 0 0; }
 
-#theme-btn {
+#settings-btn {
   right: var(--corner-right);
   width: 44px;
   height: 44px;
 }
-.theme-icon {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  transition: transform 0.7s var(--spring), opacity 0.3s var(--ease-out);
-}
-:root[data-theme="light"] .icon-sun { opacity: 0; transform: rotate(-120deg) scale(0.3); }
-:root[data-theme="dark"] .icon-moon { opacity: 0; transform: rotate(120deg) scale(0.3); }
+.settings-icon { width: 23px; height: 23px; transition: transform 0.8s var(--spring); }
+@media (hover: hover) { #settings-btn:hover .settings-icon { transform: rotate(60deg); } }
 
 #desktop-btn {
   right: calc(var(--corner-right) + 54px);
@@ -1174,6 +1189,104 @@ html.lg-ready #sheet::after {
 .seg-btn:active { transform: scale(0.94); }
 @media (hover: hover) { .seg-btn:not([aria-pressed="true"]):hover { background: var(--fill); } }
 
+/* ---------- Settings (shown in the sheet) ---------- */
+
+.set-group { margin-top: 22px; }
+.set-title {
+  margin: 0 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--label-2);
+}
+.theme-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.theme-opt,
+.glass-opt {
+  border-radius: 18px;
+  background: var(--fill);
+  box-shadow: inset 0 0 0 2px transparent;
+  transition: box-shadow 0.25s var(--ease-out), background-color 0.2s, transform 0.4s var(--spring);
+}
+.theme-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 8px 10px; }
+.theme-opt[aria-checked="true"],
+.glass-opt[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--accent); background: var(--fill-strong); }
+.theme-opt:active,
+.glass-opt:active { transform: scale(0.95); }
+.theme-swatch {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(128, 128, 140, 0.25);
+}
+.swatch-auto { background: linear-gradient(135deg, #e9eeff 0 50%, #0b0b1c 50% 100%); }
+.swatch-light { background: radial-gradient(70% 70% at 15% 15%, rgba(90, 140, 255, 0.7), transparent), radial-gradient(70% 70% at 90% 90%, rgba(255, 150, 190, 0.7), transparent), #f1f3ff; }
+.swatch-dark { background: radial-gradient(70% 70% at 15% 15%, rgba(40, 80, 255, 0.6), transparent), radial-gradient(70% 70% at 90% 90%, rgba(255, 45, 120, 0.45), transparent), #06061a; }
+.swatch-christmas {
+  background:
+    radial-gradient(circle, #fff 0 1.3px, transparent 1.9px) 3px 2px / 17px 15px,
+    radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.5px) 11px 9px / 23px 19px,
+    radial-gradient(70% 70% at 15% 15%, rgba(215, 30, 55, 0.85), transparent),
+    radial-gradient(70% 70% at 90% 90%, rgba(20, 150, 80, 0.85), transparent),
+    #051410;
+}
+.theme-name { font-size: 13.5px; font-weight: 650; }
+.glass-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.glass-opt { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; text-align: left; }
+.glass-opt-name { font-size: 15px; font-weight: 700; }
+.glass-opt-desc { font-size: 13px; line-height: 1.35; color: var(--label-2); }
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border-radius: 16px;
+  background: var(--fill);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.switch {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 48px;
+  height: 29px;
+  margin: 0;
+  border-radius: 15px;
+  background: var(--fill-strong);
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  transition: transform 0.35s var(--spring);
+}
+.switch:checked { background: #34c759; }
+.switch:checked::before { transform: translateX(19px); }
+.seg-full { display: flex; width: 100%; }
+.seg-full .seg-btn { flex: 1; padding: 9px 6px; }
+#sheet.is-settings .sheet-body { padding-bottom: 26px; }
+@media (max-width: 400px) {
+  .theme-grid { gap: 7px; }
+  .theme-opt { padding: 6px 6px 8px; }
+  .theme-name { font-size: 12.5px; }
+  .glass-opts { grid-template-columns: 1fr; }
+}
+
 /* ---------- Toast ---------- */
 
 #toast {
@@ -1393,6 +1506,103 @@ body.ready #nextup { translate: 0 0; }
   color: #e10600;
   background: rgba(255, 255, 255, 0.92);
 }
+
+/* ---------- Christmas theme (Settings > Theme) ----------
+   A dark theme with festive colors. app.js adds the falling snow (#snow),
+   the string lights (#xmas-lights) and the "days to go" line. */
+
+:root[data-skin="christmas"] {
+  --bg: #06100c;
+  --accent: #ff4553;
+  --heart: #ff4d6d;
+  --mark: rgba(255, 69, 83, 0.3);
+  --card: rgba(16, 30, 24, 0.8);
+  --card-border: rgba(255, 255, 255, 0.09);
+  --edge: rgba(6, 16, 12, 0.86);
+  --pill: #e5303d;
+  --pill-text: #ffffff;
+  --glass-simple: rgba(20, 40, 30, 0.78);
+  --panel-solid: rgba(14, 28, 22, 0.97);
+  --sheet-tint: rgba(12, 26, 19, 0.6);
+}
+
+/* Falling snow: above the page, below the buttons and panels. */
+#snow {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display: block;
+  pointer-events: none;
+}
+
+/* String lights across the top of the screen. */
+#xmas-lights {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--safe-top);
+  height: 46px;
+  z-index: 25;
+  overflow: hidden;
+  pointer-events: none;
+}
+#xmas-lights .wire { position: absolute; left: 0; top: 0; }
+#xmas-lights .wire path { fill: none; stroke: rgba(120, 150, 125, 0.55); stroke-width: 1.6; }
+.bulb {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  margin: 2px 0 0 -4px;
+  border-radius: 50% 50% 48% 48% / 58% 58% 42% 42%;
+  background: radial-gradient(circle at 50% 38%, #fff 0 14%, var(--c) 52%);
+  box-shadow: 0 0 9px 2px var(--c);
+  animation: twinkle 2s ease-in-out infinite;
+}
+.bulb::before {
+  content: "";
+  position: absolute;
+  left: 1.5px;
+  top: -3px;
+  width: 5px;
+  height: 4px;
+  border-radius: 1px;
+  background: #2e3d32;
+}
+@keyframes twinkle { 50% { opacity: 0.32; } }
+
+/* Snow resting on top of the cards and the featured banner. */
+.snowcap { display: none; }
+:root[data-skin="christmas"] .card::before,
+:root[data-skin="christmas"] .snowcap {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 15px;
+  z-index: 2;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16'%3E%3Cpath fill='%23dfe9f2' d='M0 0h120v8c-7 0-9 7-16 7s-8-6-15-6-8 7-16 7-8-6-16-6-9 5-16 5-9-6-16-6-8 5-15 5-6-5-10-6Z'/%3E%3Cpath fill='%23fff' d='M0 0h120v6c-7 0-9 6-16 6s-8-5-15-5-8 6-16 6-8-5-16-5-9 4-16 4-9-5-16-5-8 4-15 4-6-4-10-5Z'/%3E%3C/svg%3E") repeat-x 0 0 / 120px 15px;
+}
+:root[data-skin="christmas"] .snowcap { z-index: 1; height: 18px; background-size: 140px 18px; }
+
+/* A Santa hat on the SahurHub title. */
+:root[data-skin="christmas"] #home-title { position: relative; width: fit-content; margin-top: 0.34em; }
+:root[data-skin="christmas"] #home-title::before {
+  content: "";
+  position: absolute;
+  left: -0.17em;
+  top: -0.36em;
+  width: 0.74em;
+  height: 0.6em;
+  transform: rotate(-17deg);
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'%3E%3Cpath fill='%23d7262f' d='M12 62C15 34 35 10 62 8c18-1 30 10 32 32-8-10-18-14-26-10-8 4-2 20 2 32Z'/%3E%3Cpath fill='%23a3161e' d='M62 8c18-1 30 10 32 32-8-10-18-14-26-10-5 2-4 10-2 18-10-8-12-26-4-40Z' opacity='.55'/%3E%3Crect x='4' y='54' width='74' height='18' rx='9' fill='%23fff'/%3E%3Crect x='4' y='64' width='74' height='8' rx='4' fill='%23dfe7ee'/%3E%3Ccircle cx='92' cy='44' r='9' fill='%23fff'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+:root[data-skin="christmas"] .footer::after { content: " \00B7  Merry Christmas"; }
 
 /* ---------- Light/dark switch: circular reveal (browsers that support it) ---------- */
 

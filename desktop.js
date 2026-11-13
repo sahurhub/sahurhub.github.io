@@ -5,8 +5,7 @@
   This file only loads when someone opens Desktop Mode. All icons are drawn
   for SahurHub.
 */
-import { LiquidGlass } from 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
-
+// The liquid glass library is only downloaded when Settings > Glass is "Liquid glass".
 const H = window.SahurHub;
 const esc = H.escapeHtml;
 const SETTINGS_KEY = 'sahurhub.desktop';
@@ -933,10 +932,14 @@ function openSettings(fromItem) {
         <div class="dt-group">
           <div class="dt-group-title">Appearance</div>
           <div class="dt-group-box">
-            <div class="dt-row"><span>Mode</span>
-              <div class="dt-seg" role="radiogroup" aria-label="Appearance">
-                <button type="button" role="radio" data-theme="light">Light</button>
-                <button type="button" role="radio" data-theme="dark">Dark</button>
+            <div class="dt-row"><span>Theme</span>
+              <div class="dt-seg" role="radiogroup" aria-label="Theme">
+                ${H.themes.map((t) => `<button type="button" role="radio" data-dt-theme="${t.id}">${esc(t.label)}</button>`).join('')}
+              </div>
+            </div>
+            <div class="dt-row"><span>Glass</span>
+              <div class="dt-seg" role="radiogroup" aria-label="Glass">
+                ${H.glassModes.map((m) => `<button type="button" role="radio" data-dt-glass="${m.id}" title="${esc(m.desc)}">${esc(m.label)}</button>`).join('')}
               </div>
             </div>
           </div>
@@ -959,7 +962,8 @@ function openSettings(fromItem) {
     onMount: (w) => {
       const el = w.el;
       w.sync = () => {
-        el.querySelectorAll('[data-theme]').forEach((b) => b.setAttribute('aria-checked', String((b.dataset.theme === 'dark') === H.isDark())));
+        el.querySelectorAll('[data-dt-theme]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.dtTheme === H.getTheme())));
+        el.querySelectorAll('[data-dt-glass]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.dtGlass === H.getGlass())));
         el.querySelector('[data-set="size"]').value = settings.size;
         el.querySelector('[data-set="magnify"]').checked = settings.magnify;
         const m = el.querySelector('[data-set="magnification"]');
@@ -968,8 +972,10 @@ function openSettings(fromItem) {
       };
       w.sync();
       el.addEventListener('click', (e) => {
-        const t = e.target.closest('[data-theme]');
-        if (t) H.setTheme(t.dataset.theme, t);
+        const t = e.target.closest('[data-dt-theme]');
+        if (t) H.setThemeChoice(t.dataset.dtTheme, t);
+        const g = e.target.closest('[data-dt-glass]');
+        if (g) H.setGlass(g.dataset.dtGlass);
         if (e.target.closest('[data-act="exit"]')) exit();
       });
       el.addEventListener('input', (e) => {
@@ -1015,7 +1021,7 @@ function openWelcome() {
           <li><b>Apps</b> (the first Dock icon) shows every opsec. <b>Favorites</b> pops up the ones you liked.</li>
           <li><b>Chat</b> (the speech bubble next to Apps) opens SahurHub Chat in a window.</li>
           <li><b>Search</b> with the magnifier in the menu bar, or press <kbd>/</kbd>.</li>
-          <li><b>Settings</b> changes the Dock size, the magnification and light or dark mode.</li>
+          <li><b>Settings</b> changes the theme, the glass look, the Dock size and the magnification.</li>
         </ul>
         <p>To leave, press the power button at the end of the Dock.</p>
       </div>`
@@ -1474,18 +1480,35 @@ function onFavorites() {
 // Liquid glass for the Dock
 // ---------------------------------------------------------------------------
 
+let glassStarting = false;
 async function initGlass() {
-  if (lg || !isOpen) return;
+  if (lg || !isOpen || glassStarting) return;
+  if (H.getGlass && H.getGlass() !== 'liquid') return; // Simple glass: no WebGL
+  glassStarting = true;
   try {
     dockGlass.dataset.config = JSON.stringify(dockGlassConfig());
+    const { LiquidGlass } = await import(H.glassUrl);
     const instance = await LiquidGlass.init({ root, glassElements: [dockGlass] });
-    if (!isOpen) { instance.destroy(); return; }
+    if (!isOpen || (H.getGlass && H.getGlass() !== 'liquid')) { instance.destroy(); return; }
     lg = instance;
     root.classList.add('dt-lg-ready');
   } catch (err) {
     console.warn('SahurHub: Dock glass could not start, using the simple frosted look instead.', err);
     root.classList.add('dt-lg-fallback');
+  } finally {
+    glassStarting = false;
   }
+}
+
+// Settings > Glass changed while Desktop Mode is open.
+function onGlass() {
+  if (H.getGlass() === 'liquid') initGlass();
+  else {
+    if (lg) { lg.destroy(); lg = null; }
+    root.classList.remove('dt-lg-ready', 'dt-lg-fallback');
+  }
+  const w = wins.get('settings');
+  if (w && w.sync) w.sync();
 }
 
 // ---------------------------------------------------------------------------
@@ -1523,6 +1546,7 @@ export function open(options) {
   listen(document, 'keydown', onKey);
   listen(document.documentElement, 'mouseleave', onLeave);
   listen(document, 'sahurhub:theme', onTheme);
+  listen(document, 'sahurhub:glass', onGlass);
   listen(document, 'sahurhub:favorites', onFavorites);
   listen(root, 'pointerdown', onRootPointerDown, true);
   if (H.countdown) unlisten.push(H.countdown.subscribe(updateNextup));

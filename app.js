@@ -8,7 +8,23 @@
   'use strict';
 
   var LIQUID_GLASS_URL = 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
-  var KEYS = { theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent', openMode: 'sahurhub.openMode' };
+  // Bump when desktop.js or desktop.css change, so browsers fetch the new copies.
+  var DESKTOP_VERSION = '?v=20261114';
+  var KEYS = {
+    theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent',
+    openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow'
+  };
+  // Settings (the gear button). "auto" follows the device's light/dark setting.
+  var THEMES = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'light', label: 'Light' },
+    { id: 'dark', label: 'Dark' },
+    { id: 'christmas', label: 'Christmas' }
+  ];
+  var GLASS_MODES = [
+    { id: 'simple', label: 'Simple', desc: 'See-through and fast. Best for slower devices.' },
+    { id: 'liquid', label: 'Liquid glass', desc: 'Bends the page like real glass. Needs a faster device.' }
+  ];
   // Where Play opens a game. Each visitor picks one in a game's details (remembered).
   var OPEN_MODES = [
     { id: 'blank', label: 'about:blank' },
@@ -59,6 +75,9 @@
     },
     setRaw: function (key, value) {
       try { localStorage.setItem(key, value); } catch (e) { /* private mode */ }
+    },
+    remove: function (key) {
+      try { localStorage.removeItem(key); } catch (e) { /* private mode */ }
     }
   };
 
@@ -122,6 +141,7 @@
     close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
     sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.1M12 19.3v2.1M4.7 4.7l1.5 1.5M17.8 17.8l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.7 19.3l1.5-1.5M17.8 6.2l1.5-1.5"/>',
     moon: '<path d="M19.6 14.6A8 8 0 0 1 9.4 4.4a8 8 0 1 0 10.2 10.2Z"/>',
+    gear: '<path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.2l1.4.2.5 2.1 1.6.7 1.9-1.1 1.9 1.9-1.1 1.9.7 1.6 2.1.5.2 1.4-.2 1.4-2.1.5-.7 1.6 1.1 1.9-1.9 1.9-1.9-1.1-1.6.7-.5 2.1-1.4.2-1.4-.2-.5-2.1-1.6-.7-1.9 1.1-1.9-1.9 1.1-1.9-.7-1.6-2.1-.5L3.2 12l.2-1.4 2.1-.5.7-1.6-1.1-1.9 1.9-1.9 1.9 1.1 1.6-.7.5-2.1ZM12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 1 0 0-6.4Z"/>',
     play: '<path d="M8 5.6v12.8a.8.8 0 0 0 1.2.7l10.3-6.4a.8.8 0 0 0 0-1.4L9.2 4.9A.8.8 0 0 0 8 5.6Z" fill="currentColor" stroke="none"/>',
     chevron: '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
     desktop: '<rect x="2.8" y="4" width="18.4" height="12.6" rx="2.6"/><path d="M8.6 20.2h6.8M12 16.6v3.6M7.6 13.2h8.8"/>',
@@ -232,7 +252,11 @@
     desktopOpen: false,
     favorites: storage.get(KEYS.favorites, []).filter(function (id) { return BY_ID[id]; }),
     recent: storage.get(KEYS.recent, []).filter(function (r) { return r && BY_ID[r.id]; }),
-    openMode: storage.get(KEYS.openMode, 'blank')
+    openMode: storage.get(KEYS.openMode, 'blank'),
+    settingsOpen: false,
+    // Simple glass is the default; the head script in index.html reads the same key.
+    glass: storage.getRaw(KEYS.glass) === 'liquid' ? 'liquid' : 'simple',
+    snow: storage.getRaw(KEYS.snow) !== 'off'
   };
   if (!OPEN_MODES.some(function (m) { return m.id === state.openMode; })) state.openMode = 'blank';
 
@@ -248,7 +272,7 @@
   var topedge = $('topedge');
   var compactTitle = $('compact-title');
   var scrim = $('scrim');
-  var themeBtn = $('theme-btn');
+  var settingsBtn = $('settings-btn');
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
   var chatGlass = $('chat-glass');
@@ -279,7 +303,10 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, themeBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+
+  // The sheet shows either a game's details or Settings.
+  function sheetIsOpen() { return !!(state.sheetGame || state.settingsOpen); }
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -298,7 +325,7 @@
       shadowOffsetY: 4
     };
     var extra;
-    if (el === themeBtn || el === desktopBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
+    if (el === settingsBtn || el === desktopBtn) extra ={ blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
     else if (el === nextupGlass || el === chatGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
@@ -314,9 +341,9 @@
   }
 
   function visibleGlass() {
-    var list = [themeBtn, desktopBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [settingsBtn, desktopBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
-    if (state.sheetGame) list.push(sheet);
+    if (sheetIsOpen()) list.push(sheet);
     return list;
   }
 
@@ -380,23 +407,36 @@
     }
   }
 
-  async function initGlass() {
-    applyGlassConfigs();
-    GLASS_ELEMENTS.forEach(function (el) { if (el !== lensEl) watchGlassMotion(el); });
+  // Glass has two looks (Settings > Glass):
+  //   simple - plain see-through panels. No WebGL and no blur, so it stays smooth
+  //            on slow devices. The liquid glass library is never downloaded.
+  //   liquid - the WebGL liquid glass from @ybouane/liquidglass.
+  var glassStarting = false;
+  var glassResizeObserver = null;
+
+  async function startLiquidGlass(firstLoad) {
+    if (lg || glassStarting) return;
+    glassStarting = true;
     try {
       var modulePromise = import(LIQUID_GLASS_URL);
-      // Let the opening animation finish first, so the glass sees the final page.
-      await Promise.all([document.fonts ? document.fonts.ready : null, wait(reduceMotion() ? 0 : 950)]);
-      await new Promise(function (r) { idle(r, { timeout: 600 }); });
+      if (firstLoad) {
+        // Let the opening animation finish first, so the glass sees the final page.
+        await Promise.all([document.fonts ? document.fonts.ready : null, wait(reduceMotion() ? 0 : 950)]);
+        await new Promise(function (r) { idle(r, { timeout: 600 }); });
+      }
       var mod = await modulePromise;
+      if (state.glass !== 'liquid') return; // switched back while it was loading
+      applyGlassConfigs();
       lg = await mod.LiquidGlass.init({ root: app, glassElements: GLASS_ELEMENTS });
+      if (state.glass !== 'liquid') { stopLiquidGlass(); return; }
+      document.documentElement.classList.remove('lg-fallback');
       document.documentElement.classList.add('lg-ready');
       GLASS_ELEMENTS.forEach(refreshGlassContent);
       // The library clears a glass element when its size changes but does not
       // redraw it by itself, so ask for a redraw whenever one is resized
       // (for example the countdown pill when its text gets longer).
-      if (window.ResizeObserver) {
-        var resized = new ResizeObserver(function (entries) {
+      if (window.ResizeObserver && !glassResizeObserver) {
+        glassResizeObserver = new ResizeObserver(function (entries) {
           entries.forEach(function (entry) {
             var el = entry.target;
             if (!lg) return;
@@ -407,23 +447,52 @@
             });
           });
         });
-        GLASS_ELEMENTS.forEach(function (el) { resized.observe(el); });
+        GLASS_ELEMENTS.forEach(function (el) { glassResizeObserver.observe(el); });
       }
       scheduleCapture(150, [content, topedge]);
+      if (sheetIsOpen()) paintScrim(true);
     } catch (err) {
       console.warn('SahurHub: liquid glass could not start, using the simple frosted look instead.', err);
       document.documentElement.classList.add('lg-fallback');
       lg = null;
+    } finally {
+      glassStarting = false;
     }
+  }
+
+  function stopLiquidGlass() {
+    if (lg) {
+      try { lg.destroy(); } catch (e) { /* already gone */ }
+      lg = null;
+    }
+    document.documentElement.classList.remove('lg-ready', 'lg-fallback');
+  }
+
+  function setGlass(mode) {
+    if (mode !== 'simple' && mode !== 'liquid') return;
+    if (mode === state.glass) return;
+    state.glass = mode;
+    storage.setRaw(KEYS.glass, mode);
+    document.documentElement.setAttribute('data-glass', mode);
+    if (mode === 'liquid') startLiquidGlass(false); else stopLiquidGlass();
+    syncSettings();
+    document.dispatchEvent(new CustomEvent('sahurhub:glass', { detail: mode }));
+    showToast(mode === 'liquid' ? 'Liquid glass on' : 'Simple glass on');
+  }
+
+  function initGlass() {
+    applyGlassConfigs();
+    GLASS_ELEMENTS.forEach(function (el) { if (el !== lensEl) watchGlassMotion(el); });
+    if (state.glass === 'liquid') startLiquidGlass(true);
     // Quietly fetch Desktop Mode in the background, so it opens instantly later.
     idle(function () {
       var js = document.createElement('link');
       js.rel = 'modulepreload';
-      js.href = 'desktop.js';
+      js.href = 'desktop.js' + DESKTOP_VERSION;
       document.head.appendChild(js);
       var css = document.createElement('link');
       css.rel = 'prefetch';
-      css.href = 'desktop.css';
+      css.href = 'desktop.css' + DESKTOP_VERSION;
       document.head.appendChild(css);
     }, { timeout: 5000 });
   }
@@ -452,6 +521,17 @@
         [0.1, 0.9, 0.5, [0, 190, 170, 0.38]],
         [0.5, 0.48, 0.4, [80, 60, 220, 0.3]]
       ]
+    },
+    // A winter night: deep green and navy with red, green and warm gold glows.
+    christmas: {
+      base: ['#050d1c', '#04140d'],
+      blobs: [
+        [0.08, 0.08, 0.55, [215, 30, 55, 0.5]],
+        [0.92, 0.2, 0.5, [20, 150, 80, 0.48]],
+        [0.8, 0.88, 0.6, [200, 25, 45, 0.36]],
+        [0.1, 0.92, 0.5, [25, 130, 75, 0.42]],
+        [0.55, 0.42, 0.38, [255, 190, 90, 0.16]]
+      ]
     }
   };
 
@@ -463,7 +543,7 @@
     wallpaper.height = Math.max(1, Math.round(h * dpr));
     var ctx = wallpaper.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var theme = WALLPAPERS[isDark() ? 'dark' : 'light'];
+    var theme = WALLPAPERS[isChristmas() ? 'christmas' : isDark() ? 'dark' : 'light'];
     var base = ctx.createLinearGradient(0, 0, w, h);
     base.addColorStop(0, theme.base[0]);
     base.addColorStop(1, theme.base[1]);
@@ -485,28 +565,50 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Theme (light / dark), with a circular reveal from the button
+  // Theme (auto / light / dark / christmas), with a circular reveal
   // ---------------------------------------------------------------------------
+  // Christmas is a dark theme plus data-skin="christmas", so everything that
+  // checks for dark mode keeps working.
 
-  function setThemeAttr(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
+  function themeChoice() {
+    var saved = storage.getRaw(KEYS.theme);
+    return THEMES.some(function (t) { return t.id === saved; }) ? saved : 'auto';
+  }
+
+  function isChristmas() { return document.documentElement.getAttribute('data-skin') === 'christmas'; }
+
+  function themeLook(choice) {
+    var christmas = choice === 'christmas';
+    var dark = christmas || (choice === 'auto' ? darkQuery.matches : choice === 'dark');
+    return { dark: dark, christmas: christmas };
+  }
+
+  function applyThemeAttrs(choice) {
+    var look = themeLook(choice);
+    var root = document.documentElement;
+    root.setAttribute('data-theme', look.dark ? 'dark' : 'light');
+    if (look.christmas) root.setAttribute('data-skin', 'christmas'); else root.removeAttribute('data-skin');
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#05060c' : '#eef1fb');
-    themeBtn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    if (meta) meta.setAttribute('content', look.christmas ? '#06110c' : look.dark ? '#05060c' : '#eef1fb');
   }
 
   function onThemeChanged() {
     drawWallpaper();
     applyGlassConfigs();
-    paintScrim(!!state.sheetGame);
+    paintScrim(sheetIsOpen());
+    updateChristmas();
+    syncSettings();
     scheduleCapture(420, [content, topedge]);
     document.dispatchEvent(new CustomEvent('sahurhub:theme'));
   }
 
-  function setTheme(next, originEl) {
-    if (next === (isDark() ? 'dark' : 'light')) return;
-    storage.setRaw(KEYS.theme, next);
-    var apply = function () { setThemeAttr(next); onThemeChanged(); };
+  function setThemeChoice(choice, originEl) {
+    if (!THEMES.some(function (t) { return t.id === choice; })) return;
+    if (choice === 'auto') storage.remove(KEYS.theme); else storage.setRaw(KEYS.theme, choice);
+    var look = themeLook(choice);
+    var same = look.dark === isDark() && look.christmas === isChristmas();
+    if (same) { syncSettings(); document.dispatchEvent(new CustomEvent('sahurhub:theme')); return; }
+    var apply = function () { applyThemeAttrs(choice); onThemeChanged(); };
     if (!document.startViewTransition || reduceMotion()) { apply(); return; }
     var r = originEl && originEl.getBoundingClientRect();
     var x = r ? r.left + r.width / 2 : window.innerWidth - 40;
@@ -521,12 +623,233 @@
     }).catch(function () {});
   }
 
-  function toggleTheme(originEl) { setTheme(isDark() ? 'light' : 'dark', originEl); }
+  // Older name, still used by Desktop Mode (light / dark buttons and menu).
+  function setTheme(next, originEl) { setThemeChoice(next, originEl); }
+  function toggleTheme(originEl) { setThemeChoice(isDark() ? 'light' : 'dark', originEl); }
 
   function followSystemTheme() {
-    if (storage.getRaw(KEYS.theme)) return; // the visitor picked one themselves
-    setThemeAttr(darkQuery.matches ? 'dark' : 'light');
+    if (themeChoice() !== 'auto') return; // the visitor picked one themselves
+    applyThemeAttrs('auto');
     onThemeChanged();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Christmas theme: falling snow, string lights, a Santa hat and a countdown
+  // ---------------------------------------------------------------------------
+
+  var homeSubtitle = null;
+  var lightsEl = null;
+  // Fewer flakes and 30 frames a second on slower devices.
+  var lowEndDevice = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  var snow = { canvas: null, ctx: null, sprite: null, flakes: [], frame: 0, last: 0, t: 0, w: 0, h: 0, skip: false };
+
+  function christmasLine() {
+    var now = new Date();
+    if (now.getMonth() === 11 && now.getDate() === 25) return 'Merry Christmas!';
+    if (now.getMonth() === 11 && now.getDate() > 25) return 'Happy holidays!';
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var days = Math.round((new Date(now.getFullYear(), 11, 25) - today) / 86400000);
+    return 'Merry Christmas! ' + days + (days === 1 ? ' day' : ' days') + ' to go.';
+  }
+
+  function updateChristmas() {
+    var on = isChristmas();
+    var sub = views.home.querySelector('.subtitle');
+    if (homeSubtitle === null) homeSubtitle = sub.textContent;
+    sub.textContent = on ? christmasLine() : homeSubtitle;
+    if (on) buildLights(); else if (lightsEl) { lightsEl.remove(); lightsEl = null; }
+    updateSnow();
+  }
+
+  // A string of twinkling lights hanging across the top of the screen.
+  function buildLights() {
+    var w = window.innerWidth;
+    var gap = w < 520 ? 34 : 44;
+    var span = gap * 3;
+    var sag = 13;
+    var colors = ['#ff3b30', '#ffd60a', '#30d158', '#0a84ff', '#ff9f0a'];
+    var path = '';
+    var bulbs = '';
+    var n = 0;
+    for (var x0 = -gap; x0 < w + span; x0 += span) {
+      path += 'M' + x0 + ' 0Q' + (x0 + span / 2) + ' ' + sag * 2 + ' ' + (x0 + span) + ' 0';
+      [1 / 6, 3 / 6, 5 / 6].forEach(function (t) {
+        var x = x0 + t * span;
+        var y = 4 * sag * t * (1 - t);
+        bulbs += '<i class="bulb" style="left:' + x.toFixed(1) + 'px;top:' + y.toFixed(1) + 'px;--c:' + colors[n % colors.length] +
+          ';animation-delay:-' + ((n * 0.37) % 2.4).toFixed(2) + 's;animation-duration:' + (1.8 + (n % 4) * 0.35).toFixed(2) + 's"></i>';
+        n++;
+      });
+    }
+    if (!lightsEl) {
+      lightsEl = document.createElement('div');
+      lightsEl.id = 'xmas-lights';
+      lightsEl.setAttribute('aria-hidden', 'true');
+      app.appendChild(lightsEl);
+    }
+    lightsEl.innerHTML = '<svg class="wire" width="' + w + '" height="' + (sag * 2 + 4) + '"><path d="' + path + '"/></svg>' + bulbs;
+  }
+
+  function updateSnow() {
+    var want = isChristmas() && state.snow && !reduceMotion() && !state.desktopOpen;
+    if (want) startSnow(); else stopSnow();
+  }
+
+  function setSnow(on) {
+    state.snow = !!on;
+    storage.setRaw(KEYS.snow, on ? 'on' : 'off');
+    updateSnow();
+    showToast(on ? 'Snow on' : 'Snow off');
+  }
+
+  function snowSprite() {
+    var c = document.createElement('canvas');
+    c.width = c.height = 32;
+    var g = c.getContext('2d');
+    var grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.45, 'rgba(255,255,255,0.85)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 32, 32);
+    return c;
+  }
+
+  function newFlake(w, h, anywhere) {
+    var r = 1.1 + Math.pow(Math.random(), 2.2) * 3.4; // mostly small flakes
+    return {
+      x: Math.random() * w,
+      y: anywhere ? Math.random() * h : -8 - Math.random() * 40,
+      r: r,
+      vy: 16 + r * 10 + Math.random() * 12,
+      sway: 6 + Math.random() * 20,
+      freq: 0.4 + Math.random() * 0.8,
+      phase: Math.random() * 6.3,
+      a: 0.45 + Math.random() * 0.5
+    };
+  }
+
+  function sizeSnow() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    // One canvas pixel per screen pixel is plenty for soft dots and much cheaper.
+    snow.canvas.width = w;
+    snow.canvas.height = h;
+    if (snow.w && snow.h) {
+      snow.flakes.forEach(function (f) { f.x *= w / snow.w; f.y *= h / snow.h; });
+    }
+    var count = Math.round(clamp(w * h / 9000, 30, 150) * (lowEndDevice ? 0.55 : 1));
+    while (snow.flakes.length < count) snow.flakes.push(newFlake(w, h, true));
+    snow.flakes.length = count;
+    snow.w = w;
+    snow.h = h;
+  }
+
+  function snowFrame(now) {
+    snow.frame = requestAnimationFrame(snowFrame);
+    if (lowEndDevice) { snow.skip = !snow.skip; if (snow.skip) return; }
+    var dt = snow.last ? Math.min(0.05, (now - snow.last) / 1000) : 0.016;
+    snow.last = now;
+    snow.t += dt;
+    var ctx = snow.ctx;
+    var w = snow.w;
+    var h = snow.h;
+    ctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < snow.flakes.length; i++) {
+      var f = snow.flakes[i];
+      f.y += f.vy * dt;
+      f.x += Math.sin(snow.t * f.freq + f.phase) * f.sway * dt;
+      if (f.y - f.r * 2 > h) { snow.flakes[i] = f = newFlake(w, h, false); }
+      if (f.x < -10) f.x = w + 10; else if (f.x > w + 10) f.x = -10;
+      var s = f.r * 4;
+      ctx.globalAlpha = f.a;
+      ctx.drawImage(snow.sprite, f.x - s / 2, f.y - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function startSnow() {
+    if (snow.frame) return;
+    if (!snow.canvas) {
+      snow.canvas = document.createElement('canvas');
+      snow.canvas.id = 'snow';
+      snow.canvas.setAttribute('aria-hidden', 'true');
+      app.appendChild(snow.canvas);
+      snow.ctx = snow.canvas.getContext('2d');
+      snow.sprite = snow.sprite || snowSprite();
+    }
+    sizeSnow();
+    snow.last = 0;
+    snow.frame = requestAnimationFrame(snowFrame);
+  }
+
+  function stopSnow() {
+    if (snow.frame) cancelAnimationFrame(snow.frame);
+    snow.frame = 0;
+    if (snow.canvas) { snow.canvas.remove(); snow.canvas = null; snow.ctx = null; }
+    snow.flakes = [];
+    snow.w = snow.h = 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Settings (opens in the same sheet as a game's details)
+  // ---------------------------------------------------------------------------
+
+  function settingsHtml() {
+    var theme = themeChoice();
+    return '<h2 class="sheet-title" id="sheet-title">Settings</h2>' +
+      '<section class="set-group">' +
+        '<h3 class="set-title" id="set-theme">Theme</h3>' +
+        '<div class="theme-grid" role="radiogroup" aria-labelledby="set-theme">' +
+          THEMES.map(function (t) {
+            return '<button class="theme-opt" type="button" role="radio" data-set-theme="' + t.id + '" aria-checked="' + (t.id === theme) + '">' +
+              '<span class="theme-swatch swatch-' + t.id + '" aria-hidden="true"></span>' +
+              '<span class="theme-name">' + escapeHtml(t.label) + '</span></button>';
+          }).join('') +
+        '</div>' +
+        '<label class="set-row" id="snow-row"' + (theme === 'christmas' ? '' : ' hidden') + '>' +
+          '<span>Falling snow</span><input class="switch" type="checkbox" data-set-snow' + (state.snow ? ' checked' : '') + '>' +
+        '</label>' +
+      '</section>' +
+      '<section class="set-group">' +
+        '<h3 class="set-title" id="set-glass">Glass</h3>' +
+        '<div class="glass-opts" role="radiogroup" aria-labelledby="set-glass">' +
+          GLASS_MODES.map(function (m) {
+            return '<button class="glass-opt" type="button" role="radio" data-set-glass="' + m.id + '" aria-checked="' + (m.id === state.glass) + '">' +
+              '<span class="glass-opt-name">' + escapeHtml(m.label) + '</span>' +
+              '<span class="glass-opt-desc">' + escapeHtml(m.desc) + '</span></button>';
+          }).join('') +
+        '</div>' +
+      '</section>' +
+      '<section class="set-group">' +
+        '<h3 class="set-title" id="set-open">Open opsecs in</h3>' +
+        '<div class="seg seg-full" role="group" aria-labelledby="set-open">' +
+          OPEN_MODES.map(function (m) {
+            return '<button class="seg-btn" type="button" data-open-mode="' + m.id + '" aria-pressed="' + (m.id === state.openMode) + '">' + escapeHtml(m.label) + '</button>';
+          }).join('') +
+        '</div>' +
+      '</section>';
+  }
+
+  function syncSettings() {
+    if (!state.settingsOpen) return;
+    var theme = themeChoice();
+    sheetBody.querySelectorAll('[data-set-theme]').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-set-theme') === theme)); });
+    sheetBody.querySelectorAll('[data-set-glass]').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-set-glass') === state.glass)); });
+    var row = $('snow-row');
+    if (row) row.hidden = theme !== 'christmas';
+    var sw = sheetBody.querySelector('[data-set-snow]');
+    if (sw) sw.checked = state.snow;
+  }
+
+  function openSettings() {
+    lastFocus = document.activeElement;
+    state.sheetGame = null;
+    state.settingsOpen = true;
+    sheet.classList.add('is-settings');
+    sheet.style.removeProperty('translate');
+    sheetBody.innerHTML = settingsHtml();
+    showSheet();
   }
 
   // ---------------------------------------------------------------------------
@@ -678,6 +1001,7 @@
       '<article class="featured' + (g.cover ? ' has-cover' : '') + '" style="' + artStyle(g) + '">' +
         (g.cover ? coverImg(g, 'featured-cover') : '') +
         '<span class="featured-shine" aria-hidden="true"></span>' +
+        '<span class="snowcap" aria-hidden="true"></span>' +
         '<button class="featured-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', featured opsec. Open details') + '"></button>' +
         (g.cover ? '' : '<div class="featured-art">' + glyph(g.icon) + '</div>') +
         '<div class="featured-text">' +
@@ -851,7 +1175,7 @@
 
   function openSearch() {
     if (state.searchOpen) { searchInput.focus({ preventScroll: true }); return; }
-    if (state.sheetGame) closeSheet(true);
+    if (sheetIsOpen()) closeSheet(true);
     state.searchOpen = true;
     document.body.classList.add('searching');
     searchbar.inert = false;
@@ -1324,6 +1648,8 @@
     if (!g) return;
     lastFocus = document.activeElement;
     state.sheetGame = g;
+    state.settingsOpen = false;
+    sheet.classList.remove('is-settings');
     // Set colors as variables only; the glass library keeps its own inline styles here.
     sheet.style.setProperty('--c1', g.c1);
     sheet.style.setProperty('--c2', g.c2);
@@ -1343,6 +1669,11 @@
       '</div>' +
       (g.url ? openModeChoice(g) : '');
     syncSheetFav();
+    showSheet();
+  }
+
+  // Slides the sheet in (shared by game details and Settings).
+  function showSheet() {
     sheetBody.scrollTop = 0;
     sheet.inert = false;
     sheet.classList.add('open');
@@ -1360,14 +1691,15 @@
   }
 
   function closeSheet(skipFocus) {
-    if (!state.sheetGame) return;
+    if (!sheetIsOpen()) return;
     state.sheetGame = null;
+    state.settingsOpen = false;
     sheet.classList.remove('open');
     scrim.classList.remove('open');
     sheet.inert = true;
-    setTimeout(function () { if (!state.sheetGame) paintScrim(false); }, 420);
+    setTimeout(function () { if (!sheetIsOpen()) paintScrim(false); }, 420);
     // If it was swiped down, let it slide away from where the finger left it.
-    setTimeout(function () { if (!state.sheetGame) sheet.style.removeProperty('translate'); }, 650);
+    setTimeout(function () { if (!sheetIsOpen()) sheet.style.removeProperty('translate'); }, 650);
     if (!skipFocus && lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
   }
 
@@ -1415,7 +1747,7 @@
   }
 
   function trapFocus(e) {
-    if (!state.sheetGame || e.key !== 'Tab') return;
+    if (!sheetIsOpen() || e.key !== 'Tab') return;
     var focusables = Array.prototype.filter.call(
       sheet.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])'),
       function (el) { return !el.disabled && el.offsetParent !== null; }
@@ -1454,7 +1786,7 @@
       var link = document.createElement('link');
       link.id = 'desktop-css';
       link.rel = 'stylesheet';
-      link.href = 'desktop.css';
+      link.href = 'desktop.css' + DESKTOP_VERSION;
       link.onload = resolve;
       link.onerror = resolve;
       document.head.appendChild(link);
@@ -1467,7 +1799,7 @@
     desktopBtn.classList.add('is-loading');
     try {
       await loadDesktopCss();
-      desktopModule = desktopModule || await import('./desktop.js');
+      desktopModule = desktopModule || await import('./desktop.js' + DESKTOP_VERSION);
     } catch (err) {
       console.warn('SahurHub: Desktop Mode could not load.', err);
       showToast('Desktop Mode could not load. Check your connection.');
@@ -1477,15 +1809,17 @@
     }
     desktopLoading = false;
     desktopBtn.classList.remove('is-loading');
-    if (state.sheetGame) closeSheet(true);
+    if (sheetIsOpen()) closeSheet(true);
     if (state.searchOpen) closeSearch();
     if (window.SahurHubCountdown) window.SahurHubCountdown.closePanel();
     if (chatModule) chatModule.close();
     state.desktopOpen = true;
+    updateSnow(); // no snow behind Desktop Mode (saves battery)
     app.inert = true;
     desktopModule.open({
       onExit: function () {
         state.desktopOpen = false;
+        updateSnow();
         app.inert = false;
         refreshGlass();
         desktopBtn.focus({ preventScroll: true });
@@ -1580,8 +1914,15 @@
     getOpenMode: function () { return state.openMode; },
     setOpenMode: setOpenMode,
     isDark: isDark,
+    isChristmas: isChristmas,
     setTheme: setTheme,
     toggleTheme: toggleTheme,
+    themes: THEMES,
+    getTheme: themeChoice,
+    setThemeChoice: setThemeChoice,
+    glassModes: GLASS_MODES,
+    getGlass: function () { return state.glass; },
+    setGlass: setGlass,
     toast: showToast,
     reduceMotion: reduceMotion,
     glassUrl: LIQUID_GLASS_URL,
@@ -1614,6 +1955,12 @@
 
     var modeBtn = target.closest('[data-open-mode]');
     if (modeBtn) { setOpenMode(modeBtn.getAttribute('data-open-mode')); return; }
+
+    var themeOpt = target.closest('[data-set-theme]');
+    if (themeOpt) { setThemeChoice(themeOpt.getAttribute('data-set-theme'), themeOpt); return; }
+
+    var glassOpt = target.closest('[data-set-glass]');
+    if (glassOpt) { setGlass(glassOpt.getAttribute('data-set-glass')); return; }
 
     var play = target.closest('[data-play]');
     if (play) { playGame(BY_ID[play.getAttribute('data-play')]); return; }
@@ -1676,7 +2023,9 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
       drawWallpaper();
-      if (state.sheetGame) paintScrim(true);
+      if (sheetIsOpen()) paintScrim(true);
+      if (lightsEl) buildLights();
+      if (snow.canvas) sizeSnow();
       moveIndicator(false);
       document.querySelectorAll('.chips').forEach(function (c) { placePill(c, false); });
     }, 120);
@@ -1711,9 +2060,12 @@
       });
     });
 
-    themeBtn.addEventListener('click', function () {
-      toggleTheme(themeBtn);
-      bounce(themeBtn.querySelector(isDark() ? '.icon-moon' : '.icon-sun'));
+    settingsBtn.addEventListener('click', function () {
+      bounce(settingsBtn.querySelector('[data-icon]'));
+      openSettings();
+    });
+    sheet.addEventListener('change', function (e) {
+      if (e.target.matches('[data-set-snow]')) setSnow(e.target.checked);
     });
     desktopBtn.addEventListener('click', openDesktop);
 
@@ -1774,13 +2126,13 @@
       if (state.desktopOpen) return; // Desktop Mode has its own shortcuts
       if (e.target && e.target.closest && e.target.closest('#chat-root')) return; // typing in the chat
       if (e.key === 'Escape') {
-        if (state.sheetGame) { closeSheet(); return; }
+        if (sheetIsOpen()) { closeSheet(); return; }
         if (state.searchOpen) { closeSearch(); return; }
       }
       trapFocus(e);
       var tag = document.activeElement && document.activeElement.tagName;
       var typing = tag === 'INPUT' || tag === 'TEXTAREA';
-      if (!typing && !state.sheetGame && (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'))) {
+      if (!typing && !sheetIsOpen() && (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'))) {
         e.preventDefault();
         openSearch();
       }
@@ -1825,13 +2177,14 @@
 
   function start() {
     fillIcons(document);
-    setThemeAttr(isDark() ? 'dark' : 'light');
+    applyThemeAttrs(themeChoice());
     $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
     drawWallpaper();
     requestAnimationFrame(function () { document.documentElement.classList.add('wallpaper-ready'); });
 
     renderFeatured();
+    updateChristmas();
     renderChips($('home-chips'));
     renderChips($('search-chips'));
     renderHome(true);

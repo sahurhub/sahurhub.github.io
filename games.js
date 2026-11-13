@@ -23,8 +23,8 @@
 */
 window.SAHURHUB_GAMES = [
   {
-    // The game files are on the Oracle server (/var/www/sahurhub-games), because
-    // they are too big for GitHub uploads from this PC.
+    // games/f1-simulator/ shows the game full screen. Its files are on the Oracle
+    // server (/var/www/sahurhub-games) because they are too big for this repo.
     id: "f1-simulator",
     title: "F1 Simulator",
     category: "Racing",
@@ -32,7 +32,7 @@ window.SAHURHUB_GAMES = [
     description: "Race the 2026 Formula 1 cars around Monza in 3D. Keyboard or controller.",
     icon: "car",
     colors: ["#e10600", "#1e1e2a"],
-    url: "https://games-79-72-86-205.sslip.io/f1-simulator/",
+    url: "games/f1-simulator/",
     featured: true,
     isNew: true
   },

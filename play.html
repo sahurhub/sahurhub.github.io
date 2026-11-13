@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SahurHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b10; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    .msg { height: 100%; display: grid; place-content: center; gap: 14px; text-align: center; padding: 16px; }
+    .msg a { color: #0a84ff; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <!-- Plays an opsec from games.js full screen while the address stays on SahurHub.
+       Only opsecs listed in games.js can be opened here: play.html?g=<id> -->
+  <script src="games.js?v=20261113"></script>
+  <script>
+    (function () {
+      var id = new URLSearchParams(location.search).get('g');
+      var list = Array.isArray(window.SAHURHUB_GAMES) ? window.SAHURHUB_GAMES : [];
+      var g = list.filter(function (x) { return x && x.id === id; })[0];
+      var url = g && typeof g.url === 'string' ? g.url.trim() : '';
+      if (!url || /^(javascript|data|vbscript):/i.test(url)) {
+        document.body.innerHTML = '<div class="msg"><p>That opsec could not be found.</p><p><a href="./">Back to SahurHub</a></p></div>';
+        return;
+      }
+      document.title = g.title + ' - SahurHub';
+      var frame = document.createElement('iframe');
+      frame.src = new URL(url, location.href).href;
+      frame.title = g.title;
+      frame.setAttribute('allow', 'fullscreen; gamepad; autoplay; pointer-lock; clipboard-write');
+      frame.setAttribute('allowfullscreen', '');
+      frame.addEventListener('load', function () { frame.focus(); });
+      document.body.appendChild(frame);
+    })();
+  </script>
+</body>
+</html>

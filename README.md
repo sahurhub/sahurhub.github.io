@@ -32,6 +32,8 @@ Messages are deleted after 90 days. The database is copied to `~/sahurhub-chat/b
 | `styles.css` | Colors, sizes, fonts and animations (light and dark colors are at the top) |
 | `app.js` | Search, filters, favorites, recently played, the tab bar lens and the glass effect |
 | `games.js` | The list of games (the only file you normally edit) |
+| `play.html` | Plays a game full screen on SahurHub (used when a visitor picks "Open in: SahurHub") |
+| `covers/` | Cover pictures for games (landscape 16:9, set with `cover` in `games.js`) |
 | `countdown.js` | The "next up" school countdown. The school times are the list at the very top of this file |
 | `chat.js`, `chat.css` | SahurHub Chat: the chat window (the live copies are on the chat server, see above) |
 | `desktop.js`, `desktop.css` | Desktop Mode: the Mac-style desktop with the magnifying Dock. Only loaded when someone opens it |

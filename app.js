@@ -8,7 +8,13 @@
   'use strict';
 
   var LIQUID_GLASS_URL = 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
-  var KEYS = { theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent' };
+  var KEYS = { theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent', openMode: 'sahurhub.openMode' };
+  // Where Play opens a game. Each visitor picks one in a game's details (remembered).
+  var OPEN_MODES = [
+    { id: 'blank', label: 'about:blank' },
+    { id: 'site', label: 'SahurHub' },
+    { id: 'tab', label: 'New tab' }
+  ];
   var MAX_RECENT = 12;
   var SPRING = 'cubic-bezier(.34, 1.56, .64, 1)';
   var EASE_OUT = 'cubic-bezier(.22, 1, .36, 1)';
@@ -158,6 +164,8 @@
   // ---------------------------------------------------------------------------
 
   var COLOR_RE = /^#[0-9a-f]{3,8}$/i;
+  // Covers must be picture files in this repository (same site keeps the glass effect working).
+  var COVER_RE = /^[a-z0-9_\-.\/]+\.(png|jpe?g|webp|gif|avif)$/i;
 
   function safeUrl(url) {
     if (!url || typeof url !== 'string') return '';
@@ -180,7 +188,8 @@
         c1: COLOR_RE.test(colors[0]) ? colors[0] : '#5ac8fa',
         c2: COLOR_RE.test(colors[1]) ? colors[1] : '#5856d6',
         url: safeUrl(g.url),
-        newTab: !!g.newTab,
+        cover: COVER_RE.test(String(g.cover || '')) ? String(g.cover) : '',
+        newTabOnly: !!g.newTabOnly,
         featured: !!g.featured,
         isNew: !!g.isNew
       };
@@ -203,6 +212,12 @@
 
   function artStyle(g) { return '--c1:' + g.c1 + ';--c2:' + g.c2; }
 
+  // A game's picture: its cover art if it has one, otherwise its icon.
+  function coverImg(g, cls) {
+    return '<img class="' + cls + '" src="' + escapeHtml(g.cover) + '" alt="" decoding="async" draggable="false">';
+  }
+  function gameArt(g) { return g.cover ? coverImg(g, 'cover') : glyph(g.icon); }
+
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
@@ -216,8 +231,10 @@
     sheetGame: null,
     desktopOpen: false,
     favorites: storage.get(KEYS.favorites, []).filter(function (id) { return BY_ID[id]; }),
-    recent: storage.get(KEYS.recent, []).filter(function (r) { return r && BY_ID[r.id]; })
+    recent: storage.get(KEYS.recent, []).filter(function (r) { return r && BY_ID[r.id]; }),
+    openMode: storage.get(KEYS.openMode, 'blank')
   };
+  if (!OPEN_MODES.some(function (m) { return m.id === state.openMode; })) state.openMode = 'blank';
 
   function isFavorite(id) { return state.favorites.indexOf(id) !== -1; }
 
@@ -557,9 +574,13 @@
     var badges = '';
     if (g.isNew) badges += '<span class="badge badge-new">NEW</span>';
     if (!g.url) badges += '<span class="badge">SOON</span>';
+    // Play button on the picture: shows on hover and goes straight into the game.
+    var playBtn = g.url
+      ? '<button class="card-play" type="button" data-play="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml('Play ' + g.title) + '">' + uiIcon('play') + '</button>'
+      : '';
     card.innerHTML =
       '<button class="card-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', ' + g.category + '. Open details') + '"></button>' +
-      '<div class="card-art">' + glyph(g.icon) + '</div>' +
+      '<div class="card-art">' + gameArt(g) + playBtn + '</div>' +
       '<div class="card-body">' +
         '<h3 class="card-title"></h3>' +
         '<div class="card-meta"><span>' + escapeHtml(g.category) + '</span>' + badges + '</div>' +
@@ -654,10 +675,11 @@
     var g = GAMES.filter(function (x) { return x.featured; })[0];
     if (!g) { slot.innerHTML = ''; return; }
     slot.innerHTML =
-      '<article class="featured" style="' + artStyle(g) + '">' +
+      '<article class="featured' + (g.cover ? ' has-cover' : '') + '" style="' + artStyle(g) + '">' +
+        (g.cover ? coverImg(g, 'featured-cover') : '') +
         '<span class="featured-shine" aria-hidden="true"></span>' +
         '<button class="featured-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', featured opsec. Open details') + '"></button>' +
-        '<div class="featured-art">' + glyph(g.icon) + '</div>' +
+        (g.cover ? '' : '<div class="featured-art">' + glyph(g.icon) + '</div>') +
         '<div class="featured-text">' +
           '<p class="featured-kicker">FEATURED</p>' +
           '<h2 class="featured-title">' + escapeHtml(g.title) + '</h2>' +
@@ -691,7 +713,7 @@
     row.innerHTML = items.map(function (r) {
       var g = BY_ID[r.id];
       return '<button class="mini" type="button" data-open="' + escapeHtml(g.id) + '" style="' + artStyle(g) + '" aria-label="' + escapeHtml(g.title + ', played ' + timeAgo(r.t)) + '">' +
-        '<div class="mini-art">' + glyph(g.icon) + '</div>' +
+        '<div class="mini-art">' + gameArt(g) + '</div>' +
         '<div class="mini-title">' + escapeHtml(g.title) + '</div>' +
         '<div class="mini-meta">' + escapeHtml(timeAgo(r.t)) + '</div>' +
       '</button>';
@@ -721,7 +743,7 @@
     listEl.innerHTML = state.recent.map(function (r) {
       var g = BY_ID[r.id];
       return '<button class="list-row" type="button" data-open="' + escapeHtml(g.id) + '" style="' + artStyle(g) + '">' +
-        '<span class="list-icon">' + glyph(g.icon) + '</span>' +
+        '<span class="list-icon">' + gameArt(g) + '</span>' +
         '<span class="list-text"><span class="list-title">' + escapeHtml(g.title) + '</span>' +
         '<span class="list-sub">' + escapeHtml(g.category + ' · ' + timeAgo(r.t)) + '</span></span>' +
         '<span class="list-chev">' + uiIcon('chevron') + '</span>' +
@@ -1201,8 +1223,67 @@
       showToast(g.title + ' is coming soon');
       return;
     }
-    if (g.newTab) window.open(g.url, '_blank', 'noopener');
-    else window.location.href = g.url;
+    var url = new URL(g.url, location.href).href;
+    var mode = g.newTabOnly ? 'tab' : state.openMode;
+    if (mode === 'site') {
+      // Games in this repository open directly. Others play inside play.html,
+      // so the address stays on SahurHub.
+      location.href = new URL(url).origin === location.origin ? url : 'play.html?g=' + encodeURIComponent(g.id);
+      return;
+    }
+    if (mode === 'blank') { openInBlank(url); return; }
+    window.open(url, '_blank', 'noopener');
+  }
+
+  // Opens a new about:blank tab with the game filling it, so the address bar
+  // only says about:blank.
+  function openInBlank(url) {
+    var w = window.open('about:blank', '_blank');
+    if (!w) { showToast('Your browser blocked the new tab. Allow pop-ups for SahurHub.'); return; }
+    try {
+      // Built element by element: document.write would change the tab's
+      // address from about:blank to SahurHub's.
+      var d = w.document;
+      var viewport = d.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width, initial-scale=1';
+      d.head.appendChild(viewport);
+      var style = d.createElement('style');
+      style.textContent = 'html,body{margin:0;height:100%;overflow:hidden;background:#000}' +
+        'iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}';
+      d.head.appendChild(style);
+      var frame = d.createElement('iframe');
+      frame.src = url;
+      frame.setAttribute('allow', 'fullscreen; gamepad; autoplay; pointer-lock; clipboard-write');
+      frame.setAttribute('allowfullscreen', '');
+      frame.addEventListener('load', function () { try { frame.focus(); } catch (e) { /* ignore */ } });
+      d.body.appendChild(frame);
+      w.opener = null;
+    } catch (e) {
+      w.location.href = url;
+    }
+  }
+
+  function setOpenMode(id) {
+    var mode = OPEN_MODES.filter(function (m) { return m.id === id; })[0];
+    if (!mode || id === state.openMode) return;
+    state.openMode = id;
+    storage.set(KEYS.openMode, id);
+    document.querySelectorAll('[data-open-mode]').forEach(function (btn) {
+      btn.setAttribute('aria-pressed', btn.getAttribute('data-open-mode') === id ? 'true' : 'false');
+    });
+    document.dispatchEvent(new CustomEvent('sahurhub:openmode', { detail: id }));
+    showToast('Opsecs now open in ' + mode.label);
+  }
+
+  function openModeChoice(g) {
+    if (g.newTabOnly) return '<p class="open-mode open-mode-note">This opsec always opens in a new tab.</p>';
+    return '<div class="open-mode"><span class="open-mode-label" id="open-mode-label">Open in</span>' +
+      '<div class="seg" role="group" aria-labelledby="open-mode-label">' +
+      OPEN_MODES.map(function (m) {
+        return '<button class="seg-btn" type="button" data-open-mode="' + m.id + '" aria-pressed="' + (m.id === state.openMode) + '">' + escapeHtml(m.label) + '</button>';
+      }).join('') +
+      '</div></div>';
   }
 
   // ---------------------------------------------------------------------------
@@ -1243,7 +1324,7 @@
     sheet.style.removeProperty('translate');
     var tags = [g.category].concat(g.tags);
     sheetBody.innerHTML =
-      '<div class="sheet-art">' + glyph(g.icon) + '</div>' +
+      '<div class="sheet-art">' + gameArt(g) + '</div>' +
       '<h2 class="sheet-title" id="sheet-title">' + escapeHtml(g.title) + '</h2>' +
       '<div class="sheet-sub"><span>' + escapeHtml(g.category) + '</span>' +
         (g.isNew ? '<span class="badge badge-new">NEW</span>' : '') +
@@ -1253,7 +1334,8 @@
       '<div class="sheet-actions">' +
         '<button class="btn btn-primary" type="button" data-play="' + escapeHtml(g.id) + '"><span data-icon="play">' + uiIcon('play') + '</span>Play</button>' +
         '<button class="btn btn-tinted btn-fav" type="button" data-fav-sheet="' + escapeHtml(g.id) + '"></button>' +
-      '</div>';
+      '</div>' +
+      (g.url ? openModeChoice(g) : '');
     syncSheetFav();
     sheetBody.scrollTop = 0;
     sheet.inert = false;
@@ -1488,6 +1570,9 @@
     favorites: function () { return state.favorites.slice(); },
     recent: function () { return state.recent.slice(); },
     play: function (id) { playGame(BY_ID[id]); },
+    openModes: OPEN_MODES,
+    getOpenMode: function () { return state.openMode; },
+    setOpenMode: setOpenMode,
     isDark: isDark,
     setTheme: setTheme,
     toggleTheme: toggleTheme,
@@ -1520,6 +1605,9 @@
       }
       return;
     }
+
+    var modeBtn = target.closest('[data-open-mode]');
+    if (modeBtn) { setOpenMode(modeBtn.getAttribute('data-open-mode')); return; }
 
     var play = target.closest('[data-play]');
     if (play) { playGame(BY_ID[play.getAttribute('data-play')]); return; }
@@ -1609,7 +1697,7 @@
     content.addEventListener('pointerleave', function () { if (hoverTilt) { endTilt(hoverTilt); hoverTilt = null; } });
     content.addEventListener('pointerdown', function (e) {
       var card = e.target.closest('.card');
-      if (card && !e.target.closest('.fav-btn')) card.classList.add('is-pressed');
+      if (card && !e.target.closest('.fav-btn, .card-play')) card.classList.add('is-pressed');
     });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
       content.addEventListener(type, function () {

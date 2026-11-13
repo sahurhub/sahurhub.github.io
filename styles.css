@@ -296,6 +296,21 @@ h1, h2, h3, p { margin: 0; }
   translate: calc(var(--px) * -16px) calc(var(--py) * -12px);
 }
 .featured-art .glyph { animation: float 6s ease-in-out infinite; }
+/* Banner with cover art: the picture fills it, darkened on the left so the text stays readable. */
+.featured-cover {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.featured.has-cover::before {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.22) 55%, transparent 80%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent 60%);
+}
 .featured-text { position: relative; max-width: 540px; pointer-events: none; translate: calc(var(--px) * 6px) calc(var(--py) * 4px); }
 .featured-kicker { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; opacity: 0.9; }
 .featured-title {
@@ -426,6 +441,70 @@ h1, h2, h3, p { margin: 0; }
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.22));
   transition: transform 0.6s var(--spring);
 }
+/* Cover art fills whatever spot it is in; the middle always stays visible. */
+.cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition: transform 0.6s var(--spring);
+}
+.card.is-tilting .card-art .cover { transform: scale(1.06); }
+
+/* Play button on a card's picture. With a mouse it appears on hover; on touch
+   screens it always shows, smaller, in the corner. */
+.card-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out);
+}
+.card-play {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #111;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.25s var(--ease-out), transform 0.45s var(--spring);
+}
+.card-play .ico { width: 26px; height: 26px; margin-left: 3px; }
+.card-play:focus-visible { opacity: 1; transform: scale(1); outline-offset: 3px; }
+@media (hover: hover) {
+  .card:hover .card-play { opacity: 1; transform: scale(1); }
+  .card:hover .card-art::after { opacity: 1; }
+  .card .card-play:hover { transform: scale(1.08); }
+}
+@media (hover: none) {
+  .card-play {
+    left: auto;
+    top: auto;
+    right: 10px;
+    bottom: 10px;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    opacity: 1;
+    transform: none;
+  }
+  .card-play .ico { width: 18px; height: 18px; margin-left: 2px; }
+}
+.card .card-play:active { transform: scale(0.86); transition-duration: 0.1s; }
+
 .card-body { padding: 12px 14px 14px; }
 .card-title {
   font-size: 17px;
@@ -546,6 +625,7 @@ mark {
 @media (hover: hover) {
   .mini:hover .mini-art { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
   .mini:hover .mini-art .glyph { transform: scale(1.1) rotate(-6deg); }
+  .mini:hover .mini-art .cover { transform: scale(1.08); }
 }
 .mini-title { margin-top: 8px; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-meta { font-size: 12px; color: var(--label-2); }
@@ -583,6 +663,8 @@ mark {
 .list-row:active { background: var(--fill); }
 @media (hover: hover) { .list-row:hover { background: var(--fill); } }
 .list-icon {
+  position: relative;
+  overflow: hidden;
   flex: none;
   width: 44px;
   height: 44px;
@@ -1040,6 +1122,37 @@ html.lg-ready #sheet::after {
 }
 .sheet-actions { display: flex; gap: 10px; margin-top: 22px; }
 .sheet-actions .btn { flex: 1; height: 50px; border-radius: 25px; font-size: 17px; }
+
+/* "Open in: about:blank / SahurHub / New tab" choice under Play. */
+.open-mode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--label-2);
+}
+.open-mode-note { text-align: center; }
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fill);
+}
+.seg-btn {
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--label);
+  transition: background-color 0.2s, box-shadow 0.2s, transform 0.3s var(--spring);
+}
+.seg-btn[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.16); }
+.seg-btn:active { transform: scale(0.94); }
+@media (hover: hover) { .seg-btn:not([aria-pressed="true"]):hover { background: var(--fill); } }
 
 /* ---------- Toast ---------- */
 

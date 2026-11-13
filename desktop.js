@@ -69,7 +69,13 @@ const folderSvg = (back, front, shine) =>
 const DOC_SVG = '<svg viewBox="0 0 52 64" aria-hidden="true"><path d="M6 4h28l12 12v42a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z" fill="#fff"/><path d="M34 4v9a3 3 0 0 0 3 3h9Z" fill="#d6d9e1"/><g stroke="#b6bbc7" stroke-width="2.4" stroke-linecap="round"><path d="M11 26h28M11 33h28M11 40h28M11 47h17"/></g></svg>';
 
 function gameIcon(g, extraClass = '') {
-  return `<span class="dt-icon dt-icon-game ${extraClass}" style="--c1:${g.c1};--c2:${g.c2}">${H.glyph(g.icon)}</span>`;
+  const art = g.cover ? coverImg(g) : H.glyph(g.icon);
+  return `<span class="dt-icon dt-icon-game ${extraClass}" style="--c1:${g.c1};--c2:${g.c2}">${art}</span>`;
+}
+
+// A game's cover art (games.js "cover"), filling its spot.
+function coverImg(g) {
+  return `<img class="dt-cover" src="${esc(g.cover)}" alt="" decoding="async" draggable="false">`;
 }
 
 // ---------------------------------------------------------------------------
@@ -833,7 +839,7 @@ function openGame(g, fromItem, fromEl) {
     from: fromEl || (item ? item.el : dockItem('apps').el),
     body: `
       <div class="dt-game" style="--c1:${g.c1};--c2:${g.c2}">
-        <div class="dt-game-hero">${gameIcon(g, 'dt-game-icon')}</div>
+        <div class="dt-game-hero">${g.cover ? coverImg(g) : gameIcon(g, 'dt-game-icon')}</div>
         <div class="dt-game-info">
           <h2>${esc(g.title)}</h2>
           <p class="dt-game-meta">${esc(g.category)}${g.isNew ? ' · New' : ''}${g.url ? '' : ' · Coming soon'}</p>
@@ -843,6 +849,7 @@ function openGame(g, fromItem, fromEl) {
             <button class="dt-btn dt-btn-primary" type="button" data-act="play">${H.icon('play')}Play</button>
             <button class="dt-btn dt-fav" type="button" data-act="fav"></button>
           </div>
+          ${openModeChoice(g)}
         </div>
       </div>`,
     onMount: (w) => {
@@ -854,10 +861,23 @@ function openGame(g, fromItem, fromEl) {
       };
       w.sync();
       w.el.querySelector('[data-act="play"]').addEventListener('click', () => H.play(g.id));
+      const mode = w.el.querySelector('[data-act="mode"]');
+      if (mode) mode.addEventListener('change', () => H.setOpenMode(mode.value));
       fav.addEventListener('click', () => H.toggleFavorite(g.id, fav.querySelector('svg')));
     }
   });
 }
+
+// "Open in" choice (about:blank / SahurHub / New tab), shared with the normal site.
+function openModeChoice(g) {
+  if (!g.url || g.newTabOnly || !H.openModes) return '';
+  const current = H.getOpenMode();
+  const options = H.openModes.map((m) => `<option value="${m.id}"${m.id === current ? ' selected' : ''}>${esc(m.label)}</option>`).join('');
+  return `<label class="dt-open-mode">Open in <select data-act="mode">${options}</select></label>`;
+}
+document.addEventListener('sahurhub:openmode', (e) => {
+  document.querySelectorAll('.dt-open-mode select').forEach((s) => { s.value = e.detail; });
+});
 
 // SahurHub Chat in a window (the same chat as on the normal site)
 let chatOpening = false;

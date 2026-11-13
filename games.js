@@ -15,7 +15,15 @@
     url         where the Play button goes. Leave it as "" while the game is not ready
                 (the site then says "coming soon"). Can be a folder in this repository,
                 for example "games/sky-runner/", or a full web address.
-    newTab      true to open the game in a new browser tab instead of the same one
+                Each visitor picks how games open in a game's details: about:blank
+                (the default), on SahurHub (play.html), or a new tab.
+    newTabOnly  true for a game whose site refuses to be shown inside another page;
+                it then always opens in a normal new tab.
+    cover       optional cover picture, for example "covers/snowball-rush.jpg" (a file
+                in the covers folder of this repository). Use a landscape 16:9 picture,
+                1920 x 1080 or at least 1280 x 720, with the main thing in the middle:
+                small spots (like the Recently Played row) only show the middle square.
+                Without a cover the card shows the icon and colors instead.
     featured    true for the game shown in the big banner at the top (pick one)
     isNew       true to show a "NEW" badge
 
@@ -32,7 +40,21 @@ window.SAHURHUB_GAMES = [
     icon: "car",
     colors: ["#e10600", "#1e1e2a"],
     url: "games/f1-simulator/",
+    cover: "covers/f1-simulator.jpg",
     featured: true,
+    isNew: true
+  },
+  {
+    // Runs on Google Apps Script; it allows being shown inside other pages.
+    id: "snowball-rush",
+    title: "Snowball Rush",
+    category: "Simulator",
+    tags: ["snow", "snowball", "simulator", "race", "pets", "upgrades", "3d", "winter"],
+    description: "Train your snowball, race it down the hill and hatch pets. Unlock the Spooky and Candy worlds.",
+    icon: "bubbles",
+    colors: ["#7fd8ff", "#2f6bff"],
+    url: "https://script.google.com/macros/s/AKfycbx6X9zeQagijDw4FZseqyrK8oMfDFWXzqFlO9WmKt4LOByaZ2ZxRH6igxqgcSet7KQe/exec",
+    cover: "covers/snowball-rush.jpg",
     isNew: true
   },
   {

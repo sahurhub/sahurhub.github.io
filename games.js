@@ -58,6 +58,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // A Unity game hosted on jsDelivr (with Playgama ads); it allows being shown
+    // inside other pages.
+    id: "military-strike",
+    title: "Military Strike",
+    category: "Action",
+    tags: ["military", "shooter", "fps", "guns", "army", "war", "sniper", "3d"],
+    description: "A 3D first-person shooter. Pick your loadout, earn XP and unlock new guns like snipers and machine guns.",
+    icon: "target",
+    colors: ["#6b7a3a", "#252a17"],
+    url: "https://cdn.jsdelivr.net/gh/maureenbev/service@c3ee9113a0cc37adb1e8e329fed4398ecb285142/lib/ms.svg",
+    cover: "covers/military-strike.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

@@ -712,11 +712,17 @@
     block.hidden = items.length === 0;
     row.innerHTML = items.map(function (r) {
       var g = BY_ID[r.id];
-      return '<button class="mini" type="button" data-open="' + escapeHtml(g.id) + '" style="' + artStyle(g) + '" aria-label="' + escapeHtml(g.title + ', played ' + timeAgo(r.t)) + '">' +
-        '<div class="mini-art">' + gameArt(g) + '</div>' +
+      // Like a card: an invisible button opens details, the Play button on the
+      // picture goes straight into the game.
+      var playBtn = g.url
+        ? '<button class="mini-play" type="button" data-play="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml('Play ' + g.title) + '">' + uiIcon('play') + '</button>'
+        : '';
+      return '<div class="mini" style="' + artStyle(g) + '">' +
+        '<button class="mini-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', played ' + timeAgo(r.t) + '. Open details') + '"></button>' +
+        '<div class="mini-art">' + gameArt(g) + playBtn + '</div>' +
         '<div class="mini-title">' + escapeHtml(g.title) + '</div>' +
         '<div class="mini-meta">' + escapeHtml(timeAgo(r.t)) + '</div>' +
-      '</button>';
+      '</div>';
     }).join('');
   }
 

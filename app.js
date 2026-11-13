@@ -21,6 +21,18 @@
     { id: 'dark', label: 'Dark' },
     { id: 'christmas', label: 'Christmas' }
   ];
+  // Christmas snow amount (Settings > Theme, when Christmas is picked).
+  var SNOW_LEVELS = [
+    { id: 'off', label: 'Off', mult: 0 },
+    { id: 'light', label: 'Light', mult: 0.5 },
+    { id: 'medium', label: 'Medium', mult: 1 },
+    { id: 'heavy', label: 'Heavy', mult: 1.9 },
+    { id: 'blizzard', label: 'Blizzard', mult: 3.2 }
+  ];
+  function snowLevelFrom(saved) {
+    if (saved === 'off') return 'off';
+    return SNOW_LEVELS.some(function (l) { return l.id === saved; }) ? saved : 'medium'; // older "on" = medium
+  }
   var GLASS_MODES = [
     { id: 'simple', label: 'Simple', desc: 'See-through and fast. Best for slower devices.' },
     { id: 'liquid', label: 'Liquid glass', desc: 'Bends the page like real glass. Needs a faster device.' }
@@ -256,7 +268,7 @@
     settingsOpen: false,
     // Simple glass is the default; the head script in index.html reads the same key.
     glass: storage.getRaw(KEYS.glass) === 'liquid' ? 'liquid' : 'simple',
-    snow: storage.getRaw(KEYS.snow) !== 'off'
+    snowLevel: snowLevelFrom(storage.getRaw(KEYS.snow))
   };
   if (!OPEN_MODES.some(function (m) { return m.id === state.openMode; })) state.openMode = 'blank';
 
@@ -522,15 +534,13 @@
         [0.5, 0.48, 0.4, [80, 60, 220, 0.3]]
       ]
     },
-    // A winter night: deep green and navy with red, green and warm gold glows.
+    // Deep Christmas-tree green, a little lighter near the top.
     christmas: {
-      base: ['#050d1c', '#04140d'],
+      base: ['#10402f', '#0b3124'],
       blobs: [
-        [0.08, 0.08, 0.55, [215, 30, 55, 0.5]],
-        [0.92, 0.2, 0.5, [20, 150, 80, 0.48]],
-        [0.8, 0.88, 0.6, [200, 25, 45, 0.36]],
-        [0.1, 0.92, 0.5, [25, 130, 75, 0.42]],
-        [0.55, 0.42, 0.38, [255, 190, 90, 0.16]]
+        [0.5, 0.04, 0.65, [48, 122, 86, 0.3]],
+        [0.06, 0.96, 0.5, [5, 30, 21, 0.45]],
+        [0.94, 0.96, 0.5, [5, 30, 21, 0.45]]
       ]
     }
   };
@@ -589,7 +599,7 @@
     root.setAttribute('data-theme', look.dark ? 'dark' : 'light');
     if (look.christmas) root.setAttribute('data-skin', 'christmas'); else root.removeAttribute('data-skin');
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', look.christmas ? '#06110c' : look.dark ? '#05060c' : '#eef1fb');
+    if (meta) meta.setAttribute('content', look.christmas ? '#0e3a2a' : look.dark ? '#05060c' : '#eef1fb');
   }
 
   function onThemeChanged() {
@@ -641,7 +651,14 @@
   var lightsEl = null;
   // Fewer flakes and 30 frames a second on slower devices.
   var lowEndDevice = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
-  var snow = { canvas: null, ctx: null, sprite: null, flakes: [], frame: 0, last: 0, t: 0, w: 0, h: 0, skip: false };
+  // Snow falls behind the page. It flows around the pointer, and a click throws
+  // out a puff of extra flakes (kept in snow.extra until they land).
+  var snow = {
+    canvas: null, ctx: null, sprite: null, flakes: [], extra: [], frame: 0, last: 0, t: 0, w: 0, h: 0, skip: false,
+    px: 0, py: 0, pvx: 0, pvy: 0, pOn: false, pT: 0
+  };
+  var SNOW_PUSH_RADIUS = 110;  // pixels around the pointer that flakes are pushed out of
+  var MAX_EXTRA_FLAKES = 400;  // most click-puff flakes at once
 
   function christmasLine() {
     var now = new Date();
@@ -690,16 +707,25 @@
     lightsEl.innerHTML = '<svg class="wire" width="' + w + '" height="' + (sag * 2 + 4) + '"><path d="' + path + '"/></svg>' + bulbs;
   }
 
+  function snowMult() {
+    var level = SNOW_LEVELS.filter(function (l) { return l.id === state.snowLevel; })[0];
+    return level ? level.mult : 1;
+  }
+
   function updateSnow() {
-    var want = isChristmas() && state.snow && !reduceMotion() && !state.desktopOpen;
+    var want = isChristmas() && snowMult() > 0 && !reduceMotion() && !state.desktopOpen;
     if (want) startSnow(); else stopSnow();
   }
 
-  function setSnow(on) {
-    state.snow = !!on;
-    storage.setRaw(KEYS.snow, on ? 'on' : 'off');
+  function setSnowLevel(id) {
+    var level = SNOW_LEVELS.filter(function (l) { return l.id === id; })[0];
+    if (!level || id === state.snowLevel) return;
+    state.snowLevel = id;
+    storage.setRaw(KEYS.snow, id);
+    if (snow.canvas) sizeSnow();
     updateSnow();
-    showToast(on ? 'Snow on' : 'Snow off');
+    syncSettings();
+    showToast(id === 'off' ? 'Snow off' : 'Snow: ' + level.label);
   }
 
   function snowSprite() {
@@ -721,7 +747,9 @@
       x: Math.random() * w,
       y: anywhere ? Math.random() * h : -8 - Math.random() * 40,
       r: r,
-      vy: 16 + r * 10 + Math.random() * 12,
+      fall: 16 + r * 10 + Math.random() * 12, // normal falling speed
+      vx: 0, // extra speed from the pointer or a click puff; fades out
+      vy: 0,
       sway: 6 + Math.random() * 20,
       freq: 0.4 + Math.random() * 0.8,
       phase: Math.random() * 6.3,
@@ -736,13 +764,52 @@
     snow.canvas.width = w;
     snow.canvas.height = h;
     if (snow.w && snow.h) {
-      snow.flakes.forEach(function (f) { f.x *= w / snow.w; f.y *= h / snow.h; });
+      snow.flakes.concat(snow.extra).forEach(function (f) { f.x *= w / snow.w; f.y *= h / snow.h; });
     }
-    var count = Math.round(clamp(w * h / 9000, 30, 150) * (lowEndDevice ? 0.55 : 1));
+    // The amount follows Settings (Light to Blizzard); slow devices get about half.
+    var count = Math.round(clamp(w * h / 9000, 30, 150) * snowMult() * (lowEndDevice ? 0.55 : 1));
+    count = Math.min(count, 480);
     while (snow.flakes.length < count) snow.flakes.push(newFlake(w, h, true));
     snow.flakes.length = count;
     snow.w = w;
     snow.h = h;
+  }
+
+  function moveAndDrawFlakes(list, isExtra, dt, fade) {
+    var ctx = snow.ctx;
+    var w = snow.w;
+    var h = snow.h;
+    var R = SNOW_PUSH_RADIUS;
+    var R2 = R * R;
+    for (var i = list.length - 1; i >= 0; i--) {
+      var f = list[i];
+      if (snow.pOn) {
+        var dx = f.x - snow.px;
+        var dy = f.y - snow.py;
+        var d2 = dx * dx + dy * dy;
+        if (d2 < R2 && d2 > 1) {
+          // Push the flake away from the pointer (stronger when closer), and let
+          // a moving pointer drag nearby flakes along with it.
+          var d = Math.sqrt(d2);
+          var k = 1 - d / R;
+          var push = k * k * 1500 * dt;
+          f.vx += (dx / d) * push + snow.pvx * k * 2.5 * dt;
+          f.vy += (dy / d) * push + snow.pvy * k * 2.5 * dt;
+        }
+      }
+      f.vx *= fade;
+      f.vy *= fade;
+      f.y += (f.fall + f.vy) * dt;
+      f.x += (Math.sin(snow.t * f.freq + f.phase) * f.sway + f.vx) * dt;
+      if (f.y - f.r * 2 > h) {
+        if (isExtra) { list.splice(i, 1); continue; } // puff flakes melt when they land
+        list[i] = f = newFlake(w, h, false);
+      }
+      if (f.x < -10) f.x = w + 10; else if (f.x > w + 10) f.x = -10;
+      var s = f.r * 4;
+      ctx.globalAlpha = f.a;
+      ctx.drawImage(snow.sprite, f.x - s / 2, f.y - s / 2, s, s);
+    }
   }
 
   function snowFrame(now) {
@@ -751,21 +818,63 @@
     var dt = snow.last ? Math.min(0.05, (now - snow.last) / 1000) : 0.016;
     snow.last = now;
     snow.t += dt;
-    var ctx = snow.ctx;
-    var w = snow.w;
-    var h = snow.h;
-    ctx.clearRect(0, 0, w, h);
-    for (var i = 0; i < snow.flakes.length; i++) {
-      var f = snow.flakes[i];
-      f.y += f.vy * dt;
-      f.x += Math.sin(snow.t * f.freq + f.phase) * f.sway * dt;
-      if (f.y - f.r * 2 > h) { snow.flakes[i] = f = newFlake(w, h, false); }
-      if (f.x < -10) f.x = w + 10; else if (f.x > w + 10) f.x = -10;
-      var s = f.r * 4;
-      ctx.globalAlpha = f.a;
-      ctx.drawImage(snow.sprite, f.x - s / 2, f.y - s / 2, s, s);
+    snow.ctx.clearRect(0, 0, snow.w, snow.h);
+    var fade = Math.exp(-2.6 * dt); // pushed flakes settle back to normal in about a second
+    snow.pvx *= Math.exp(-8 * dt);
+    snow.pvy *= Math.exp(-8 * dt);
+    moveAndDrawFlakes(snow.flakes, false, dt, fade);
+    moveAndDrawFlakes(snow.extra, true, dt, fade);
+    snow.ctx.globalAlpha = 1;
+  }
+
+  // A click throws out a puff of snow that drifts down like the rest.
+  function spawnSnow(x, y) {
+    var n = lowEndDevice ? 14 : 26;
+    for (var i = 0; i < n; i++) {
+      var f = newFlake(snow.w, snow.h, false);
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 60 + Math.random() * 230;
+      f.x = x;
+      f.y = y;
+      f.vx = Math.cos(angle) * speed;
+      f.vy = Math.sin(angle) * speed - 70; // a little upward
+      snow.extra.push(f);
     }
-    ctx.globalAlpha = 1;
+    if (snow.extra.length > MAX_EXTRA_FLAKES) snow.extra.splice(0, snow.extra.length - MAX_EXTRA_FLAKES);
+  }
+
+  function onSnowPointerMove(e) {
+    var now = performance.now();
+    if (snow.pOn && snow.pT) {
+      var secs = Math.max(8, now - snow.pT) / 1000;
+      snow.pvx = snow.pvx * 0.6 + ((e.clientX - snow.px) / secs) * 0.4;
+      snow.pvy = snow.pvy * 0.6 + ((e.clientY - snow.py) / secs) * 0.4;
+    }
+    snow.px = e.clientX;
+    snow.py = e.clientY;
+    snow.pT = now;
+    snow.pOn = true;
+  }
+  function onSnowPointerDown(e) {
+    if (sheetIsOpen() || state.desktopOpen) return;
+    if (e.target && e.target.closest && e.target.closest('#chat-root, #sheet, .nu-panel')) return;
+    snow.px = e.clientX;
+    snow.py = e.clientY;
+    snow.pT = performance.now();
+    snow.pOn = true;
+    spawnSnow(e.clientX, e.clientY);
+  }
+  function onSnowPointerUp(e) { if (e.pointerType !== 'mouse') snow.pOn = false; }
+  function onSnowPointerGone() { snow.pOn = false; snow.pvx = snow.pvy = 0; }
+
+  function snowListeners(on) {
+    var fn = on ? 'addEventListener' : 'removeEventListener';
+    window[fn]('pointermove', onSnowPointerMove, { passive: true });
+    window[fn]('pointerdown', onSnowPointerDown, { passive: true });
+    window[fn]('pointerup', onSnowPointerUp, { passive: true });
+    window[fn]('pointercancel', onSnowPointerUp, { passive: true });
+    window[fn]('blur', onSnowPointerGone);
+    document.documentElement[fn]('mouseleave', onSnowPointerGone);
   }
 
   function startSnow() {
@@ -774,20 +883,25 @@
       snow.canvas = document.createElement('canvas');
       snow.canvas.id = 'snow';
       snow.canvas.setAttribute('aria-hidden', 'true');
-      app.appendChild(snow.canvas);
+      // Right after the wallpaper, so the snow falls behind the page.
+      wallpaper.after(snow.canvas);
       snow.ctx = snow.canvas.getContext('2d');
       snow.sprite = snow.sprite || snowSprite();
     }
     sizeSnow();
     snow.last = 0;
+    snowListeners(true);
     snow.frame = requestAnimationFrame(snowFrame);
   }
 
   function stopSnow() {
     if (snow.frame) cancelAnimationFrame(snow.frame);
     snow.frame = 0;
+    snowListeners(false);
+    snow.pOn = false;
     if (snow.canvas) { snow.canvas.remove(); snow.canvas = null; snow.ctx = null; }
     snow.flakes = [];
+    snow.extra = [];
     snow.w = snow.h = 0;
   }
 
@@ -807,9 +921,14 @@
               '<span class="theme-name">' + escapeHtml(t.label) + '</span></button>';
           }).join('') +
         '</div>' +
-        '<label class="set-row" id="snow-row"' + (theme === 'christmas' ? '' : ' hidden') + '>' +
-          '<span>Falling snow</span><input class="switch" type="checkbox" data-set-snow' + (state.snow ? ' checked' : '') + '>' +
-        '</label>' +
+        '<div class="set-snow" id="snow-row"' + (theme === 'christmas' ? '' : ' hidden') + '>' +
+          '<span class="set-snow-label" id="snow-label">Snow</span>' +
+          '<div class="seg seg-full" role="group" aria-labelledby="snow-label">' +
+            SNOW_LEVELS.map(function (l) {
+              return '<button class="seg-btn" type="button" data-snow-level="' + l.id + '" aria-pressed="' + (l.id === state.snowLevel) + '">' + escapeHtml(l.label) + '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
       '</section>' +
       '<section class="set-group">' +
         '<h3 class="set-title" id="set-glass">Glass</h3>' +
@@ -838,8 +957,7 @@
     sheetBody.querySelectorAll('[data-set-glass]').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-set-glass') === state.glass)); });
     var row = $('snow-row');
     if (row) row.hidden = theme !== 'christmas';
-    var sw = sheetBody.querySelector('[data-set-snow]');
-    if (sw) sw.checked = state.snow;
+    sheetBody.querySelectorAll('[data-snow-level]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-snow-level') === state.snowLevel)); });
   }
 
   function openSettings() {
@@ -1962,6 +2080,9 @@
     var glassOpt = target.closest('[data-set-glass]');
     if (glassOpt) { setGlass(glassOpt.getAttribute('data-set-glass')); return; }
 
+    var snowOpt = target.closest('[data-snow-level]');
+    if (snowOpt) { setSnowLevel(snowOpt.getAttribute('data-snow-level')); return; }
+
     var play = target.closest('[data-play]');
     if (play) { playGame(BY_ID[play.getAttribute('data-play')]); return; }
 
@@ -2063,9 +2184,6 @@
     settingsBtn.addEventListener('click', function () {
       bounce(settingsBtn.querySelector('[data-icon]'));
       openSettings();
-    });
-    sheet.addEventListener('change', function (e) {
-      if (e.target.matches('[data-set-snow]')) setSnow(e.target.checked);
     });
     desktopBtn.addEventListener('click', openDesktop);
 

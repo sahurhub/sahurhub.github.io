@@ -1228,63 +1228,26 @@ html.lg-ready #sheet::after {
   background:
     radial-gradient(circle, #fff 0 1.3px, transparent 1.9px) 3px 2px / 17px 15px,
     radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.5px) 11px 9px / 23px 19px,
-    radial-gradient(70% 70% at 15% 15%, rgba(215, 30, 55, 0.85), transparent),
-    radial-gradient(70% 70% at 90% 90%, rgba(20, 150, 80, 0.85), transparent),
-    #051410;
+    radial-gradient(60% 60% at 50% 0%, rgba(60, 140, 100, 0.7), transparent),
+    linear-gradient(160deg, #124a36, #0b3124);
 }
 .theme-name { font-size: 13.5px; font-weight: 650; }
 .glass-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .glass-opt { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; text-align: left; }
 .glass-opt-name { font-size: 15px; font-weight: 700; }
 .glass-opt-desc { font-size: 13px; line-height: 1.35; color: var(--label-2); }
-.set-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-  padding: 11px 14px;
-  border-radius: 16px;
-  background: var(--fill);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.switch {
-  -webkit-appearance: none;
-  appearance: none;
-  flex: none;
-  position: relative;
-  width: 48px;
-  height: 29px;
-  margin: 0;
-  border-radius: 15px;
-  background: var(--fill-strong);
-  cursor: pointer;
-  transition: background-color 0.25s;
-}
-.switch::before {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-  transition: transform 0.35s var(--spring);
-}
-.switch:checked { background: #34c759; }
-.switch:checked::before { transform: translateX(19px); }
+/* Snow amount (shown under the themes when Christmas is picked) */
+.set-snow { margin-top: 12px; }
+.set-snow-label { display: block; margin: 0 4px 8px; font-size: 14px; font-weight: 650; }
 .seg-full { display: flex; width: 100%; }
-.seg-full .seg-btn { flex: 1; padding: 9px 6px; }
+.seg-full .seg-btn { flex: 1; min-width: 0; padding: 9px 4px; }
 #sheet.is-settings .sheet-body { padding-bottom: 26px; }
 @media (max-width: 400px) {
   .theme-grid { gap: 7px; }
   .theme-opt { padding: 6px 6px 8px; }
   .theme-name { font-size: 12.5px; }
   .glass-opts { grid-template-columns: 1fr; }
+  .seg-full .seg-btn { font-size: 12.5px; padding: 9px 2px; }
 }
 
 /* ---------- Toast ---------- */
@@ -1512,27 +1475,32 @@ body.ready #nextup { translate: 0 0; }
    the string lights (#xmas-lights) and the "days to go" line. */
 
 :root[data-skin="christmas"] {
-  --bg: #06100c;
+  --bg: #0e3a2a;
+  --label-2: rgba(226, 242, 234, 0.68);
+  --label-3: rgba(226, 242, 234, 0.36);
   --accent: #ff4553;
   --heart: #ff4d6d;
   --mark: rgba(255, 69, 83, 0.3);
-  --card: rgba(16, 30, 24, 0.8);
-  --card-border: rgba(255, 255, 255, 0.09);
-  --edge: rgba(6, 16, 12, 0.86);
+  --card: rgba(30, 82, 61, 0.62);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --fill: rgba(150, 210, 180, 0.12);
+  --fill-strong: rgba(150, 210, 180, 0.2);
+  --edge: rgba(14, 58, 42, 0.9);
   --pill: #e5303d;
   --pill-text: #ffffff;
-  --glass-simple: rgba(20, 40, 30, 0.78);
-  --panel-solid: rgba(14, 28, 22, 0.97);
-  --sheet-tint: rgba(12, 26, 19, 0.6);
+  --glass-simple: rgba(22, 70, 51, 0.82);
+  --glass-simple-edge: rgba(255, 255, 255, 0.12);
+  --panel-solid: rgba(16, 56, 41, 0.97);
+  --sheet-tint: rgba(14, 50, 37, 0.6);
 }
 
-/* Falling snow: above the page, below the buttons and panels. */
+/* Falling snow: just above the wallpaper, behind everything else on the page. */
 #snow {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 20;
+  z-index: 0;
   display: block;
   pointer-events: none;
 }

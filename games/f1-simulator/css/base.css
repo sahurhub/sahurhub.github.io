@@ -1,0 +1,40 @@
+:root {
+  --bg: #0b0b0d;
+  --panel: #15151a;
+  --panel-2: #1d1d24;
+  --line: #2b2b35;
+  --text: #f1f1f4;
+  --dim: #9a9aa8;
+  --red: #e10600;
+  --red-2: #ff2a1f;
+  --green: #2bd66a;
+  --purple: #b453ff;
+  --yellow: #ffd12e;
+  --font: 'Titillium Web', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; user-select: none; }
+button, select, input { font-family: inherit; }
+.hidden { display: none !important; }
+#game { position: fixed; inset: 0; }
+.game-canvas { width: 100%; height: 100%; display: block; }
+#ui { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+#hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+
+#loading { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: radial-gradient(1200px 700px at 30% 20%, #23070a 0%, #0b0b0d 60%); }
+.loading-box { width: min(560px, 86vw); }
+.loading-title { font-weight: 900; font-style: italic; font-size: 44px; letter-spacing: 2px; }
+.loading-what { color: var(--dim); margin: 6px 0 14px; min-height: 22px; }
+.loading-bar { height: 6px; background: #26262e; overflow: hidden; }
+#loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--red), var(--red-2)); transition: width .2s; }
+.loading-tip { margin-top: 22px; color: #c9c9d4; font-size: 15px; line-height: 1.45; border-left: 3px solid var(--red); padding-left: 12px; }
+
+.btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); padding: 11px 20px; font-size: 16px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; cursor: pointer; transition: background .12s, border-color .12s, transform .08s; }
+.btn:hover { background: #2a2a34; border-color: #4a4a58; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--red); border-color: var(--red); }
+.btn.primary:hover { background: var(--red-2); border-color: var(--red-2); }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+::-webkit-scrollbar { width: 10px; } ::-webkit-scrollbar-thumb { background: #33333f; } ::-webkit-scrollbar-track { background: #121216; }

@@ -1,0 +1,90 @@
+{
+  "id": "2026",
+  "label": "2026 regulations: active aero, 50/50 hybrid power",
+  "years": [2026],
+  "sources": [
+    "https://www.formula1.com/en/latest/article/fia-unveils-formula-1-regulations-for-2026-and-beyond-featuring-more-agile.75qJiYOHXgeJqsVQtDr2UB",
+    "https://www.formula1.com/en/latest/article/2026-regulations-explained-all-you-need-to-know-about-f1s-new-power-units.14jfv7a36905uDJDdNyfQd",
+    "https://f1chronicle.com/mgu-k-rampdown-explained"
+  ],
+  "official": {
+    "_comment": "Figures taken from the published rules.",
+    "minMassKg": 768,
+    "wheelbaseMaxMm": 3400,
+    "widthMaxMm": 1900,
+    "rimInch": 18,
+    "frontTyreNarrowerMm": 25,
+    "rearTyreNarrowerMm": 30,
+    "iceKw": 400,
+    "mgukKw": 350,
+    "mgukFullPowerToKph": 290,
+    "mgukZeroAtKph": 355,
+    "overtakeFullPowerToKph": 337,
+    "harvestPerLapMj": 8.5,
+    "halo": true,
+    "drs": false,
+    "activeAero": true,
+    "forwardGears": 8
+  },
+  "physics": {
+    "_comment": "Values below are this game's tuning. They are estimates chosen so lap times and speeds land near the real cars. They are not published figures.",
+    "mass": 768,
+    "fuelStart": 12,
+    "wheelbase": 3.4,
+    "trackFront": 1.60,
+    "trackRear": 1.54,
+    "cgHeight": 0.26,
+    "weightFront": 0.455,
+    "yawInertia": 980,
+    "wheelRadius": 0.355,
+    "wheelInertia": 1.25,
+    "steerLock": 0.34,
+    "rollStiffFront": 0.56,
+    "aero": {
+      "clA": 3.55, "cdA": 1.0, "balance": 0.41,
+      "straight": { "clA": 1.55, "cdA": 0.56, "balance": 0.43 },
+      "switchTime": 0.25
+    },
+    "engine": {
+      "cylinders": 6, "layout": "V6 turbo hybrid",
+      "iceKw": 400, "mgukKw": 350,
+      "idleRpm": 4000, "launchRpm": 7200, "shiftRpm": 11900, "maxRpm": 12600,
+      "torqueCurve": [[3000, 0.55], [5000, 0.74], [7000, 0.90], [8500, 0.98], [9500, 1.0], [12600, 1.0]],
+      "peakTorqueNm": 372,
+      "engineBrakeBase": 28, "engineBrakePerRpm": 0.0042,
+      "inertia": 0.06,
+      "efficiency": 0.955,
+      "batteryMj": 4.0, "harvestPerLapMj": 8.5, "regenKw": 350, "clipKw": 200,
+      "deployFullToKph": 290, "deployZeroAtKph": 355,
+      "overtakeFullToKph": 337, "overtakeZeroAtKph": 355
+    },
+    "gearbox": {
+      "ratios": [12.85, 10.03, 8.23, 6.98, 6.06, 5.44, 4.94, 4.50],
+      "shiftTime": 0.025
+    },
+    "brakes": { "maxTorque": 15400, "bias": 0.62 },
+    "diff": { "lock": 220 },
+    "tyre": {
+      "peakSlipRatio": 0.09, "peakSlipAngleDeg": 6.5, "shape": 1.4,
+      "loadNominal": 3200, "loadSensitivity": 0.07,
+      "rollingResistance": 0.012
+    }
+  },
+  "tyres": {
+    "supplier": "Pirelli",
+    "compounds": {
+      "soft":   { "label": "Soft",   "color": "#ff3333", "mu": 2.30, "wear": 1.55, "optTemp": 96,  "window": 26 },
+      "medium": { "label": "Medium", "color": "#ffd12e", "mu": 2.25, "wear": 1.00, "optTemp": 100, "window": 28 },
+      "hard":   { "label": "Hard",   "color": "#f0f0f0", "mu": 2.19, "wear": 0.66, "optTemp": 104, "window": 30 },
+      "inter":  { "label": "Intermediate", "color": "#43b02a", "mu": 1.60, "wear": 1.2, "optTemp": 75, "window": 30 },
+      "wet":    { "label": "Full Wet", "color": "#0067ad", "mu": 1.45, "wear": 1.0, "optTemp": 60, "window": 32 }
+    }
+  },
+  "sporting": {
+    "points": [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
+    "fastestLapPoint": false,
+    "sprintPoints": [8, 7, 6, 5, 4, 3, 2, 1],
+    "qualifying": { "format": "knockout", "segments": [ { "name": "Q1", "minutes": 18, "eliminated": 6 }, { "name": "Q2", "minutes": 15, "eliminated": 6 }, { "name": "Q3", "minutes": 12, "eliminated": 0 } ] },
+    "gridSize": 22
+  }
+}

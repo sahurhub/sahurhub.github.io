@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><title>Car viewer</title>
+<style>html,body{margin:0;height:100%;background:#20232a;overflow:hidden}#v{position:fixed;inset:0}</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+</head>
+<body><div id="v"></div>
+<script type="module">
+// Test page: shows one car model with its moving parts, so wheels and wing flaps can be checked.
+// Use from the console: await view.show('cadillac', { aero: 1, spin: 0.5, steer: 0.2, from: [4, 1.2, -1] })
+import * as THREE from 'three';
+import { Engine } from '../src/render/engine.js';
+import { CarLibrary } from '../src/cars/carVisual.js';
+const engine = new Engine(document.getElementById('v'), 'high');
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x55595f, roughness: 0.9 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; engine.scene.add(ground);
+const lib = new CarLibrary({ year: 2026 });
+await lib.init();
+let car = null;
+const fake = { x: 0, z: 0, psi: 0, pitch: 0, roll: 0, heave: 0, rumble: 0, dist: 0, steer: 0, aeroK: 0, wheelAngle: [0, 0, 0, 0] };
+window.view = {
+  async show(team, { aero = 0, spin = 0, steer = 0, from = [4.5, 1.4, 2.5], at = [0, 0.4, 0], fov = 40, player = true } = {}) {
+    if (car) engine.scene.remove(car.group);
+    car = await lib.make({ model: team, color: '#888' }, player, engine.q);
+    engine.scene.add(car.group);
+    fake.aeroK = aero; fake.steer = steer; fake.wheelAngle = [spin, spin, spin, spin];
+    car._aeroShown = -1;
+    car.update(fake, null);
+    engine.camera.position.set(...from); engine.camera.lookAt(...at); engine.camera.fov = fov; engine.camera.updateProjectionMatrix();
+    engine.focus(0, 0); engine.render();
+    return { flaps: car.flaps.map((f) => f.node.name), wheels: car.wheels.map((w) => w.name + ' ' + w.quaternion.toArray().map((v) => v.toFixed(3)).join(',')) };
+  },
+  set(o) { Object.assign(fake, o); if ('spin' in o) fake.wheelAngle = [o.spin, o.spin, o.spin, o.spin]; car._aeroShown = -1; car.update(fake, null); engine.render(); },
+  cam(from, at, fov = 40) { engine.camera.position.set(...from); engine.camera.lookAt(...at); engine.camera.fov = fov; engine.camera.updateProjectionMatrix(); engine.render(); },
+  engine, lib,
+};
+// keep drawing so screenshots always get a fresh frame
+(function loop() { engine.render(); requestAnimationFrame(loop); })();
+window.viewReady = true;
+</script>
+</body></html>

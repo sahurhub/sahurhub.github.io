@@ -14,7 +14,7 @@ Open `countdown.js`. The `SCHOOL_DAY` list at the top has one line per period, w
 
 ## SahurHub Chat
 
-The Chat button opens a Discord-style chat. The window is `chat.js` and `chat.css`, which the live site loads from the chat server (`~/sahurhub-chat/client`), so the chat can be updated without republishing this site. The copies in this folder are used by the local preview. The chat server runs on the Oracle server in `~/sahurhub-chat` as the user service `sahurhub-chat`, behind Caddy at https://chat-79-72-86-205.sslip.io. A copy of the server code is kept on the PC in the `sahurhub-chat-server` folder.
+The Chat button opens a Discord-style chat. The window is `chat.js` and `chat.css`, which the live site loads from the chat server (`~/sahurhub-chat/client`), so the chat can be updated without republishing this site. The copies in this folder are used by the local preview. The chat server runs on the Oracle server in `~/sahurhub-chat` as the user service `sahurhub-chat`, behind Caddy at https://chat-79-72-86-205.nip.io. A copy of the server code is kept on the PC in the `sahurhub-chat-server` folder.
 
 Owner commands, run on the server in `~/sahurhub-chat`:
 

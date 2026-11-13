@@ -1,0 +1,57 @@
+{
+  "id": "monza",
+  "name": "Autodromo Nazionale Monza",
+  "shortName": "Monza",
+  "country": "Italy",
+  "grandPrix": "Italian Grand Prix",
+  "configuration": "Grand Prix circuit 2000-present",
+  "validFrom": 2000,
+  "lengthM": 5793,
+  "turns": 11,
+  "direction": "clockwise",
+  "raceLaps": 53,
+  "centerline": "monza.centerline.json",
+  "model": "../../assets/tracks/monza/monza.glb",
+  "sources": [
+    "3D circuit: 'Autodromo Nazionale Monza Circuit 2020 layout' by Tyler_Dave on Sketchfab (labelled CC Attribution; appears to be extracted from Assetto Corsa)",
+    "Centre line, widths, heights, banking, kerbs, run-off and barriers measured from that model, aligned to the TUMFTM racetrack-database centre line (LGPL-3.0)",
+    "Straight mode zones and overtake detection: FIA 2026 Italian Grand Prix circuit configuration (reported by GPFans and PlanetF1)",
+    "https://en.wikipedia.org/wiki/Monza_Circuit"
+  ],
+  "records": {
+    "raceLap": { "time": "1:20.901", "driver": "Lando Norris", "year": 2025 },
+    "outright": { "time": "1:18.792", "driver": "Max Verstappen", "year": 2025, "note": "pole lap, fastest average-speed lap in F1 history" },
+    "pole2026": { "time": "1:21.786", "driver": "Pierre Gasly" }
+  },
+  "approximations": [
+    "Exact start and end metres of the four straight mode zones are not published; they are placed from corner exit to the braking area as the FIA describes them.",
+    "Sector lines are estimated.",
+    "Grid slot spacing is the standard 8 m; the slots may not line up exactly with the boxes painted in the 3D model."
+  ],
+  "startLineS": 360,
+  "startLights": { "east": 29.35, "north": 360.09, "height": 4.76 },
+  "gridPoleSide": "left",
+  "gridFirstSlotM": 10,
+  "gridSpacingM": 8,
+  "sectors": [1860, 3570],
+  "corners": [
+    { "n": 1, "name": "Variante del Rettifilo", "s": 550 },
+    { "n": 2, "name": "Variante del Rettifilo", "s": 615 },
+    { "n": 3, "name": "Curva Grande", "s": 990 },
+    { "n": 4, "name": "Variante della Roggia", "s": 1770 },
+    { "n": 5, "name": "Variante della Roggia", "s": 1830 },
+    { "n": 6, "name": "Lesmo 1", "s": 2190 },
+    { "n": 7, "name": "Lesmo 2", "s": 2520 },
+    { "n": 8, "name": "Variante Ascari", "s": 3585 },
+    { "n": 9, "name": "Variante Ascari", "s": 3685 },
+    { "n": 10, "name": "Variante Ascari", "s": 3780 },
+    { "n": 11, "name": "Curva Alboreto (Parabolica)", "s": 4910 }
+  ],
+  "straightModeZonesNote": "FIA 2026: Zone 1 start/finish line to Turn 1; Zone 2 Curva Grande exit to Roggia; Zone 3 Lesmo 2 exit to Ascari; Zone 4 Ascari exit to Parabolica. Metres auto-fitted to corner braking points at load time when 'autoFit' is true.",
+  "straightModeZones": [[0, 420], [1150, 1660], [2610, 3450], [3870, 4640]],
+  "overtakeDetectionS": 4600,
+  "overtakeActivationS": 5160,
+  "barriers": { "default": 8, "cornerRunoff": { "slow": 42, "medium": 26, "fast": 16 }, "overrides": [] },
+  "pitLane": { "side": "right", "entryS": 5210, "exitS": 380, "laneOffset": 9, "laneWidth": 12, "speedLimitKph": 80 },
+  "scenery": { "theme": "model" }
+}

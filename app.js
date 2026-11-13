@@ -1414,7 +1414,7 @@
   // updated without republishing this site). The local preview uses the
   // copies in this folder.
   var CHAT_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  var CHAT_FILES = CHAT_LOCAL ? './' : 'https://chat-79-72-86-205.sslip.io/client/';
+  var CHAT_FILES = CHAT_LOCAL ? './' : 'https://chat-79-72-86-205.nip.io/client/';
   var chatModule = null;
   var chatLoading = null;
   var chatInfo = { mentions: 0, unread: false, status: 'idle', signedIn: false };

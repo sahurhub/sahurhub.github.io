@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Physics test bench</title></head>
+<body style="background:#111;color:#ccc;font-family:monospace">
+<p>Physics test bench. Runs the simulation without graphics, as fast as the PC allows.</p>
+<p>Open the console and try: <code>await bench.setup(); bench.runTT(100, 3)</code> or <code>bench.runRace(3, 80)</code></p>
+<script type="module">
+  import { loadTrack } from '../src/track/track.js';
+  import { computeRacingLine, computeSpeedProfile, profileLapTime } from '../src/track/racingLine.js';
+  import { Vehicle, makeSpec, profileCar, PHYSICS_DT } from '../src/physics/vehicle.js';
+  import { RaceSession } from '../src/race/session.js';
+  import { AI_TUNING } from '../src/ai/aiDriver.js';
+
+  const B = { loadTrack, computeRacingLine, computeSpeedProfile, profileLapTime, Vehicle, makeSpec, profileCar, PHYSICS_DT, RaceSession, AI_TUNING };
+
+  /** Try a change to the car's numbers without saving it: f(physics, compounds, aiTuning). */
+  B.tryIt = function (label, f, laps = 4, diff = 100) {
+    const save = JSON.stringify(B.regs), cal = AI_TUNING.gripCal;
+    f(B.regs.physics, B.regs.tyres.compounds, AI_TUNING);
+    const r = B.runTT(diff, laps);
+    B.regs = JSON.parse(save); AI_TUNING.gripCal = cal;
+    const last = r.laps[r.laps.length - 1] || {};
+    return { label, laps: r.laps.map((l) => l.lap + (l.valid ? '' : '*')).join(' '), sectors: last.sectors, mins: r.cornerMinKph, top: r.topKph, off: r.offTrackSeconds, resets: r.resets, lat: r.maxLatG, brk: r.maxBrakeG, soc: r.soc, energyMJ: r.energy, temps: r.laps.map((l) => l.temps).join(' | '), wear: last.wear };
+  };
+
+  B.setup = async function (circuit = 'monza', year = 2026) {
+    B.regs = await (await fetch(`/data/regulations/${year}.json`)).json();
+    B.season = await (await fetch(`/data/seasons/${year}.json`)).json();
+    B.track = await loadTrack(circuit);
+    B.line = computeRacingLine(B.track);
+    return true;
+  };
+
+  B.profile = function (perf = 1, grip = 1) {
+    const spec = makeSpec(B.regs, { perf });
+    const prof = computeSpeedProfile(B.track, B.line, profileCar(spec), grip);
+    const mins = B.track.meta.corners.map((c) => Math.round(Math.min(...Array.from({ length: 70 }, (_, k) => prof[B.track.idx(c.s - 70 + k * 2)])) * 3.6));
+    return { lap: profileLapTime(B.line, prof).toFixed(2), mins: mins.join(',') };
+  };
+
+  /** Hot laps by the AI alone. Returns lap times and what the car did. */
+  B.runTT = function (difficulty = 100, laps = 3, driver = 'antonelli', opts = {}) {
+    const { track, line, regs, season } = B;
+    const ses = new RaceSession({ track, line, regs, season, mode: 'timetrial', playerDriverId: driver, seed: 7, fuel: 5, ...opts });
+    ses.autopilot(true, difficulty);
+    const car = ses.player, veh = car.veh;
+    const mins = track.meta.corners.map(() => 999);
+    let top = 0, offT = 0, maxLatG = 0, maxBrakeG = 0, maxAccG = 0, socMin = 1, socMax = 0, steps = 0, lastDone = 0;
+    let dep = 0, har = 0, lapsCounted = 1;
+    const lapsOut = [];
+    const t0 = performance.now();
+    while (car.lapsDone < laps && steps < 480 * 110 * (laps + 1)) {
+      ses.step(); steps++;
+      if (car.lapsDone >= 1) {
+        const s = veh.loc.s;
+        track.meta.corners.forEach((c, k) => { if (Math.abs(track.delta(s, c.s)) < 70 && veh.kph < mins[k]) mins[k] = veh.kph; });
+        if (veh.kph > top) top = veh.kph;
+        if (veh.offWheels >= 3) offT += 1 / 480;
+        maxLatG = Math.max(maxLatG, Math.abs(veh.ayF) / 9.81);
+        maxBrakeG = Math.max(maxBrakeG, -veh.axF / 9.81);
+        maxAccG = Math.max(maxAccG, veh.axF / 9.81);
+        const soc = veh.battery / 4e6; socMin = Math.min(socMin, soc); socMax = Math.max(socMax, soc);
+        dep += veh.deployKw / 480; har += veh.harvestKw / 480; lapsCounted = car.lapsDone;
+      }
+      if (car.lapsDone !== lastDone) {
+        lastDone = car.lapsDone;
+        lapsOut.push({ lap: car.lastLap.toFixed(3), valid: car.lastValid, sectors: car.lastSectors.map((x) => (x == null ? null : +x.toFixed(2))).join(' / '), temps: Array.from(veh.temp).map((t) => Math.round(t)).join(','), wear: Array.from(veh.wear).map((w) => +(w * 100).toFixed(1)).join(','), soc: (veh.battery / 4e6).toFixed(2) });
+      }
+    }
+    B.last = ses;
+    return { simSeconds: (steps / 480).toFixed(1), wallMs: Math.round(performance.now() - t0), laps: lapsOut, cornerMinKph: mins.map((m) => Math.round(m)).join(','), topKph: Math.round(top), offTrackSeconds: offT.toFixed(2), resets: car.resets, maxLatG: maxLatG.toFixed(2), maxBrakeG: maxBrakeG.toFixed(2), maxAccG: maxAccG.toFixed(2), soc: socMin.toFixed(2) + '..' + socMax.toFixed(2), gripUse: car.ai.gripUse.toFixed(3),
+      energy: `deploy ${(dep / 1000 / Math.max(1, laps - 1)).toFixed(1)} harvest ${(har / 1000 / Math.max(1, laps - 1)).toFixed(1)} per lap` };
+  };
+
+  /** Trace of the AI driving, one line every `every` seconds. */
+  B.trace = function (seconds = 16, every = 0.4, difficulty = 100, skip = 0) {
+    const { track, line, regs, season } = B;
+    const ses = new RaceSession({ track, line, regs, season, mode: 'timetrial', playerDriverId: 'antonelli', seed: 7, fuel: 5 });
+    ses.autopilot(true, difficulty);
+    const car = ses.player, veh = car.veh, c = car.ctl, log = [];
+    const n = Math.round(every * 480);
+    for (let k = 0; k < 480 * (seconds + skip); k++) {
+      ses.step();
+      if (k >= skip * 480 && k % n === 0) {
+        const i = veh.loc.i;
+        const dpsi = Math.atan2(Math.sin(veh.psi - track.psi[i]), Math.cos(veh.psi - track.psi[i])) * 57.3;
+        log.push(`t=${(k / 480).toFixed(1)} s=${veh.loc.s.toFixed(0)} d=${veh.loc.d.toFixed(2)} line=${line.off[i].toFixed(2)} kph=${veh.kph.toFixed(0)} vT=${(car.ai.profile[i] * 3.6).toFixed(0)} st=${c.steer.toFixed(2)} th=${c.throttle.toFixed(2)} br=${c.brake.toFixed(2)} g=${veh.gear} vy=${veh.vy.toFixed(2)} r=${veh.r.toFixed(3)} dpsi=${dpsi.toFixed(1)} ax=${(veh.axF / 9.81).toFixed(2)} ay=${(veh.ayF / 9.81).toFixed(2)} srF=${veh.slipR[0].toFixed(2)} srR=${veh.slipR[2].toFixed(2)} abs=${veh.absActive ? 1 : 0} tc=${veh.tcActive ? 1 : 0} surf=${Array.from(veh.surf).join('')} soc=${(veh.battery / 4e6).toFixed(2)} aero=${veh.aeroK.toFixed(1)}`);
+      }
+    }
+    return log;
+  };
+
+  /** Full-field race run by the AI. */
+  B.runRace = function (laps = 3, difficulty = 80, seed = 11) {
+    const { track, line, regs, season } = B;
+    const ses = new RaceSession({ track, line, regs, season, mode: 'race', laps, difficulty, playerDriverId: 'norris', playerGrid: 'mid', seed });
+    ses.autopilot(true, difficulty);
+    let steps = 0;
+    const t0 = performance.now();
+    while (ses.state !== 'finished' && steps < 480 * (110 * laps + 60)) { ses.step(); steps++; }
+    B.last = ses;
+    return {
+      simSeconds: (steps / 480).toFixed(1), wallMs: Math.round(performance.now() - t0), state: ses.state,
+      result: ses.classification().map((r) => `${r.pos}. ${r.driver.short} (${r.team.name}) grid ${r.grid} laps ${r.laps} best ${r.best ? r.best.toFixed(3) : '-'} gap ${r.gap == null ? '-' : r.gap.toFixed(2)} resets ${r.car.resets} off ${r.car.offTime.toFixed(1)}s top ${Math.round(r.car.topSpeed)}`),
+      events: ses.events.map((e) => `${e.t.toFixed(1)} ${e.text}`),
+    };
+  };
+
+  const PLAYER_ASSISTS = { tc: 2, abs: 1, steer: true, stability: true, autoGear: true, autoAero: true };
+  const toward = (v, t, step) => (Math.abs(t - v) <= step ? t : v + Math.sign(t - v) * step);
+
+  /**
+   * "Clumsy keyboard" test on an endless flat surface: reach a speed, then hold a key
+   * combination for 2.5 s and see whether the car stays under control.
+   * Returns the largest slide angle (degrees). Over about 25 means it spun.
+   */
+  B.hamTest = function (assists = PLAYER_ASSISTS, { temp = 95, wingsOpen = false, surface = 0 } = {}) {
+    const flat = { n: 1, ds: 1e9, length: 1e9, straightZone: [wingsOpen ? 1 : 0], psi: [0], x: [0], z: [0], nx: [1], nz: [0], tx: [0], tz: [1], wallL: [1e9], wallR: [1e9],
+      locate(px, pz, hint, out) { out.i = 0; out.s = 0; out.d = 0; return out; }, surfaceAt() { return surface; } };
+    const cases = { 'throttle+left': [1, 0, 1], 'lift+left': [0, 0, 1], 'brake+left': [0, 1, 1], 'throttle, left then right': [1, 0, 2] };
+    const out = {};
+    for (const [name, [th, br, mode]] of Object.entries(cases)) {
+      const row = [];
+      for (const kph of [60, 100, 150, 200, 250, 300]) {
+        const veh = new Vehicle(makeSpec(B.regs, { perf: 1 }));
+        Object.assign(veh.assist, assists);
+        veh.reset(0, 0, 0, kph / 3.6);
+        for (let i = 0; i < 4; i++) veh.temp[i] = temp;
+        const c = { steer: 0, throttle: 0, brake: 0, shift: 0, aero: false, boost: false };
+        let maxBeta = 0, t = 0, aLat = 0;
+        for (let k = 0; k < 480 * 2.5; k++) {
+          t = k / 480;
+          const tgt = mode === 2 ? (t < 0.7 ? 1 : -1) : 1;
+          if (k % 8 === 0) {
+            const dt = 1 / 60, fast = Math.min(veh.speed / 80, 1);
+            const rate = Math.sign(tgt) !== Math.sign(c.steer) && c.steer !== 0 ? 6.5 : 3.0 - 1.9 * fast;
+            c.steer = toward(c.steer, tgt, rate * dt);
+            c.throttle = toward(c.throttle, th, 5.5 * dt);
+            c.brake = toward(c.brake, br, 7 * dt);
+          }
+          veh.step(1 / 480, c, flat);
+          if (veh.speed > 8) maxBeta = Math.max(maxBeta, Math.abs(Math.atan2(veh.vy, Math.abs(veh.vx))) * 57.3);
+          aLat = Math.max(aLat, Math.abs(veh.ayF) / 9.81);
+        }
+        row.push(`${kph}: slide ${maxBeta.toFixed(0)} deg, ${aLat.toFixed(1)}g${maxBeta > 25 ? ' SPIN' : ''}`);
+      }
+      out[name] = row;
+    }
+    return out;
+  };
+
+  /**
+   * A robot that drives like a person on a keyboard: it knows the line (uses the AI's brain),
+   * but every control is either fully pressed or released, with the game's key smoothing.
+   */
+  B.runKeyboard = function (laps = 2, assists = PLAYER_ASSISTS, pace = 55) {
+    const { track, line, regs, season } = B;
+    const ses = new RaceSession({ track, line, regs, season, mode: 'timetrial', playerDriverId: 'norris', seed: 5, fuel: 6 });
+    ses.autopilot(true, pace);
+    const car = ses.player, veh = car.veh, brain = car.ai;
+    veh.assist = { ...veh.assist, ...assists };
+    const want = { steer: 0, throttle: 0, brake: 0, shift: 0 }, key = { steer: 0, throttle: 0, brake: 0 };
+    car.ai = { stuckT: 0, gripUse: brain.gripUse, update(dt, c, near, since) {
+      brain.update(dt, want, near, since);
+      const tgt = (want.steer > 0.3 ? 1 : 0) - (want.steer < -0.3 ? 1 : 0);
+      const fast = Math.min(veh.speed / 80, 1);
+      const rate = tgt === 0 ? 4.5 : Math.sign(tgt) !== Math.sign(key.steer) && key.steer !== 0 ? 6.5 : 3.0 - 1.9 * fast;
+      key.steer = toward(key.steer, tgt, rate * dt);
+      const acc = want.throttle > 0.3, brk = want.brake > 0.2;
+      key.throttle = toward(key.throttle, acc ? 1 : 0, (acc ? 5.5 : 9) * dt);
+      key.brake = toward(key.brake, brk ? 1 : 0, (brk ? 7 : 11) * dt);
+      c.steer = key.steer; c.throttle = key.throttle; c.brake = key.brake; c.boost = false; c.shift = 0;
+      this.stuckT = brain.stuckT;
+    } };
+    let steps = 0, spins = 0, spinning = false, offT = 0, lastDone = 0;
+    const lapsOut = [], where = [];
+    while (car.lapsDone < laps && steps < 480 * 140 * (laps + 1)) {
+      ses.step(); steps++;
+      const i = veh.loc.i;
+      const dpsi = Math.abs(Math.atan2(Math.sin(veh.psi - track.psi[i]), Math.cos(veh.psi - track.psi[i]))) * 57.3;
+      if (dpsi > 50 && !spinning) { spinning = true; spins++; where.push(Math.round(veh.loc.s)); }
+      if (dpsi < 15) spinning = false;
+      if (veh.offWheels >= 3) offT += 1 / 480;
+      if (car.lapsDone !== lastDone) { lastDone = car.lapsDone; lapsOut.push(car.lastLap.toFixed(2) + (car.lastValid ? '' : '*')); }
+    }
+    return { laps: lapsOut.join(' '), spins, spinAt: where.join(','), offTrackSeconds: offT.toFixed(1), resets: car.resets, simSeconds: (steps / 480).toFixed(0) };
+  };
+
+  window.bench = B;
+  window.benchReady = true;
+</script>
+</body>
+</html>

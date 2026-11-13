@@ -3,23 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>F1 Simulator - SahurHub</title>
-  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-  <style>
-    html, body { margin: 0; height: 100%; background: #0b0b10; overflow: hidden; }
-    iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
-  </style>
+  <title>F1 Simulator</title>
+  <meta name="description" content="Unofficial browser Formula 1 simulator. Fan project, not affiliated with Formula 1, the FIA or any team.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/hud.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <!-- The game's files (34 MB of 3D models) are too big for this repository's
-       uploads, so they live on the SahurHub server and show here full screen. -->
-  <iframe id="game" src="https://games-79-72-86-205.sslip.io/f1-simulator/" title="F1 Simulator"
-    allow="fullscreen; gamepad; autoplay; pointer-lock" allowfullscreen></iframe>
-  <script>
-    // Pass ?mute through, and give the game the keyboard straight away.
-    var f = document.getElementById('game');
-    if (location.search.indexOf('mute') !== -1) f.src += '?mute';
-    f.addEventListener('load', function () { f.focus(); });
-  </script>
+  <div id="game"></div>
+  <div id="hud" class="hidden"></div>
+  <div id="ui"></div>
+  <div id="loading" class="hidden">
+    <div class="loading-box">
+      <div class="loading-title">LOADING</div>
+      <div class="loading-what" id="loading-what">Preparing</div>
+      <div class="loading-bar"><div id="loading-fill"></div></div>
+      <div class="loading-tip" id="loading-tip"></div>
+    </div>
+  </div>
+  <noscript>This game needs JavaScript.</noscript>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

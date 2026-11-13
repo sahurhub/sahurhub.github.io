@@ -1,0 +1,131 @@
+#hud { font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.h-box { position: absolute; background: rgba(12,12,15,.78); border: 1px solid rgba(255,255,255,.09); }
+.h-top { left: 22px; top: 18px; display: flex; gap: 0; }
+.h-pos { padding: 6px 16px 8px; border-right: 1px solid rgba(255,255,255,.1); background: var(--red); }
+.h-pos .big { font-size: 40px; font-weight: 900; font-style: italic; line-height: 1; }
+.h-pos .big small { font-size: 17px; font-weight: 700; opacity: .85; }
+.h-pos .lbl, .h-lap .lbl { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; opacity: .85; }
+.h-lap { padding: 6px 16px 8px; }
+.h-lap .big { font-size: 40px; font-weight: 900; font-style: italic; line-height: 1; }
+.h-lap .big small { font-size: 17px; font-weight: 700; color: var(--dim); }
+
+.h-time { right: 22px; top: 18px; padding: 8px 14px 10px; min-width: 232px; }
+.h-time .cur { font-size: 34px; font-weight: 900; font-style: italic; line-height: 1.05; }
+.h-time .cur.bad { color: #ff7a72; }
+.h-time .row { display: flex; justify-content: space-between; gap: 18px; font-size: 14px; color: #c9c9d4; }
+.h-time .row b { color: #fff; }
+.h-secs { display: flex; gap: 4px; margin-top: 6px; }
+.h-secs span { flex: 1; text-align: center; font-size: 12px; font-weight: 700; padding: 2px 0; background: #2a2a33; color: #ddd; }
+.h-secs span.g { background: var(--green); color: #04220f; text-shadow: none; }
+.h-secs span.p { background: var(--purple); color: #fff; }
+.h-secs span.y { background: var(--yellow); color: #2b2200; text-shadow: none; }
+
+/* Timing tower in the TV-broadcast layout: lap header, then one row per car with position,
+   team colour chip, three-letter driver code, interval to the car ahead and tyre compound. */
+.tw { position: absolute; left: 22px; top: 92px; width: 198px; --rh: 27px; border-radius: 6px; overflow: hidden; text-shadow: none;
+  background: linear-gradient(180deg, rgba(25,25,31,.95), rgba(15,15,20,.9)); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.tw-head { padding: 9px 10px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.1); }
+.tw-event { font-size: 10px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #b9b9c6; }
+.tw-lap { font-size: 17px; letter-spacing: 1.2px; color: #d6d6de; margin-top: 2px; }
+.tw-lap b { color: #fff; font-weight: 900; font-size: 19px; }
+.tw-row { display: grid; grid-template-columns: 26px 16px 1fr auto 13px; align-items: center; gap: 7px; height: var(--rh); padding: 0 6px 0 5px; border-top: 1px solid rgba(255,255,255,.05); }
+.tw-row:nth-child(even) { background: rgba(255,255,255,.028); }
+.tw-pos { display: grid; place-items: center; height: calc(var(--rh) - 7px); border-radius: 3px; background: rgba(255,255,255,.08); color: #fff; font-weight: 700; font-size: 14px; }
+.tw-row.lead .tw-pos { background: var(--red); }
+.tw-chip { width: 16px; height: 11px; border-radius: 2px; transform: skewX(-14deg); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.tw-name { font-weight: 900; font-size: 16px; letter-spacing: .7px; color: #fff; }
+.tw-gap { font-size: 14px; font-weight: 600; color: #dcdce4; text-align: right; }
+.tw-tyre { font-size: 12px; font-weight: 900; text-align: center; }
+.tw-row.me { background: rgba(255,255,255,.17); box-shadow: inset 3px 0 0 #fff; }
+.tw-row.skip { border-top: 3px solid rgba(255,255,255,.3); } /* some positions are not shown above this row */
+
+/* Driver name banner */
+.bn { position: absolute; left: 22px; bottom: 190px; display: flex; align-items: stretch; min-width: 330px; height: 66px; --tc: #888; border-radius: 5px; overflow: hidden; text-shadow: none;
+  background: linear-gradient(90deg, rgba(20,20,26,.96), rgba(20,20,26,.84)); border-bottom: 3px solid var(--tc); opacity: 0; transform: translateX(-16px); transition: opacity .3s, transform .3s; }
+.bn.show { opacity: 1; transform: none; }
+.bn-pos { width: 54px; display: grid; place-items: center; font-size: 30px; font-weight: 900; color: #fff; background: rgba(255,255,255,.09); }
+.bn-mid { flex: 1; padding: 6px 14px 4px; line-height: 1.05; }
+.bn-first { font-size: 15px; color: #e4e4ea; }
+.bn-last { font-size: 25px; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; color: var(--tc); }
+.bn-team { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: #c6c6d0; margin-top: 2px; }
+.bn-num { display: grid; place-items: center; padding: 0 16px; font-size: 44px; font-weight: 900; font-style: italic; color: var(--tc); background: rgba(255,255,255,.05); }
+
+.h-map { right: 22px; top: 122px; background: rgba(12,12,15,.55); }
+.h-map canvas { display: block; }
+
+.h-dash { left: 50%; bottom: 20px; transform: translateX(-50%); width: 430px; padding: 10px 16px 12px; }
+.h-leds { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; }
+.h-leds i { width: 20px; height: 9px; background: #25252d; border-radius: 2px; }
+.h-leds i.g { background: #2bd66a; box-shadow: 0 0 8px #2bd66a; } .h-leds i.r { background: #ff2a1f; box-shadow: 0 0 8px #ff2a1f; } .h-leds i.b { background: #4aa8ff; box-shadow: 0 0 8px #4aa8ff; }
+.h-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 14px; }
+.h-speed { text-align: right; }
+.h-speed .v { font-size: 50px; font-weight: 900; font-style: italic; line-height: .95; }
+.h-speed .u, .h-rpm .u { font-size: 11px; letter-spacing: 1.6px; color: var(--dim); text-transform: uppercase; }
+.h-gear { font-size: 76px; font-weight: 900; font-style: italic; line-height: .82; min-width: 62px; text-align: center; color: #fff; }
+.h-rpm .v { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.h-pedals { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 9px; }
+.h-pedals i, .h-ers i { display: block; height: 6px; background: #25252d; overflow: hidden; }
+.h-pedals i b, .h-ers i b { display: block; height: 100%; width: 0; }
+.h-pedals .t b { background: var(--green); } .h-pedals .b b { background: var(--red-2); margin-left: auto; }
+.h-ers { display: grid; grid-template-columns: 52px 1fr 86px; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; }
+.h-ers i b { background: linear-gradient(90deg, #ffb300, #ffe45e); }
+.h-ers .st { text-align: right; font-weight: 700; }
+.h-ers .st.dep { color: #ffe45e; } .h-ers .st.har { color: #5ed0ff; }
+.h-badges { display: flex; gap: 6px; justify-content: center; margin-top: 9px; min-height: 20px; }
+.h-badges span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; padding: 2px 8px; background: #26262e; color: #6d6d7a; text-shadow: none; }
+.h-badges span.on { background: var(--green); color: #04220f; }
+.h-badges span.warn { background: var(--yellow); color: #2b2200; }
+.h-badges span.boost { background: #ffb300; color: #2b1c00; }
+
+.h-tyres { left: 22px; bottom: 20px; padding: 9px 12px 10px; }
+.h-tyres .hd { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--dim); margin-bottom: 7px; display: flex; gap: 8px; align-items: center; }
+.h-tyres .cmp { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--cc, #f33); font-size: 11px; font-weight: 900; color: #fff; }
+.h-tgrid { display: grid; grid-template-columns: 58px 58px; gap: 6px 14px; }
+.h-tyre { height: 54px; border-radius: 7px; border: 2px solid #555; display: grid; place-items: center; text-align: center; line-height: 1.1; background: #222; text-shadow: none; }
+.h-tyre .w { font-size: 16px; font-weight: 900; } .h-tyre .tp { font-size: 11px; font-weight: 600; opacity: .9; }
+
+.h-msg { left: 50%; top: 92px; transform: translateX(-50%); padding: 7px 20px; font-size: 19px; font-weight: 900; font-style: italic; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transition: opacity .25s; white-space: nowrap; }
+.h-msg.show { opacity: 1; }
+.h-msg.warn { background: var(--yellow); color: #231c00; text-shadow: none; }
+.h-msg.purple { background: var(--purple); }
+.h-msg.flag { background: #fff; color: #111; text-shadow: none; }
+.h-msg.start { background: var(--green); color: #04220f; text-shadow: none; }
+
+.h-lights, .h-wrong { position: absolute; }
+.h-lights { left: 50%; top: 20%; transform: translateX(-50%); display: flex; gap: 12px; padding: 14px 18px; background: rgba(8,8,10,.9); border-radius: 10px; }
+.h-lights i { width: 46px; height: 46px; border-radius: 50%; background: #2a0808; border: 2px solid #000; }
+.h-lights i.on { background: radial-gradient(circle at 40% 35%, #ff8a80, #ff0d00 55%, #a30000); box-shadow: 0 0 26px #ff1a0d; }
+.h-cam { right: 22px; bottom: 20px; padding: 5px 12px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; color: #c9c9d4; }
+.h-wrong { left: 50%; top: 40%; transform: translateX(-50%); padding: 10px 26px; font-size: 30px; font-weight: 900; font-style: italic; background: var(--red); }
+.h-fps { right: 22px; bottom: 54px; font-size: 12px; color: #c9c9d4; padding: 2px 8px; }
+/* Halo HUD (Halo / Halo Offset cameras), after the 2026 TV on-board graphics */
+.hh { position: absolute; left: 50%; bottom: 12vh; width: min(70vw, 1100px); transform: translateX(-50%); text-shadow: none; --tc: #27f4d2; }
+.hh.offset { left: 56%; }
+.hh-svg { width: 100%; height: auto; display: block; overflow: visible; font-family: var(--font); }
+.hh-band { fill: none; stroke: rgba(8, 24, 22, 0.62); stroke-width: 62; stroke-linecap: round; }
+.hh-edge { fill: none; stroke: var(--tc); stroke-opacity: .55; stroke-width: 1.5; }
+.hh-bar-bg { fill: none; stroke: rgba(255,255,255,.13); stroke-width: 9; }
+.hh-bar { fill: none; stroke-width: 9; }
+.hh-bar.brk { stroke: #ff3b30; } .hh-bar.thr { stroke: #36e07a; } .hh-bar.dep { stroke: #33e1c5; } .hh-bar.rch { stroke: #3fa8ff; }
+.hh-lab { fill: #e9f5f3; font-size: 13px; font-weight: 700; letter-spacing: 1.6px; }
+.hh-small { fill: #bfe6df; font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-anchor: middle; }
+.hh-tick { stroke: #dff; stroke-width: 2; }
+.hh-rpm-bg { fill: none; stroke: rgba(255,255,255,.12); stroke-width: 7; }
+.hh-rpm { fill: none; stroke: var(--tc); stroke-width: 7; }
+.hg-box { fill: rgba(255,255,255,.06); }
+.hg-num { fill: #cfe; font-size: 17px; font-weight: 700; text-anchor: middle; }
+[data-gear].on .hg-box { fill: #8bdc3a; } [data-gear].on .hg-num { fill: #0b1a07; }
+.hh-aero-l { fill: none; stroke: rgba(255,255,255,.25); stroke-width: 3; stroke-linecap: round; }
+.hh-aero.on .hh-aero-l { stroke: #36e07a; }
+.hh-aero.on .hh-lab { fill: #7dffb0; }
+.hh-name { fill: #fff; font-size: 26px; font-weight: 900; letter-spacing: 1px; }
+.hh-posbox { fill: #fff; }
+.hh-name2 { fill: #d7e8e5; font-size: 17px; font-weight: 700; letter-spacing: 1px; }
+.hh-dial { fill: rgba(6, 20, 19, .82); }
+.hh-dial-edge { fill: none; stroke: var(--tc); stroke-width: 3; }
+.hh-speed { fill: #fff; font-size: 44px; font-weight: 900; text-anchor: middle; }
+.hh-mph { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; }
+.hh-chip { fill: rgba(255,255,255,.08); stroke: rgba(255,255,255,.2); }
+.hh-chip.on { fill: #3ad36d; stroke: #3ad36d; }
+.hh-chip-t { fill: #e8f6f3; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-anchor: middle; }
+@media (max-width: 900px) { .tw, .bn { display: none; } .h-map { display: none; } }

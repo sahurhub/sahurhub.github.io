@@ -23,8 +23,7 @@
 */
 window.SAHURHUB_GAMES = [
   {
-    // games/f1-simulator/ shows the game full screen. Its files are on the Oracle
-    // server (/var/www/sahurhub-games) because they are too big for this repo.
+    // The game's files are in games/f1-simulator/ in this repository.
     id: "f1-simulator",
     title: "F1 Simulator",
     category: "Racing",

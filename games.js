@@ -23,6 +23,20 @@
 */
 window.SAHURHUB_GAMES = [
   {
+    // The game files are on the Oracle server (/var/www/sahurhub-games), because
+    // they are too big for GitHub uploads from this PC.
+    id: "f1-simulator",
+    title: "F1 Simulator",
+    category: "Racing",
+    tags: ["f1", "formula 1", "cars", "monza", "3d", "simulator", "racing"],
+    description: "Race the 2026 Formula 1 cars around Monza in 3D. Keyboard or controller.",
+    icon: "car",
+    colors: ["#e10600", "#1e1e2a"],
+    url: "https://games-79-72-86-205.sslip.io/f1-simulator/",
+    featured: true,
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",
@@ -30,8 +44,7 @@ window.SAHURHUB_GAMES = [
     description: "Placeholder opsec. Dash across floating islands and see how far you can get before you fall.",
     icon: "rocket",
     colors: ["#5ac8fa", "#3a5bff"],
-    url: "",
-    featured: true
+    url: ""
   },
   {
     id: "neon-drift",

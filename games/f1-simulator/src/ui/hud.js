@@ -5,63 +5,6 @@ import { fmtTime, clamp } from '../core/math.js';
 
 const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
 
-// ---- halo HUD geometry: everything sits on an arch that follows the top of the halo -----------
-const AC = { x: 500, y: 720 };
-const rad = (a) => (a * Math.PI) / 180;
-const pt = (r, a) => [AC.x + r * Math.cos(rad(a)), AC.y - r * Math.sin(rad(a))];
-/** SVG path along the arch from angle a0 to a1 (degrees, 90 = top) at radius r. */
-const arc = (r, a0, a1) => {
-  const [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a1);
-  return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 ${a0 > a1 ? 1 : 0} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-};
-const arcLen = (r, a0, a1) => (Math.abs(a1 - a0) * Math.PI * r) / 180;
-
-function haloSvg() {
-  const R = 525;
-  const gears = ['N', '1', '2', '3', '4', '5', '6', '7', '8'];
-  const gearA = (k) => 63 - k * 3.1;
-  let g = '';
-  gears.forEach((n, k) => {
-    const [x, y] = pt(R + 2, gearA(k));
-    g += `<g data-gear="${k}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(90 - gearA(k)).toFixed(1)})"><rect x="-11" y="-12" width="22" height="24" rx="3" class="hg-box"/><text y="7" class="hg-num">${n}</text></g>`;
-  });
-  let ticks = '';
-  for (let k = 0; k <= 15; k++) {
-    const a = 64 - k * 1.85, [x0, y0] = pt(R - 26, a), [x1, y1] = pt(R - (k % 5 === 0 ? 40 : 33), a);
-    ticks += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" class="hh-tick"/>`;
-    if (k % 5 === 0) { const [tx, ty] = pt(R - 52, a); ticks += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="hh-small">${k}</text>`; }
-  }
-  const bar = (id, r, a0, a1, cls) =>
-    `<path d="${arc(r, a0, a1)}" class="hh-bar-bg"/><path d="${arc(r, a0, a1)}" class="hh-bar ${cls}" data-k="${id}" stroke-dasharray="${arcLen(r, a0, a1).toFixed(1)}" stroke-dashoffset="${arcLen(r, a0, a1).toFixed(1)}" data-len="${arcLen(r, a0, a1).toFixed(1)}"/>`;
-  return `<svg viewBox="0 0 1000 420" class="hh-svg">
-    <defs><path id="hh-left" d="${arc(R + 4, 156, 118)}"/><path id="hh-left2" d="${arc(R - 28, 152, 120)}"/><path id="hh-aero" d="${arc(R - 2, 79, 68)}"/>
-      <path id="hh-gears" d="${arc(R + 30, 66, 52)}"/><path id="hh-rpm" d="${arc(R - 70, 63, 38)}"/>
-      <path id="hh-brk" d="${arc(R + 30, 117, 103)}"/><path id="hh-thr" d="${arc(R + 30, 77, 63)}"/></defs>
-    <path d="${arc(R, 162, 18)}" class="hh-band"/>
-    <path d="${arc(R + 24, 160, 20)}" class="hh-edge"/>
-    ${bar('hBrake', R + 14, 116, 102, 'brk')}${bar('hRech', R - 14, 116, 102, 'rch')}
-    ${bar('hThr', R + 14, 78, 64, 'thr')}${bar('hDep', R - 14, 78, 64, 'dep')}
-    <text class="hh-lab"><textPath href="#hh-brk">BRAKE</textPath></text>
-    <text class="hh-lab"><textPath href="#hh-thr" startOffset="100%" text-anchor="end">THROTTLE</textPath></text>
-    <g class="hh-aero" data-k="hAero"><text class="hh-lab"><textPath href="#hh-aero">ACTIVE AERO</textPath></text>
-      <path d="${arc(R - 20, 77.5, 70)}" class="hh-aero-l"/><path d="${arc(R - 30, 77.5, 70)}" class="hh-aero-l"/></g>
-    <text class="hh-lab"><textPath href="#hh-gears" startOffset="100%" text-anchor="end">GEARS</textPath></text>
-    ${g}
-    <path d="${arc(R - 29, 64, 36.3)}" class="hh-rpm-bg"/><path d="${arc(R - 29, 64, 36.3)}" class="hh-rpm" data-k="hRpm" stroke-dasharray="${arcLen(R - 29, 64, 36.3).toFixed(1)}" stroke-dashoffset="${arcLen(R - 29, 64, 36.3).toFixed(1)}" data-len="${arcLen(R - 29, 64, 36.3).toFixed(1)}"/>
-    ${ticks}
-    <text class="hh-lab"><textPath href="#hh-rpm" startOffset="100%" text-anchor="end">RPM x1000</textPath></text>
-    <text class="hh-name"><textPath href="#hh-left"><tspan class="hh-posbox" data-k="hPos">1</tspan> <tspan data-k="hName">DRIVER</tspan></textPath></text>
-    <text class="hh-name2"><textPath href="#hh-left2"><tspan data-k="hNext"></tspan></textPath></text>
-    <g transform="translate(500 168)">
-      <circle r="84" class="hh-dial"/><circle r="84" class="hh-dial-edge"/>
-      <text y="-46" class="hh-small">KM/H</text>
-      <text y="-6" class="hh-speed" data-k="hKph">0</text>
-      <rect x="-50" y="8" width="100" height="18" rx="3" class="hh-chip" data-k="hBoost"/><text y="22" class="hh-chip-t">BOOST</text>
-      <rect x="-50" y="30" width="100" height="18" rx="3" class="hh-chip" data-k="hOt"/><text y="44" class="hh-chip-t">OVERTAKE</text>
-      <text y="70" class="hh-mph" data-k="hMph">0</text><text y="82" class="hh-small">MPH</text>
-    </g>
-  </svg>`;
-}
 
 function tempColor(T, opt) {
   const x = T - opt;
@@ -96,7 +39,7 @@ export class Hud {
           <div class="h-gear" data-k="gear">N</div>
           <div class="h-rpm"><div class="v" data-k="rpm">0</div><div class="u">rpm</div></div></div>
         <div class="h-pedals"><i class="b"><b data-k="brk"></b></i><i class="t"><b data-k="thr"></b></i></div>
-        <div class="h-ers"><span>Battery</span><i><b data-k="ers"></b></i><span class="st" data-k="ersSt"></span></div>
+        <div class="h-ers"><span data-k="ersMode">Medium</span><i><b data-k="ers"></b></i><span class="st" data-k="ersSt"></span></div>
         <div class="h-badges"><span data-k="bAero">Straight mode</span><span data-k="bBoost">Boost</span><span data-k="bTc">TC</span><span data-k="bEsc">ESC</span><span data-k="bAbs">ABS</span></div></div>`)),
       (this.tyres = el(`<div class="h-box h-tyres"><div class="hd"><span class="cmp" data-k="cmp">S</span><span data-k="cmpName">Soft</span></div>
         <div class="h-tgrid">${[0, 1, 2, 3].map((i) => `<div class="h-tyre" data-k="t${i}"><div><div class="w">100%</div><div class="tp">80&deg;</div></div></div>`).join('')}</div></div>`)),
@@ -105,9 +48,7 @@ export class Hud {
       (this.cam = el(`<div class="h-box h-cam"></div>`)),
       (this.wrong = el(`<div class="h-wrong hidden">Wrong way</div>`)),
       (this.fps = el(`<div class="h-box h-fps hidden"></div>`)),
-      (this.halo = el(`<div class="hh hidden">${haloSvg()}</div>`)),
     );
-    this.haloGears = [...this.halo.querySelectorAll('[data-gear]')];
     this.k = {};
     root.querySelectorAll('[data-k]').forEach((n) => (this.k[n.dataset.k] = n));
     this.leds = [...this.dash.querySelectorAll('.h-leds i')];
@@ -212,45 +153,11 @@ export class Hud {
     this.msgT = secs;
   }
 
-  _bar(key, f) {
-    const n = this.k[key];
-    const v = (1 - clamp(f, 0, 1)) * +n.dataset.len;
-    const r = Math.round(v);
-    if (this.cache[key] !== r) { this.cache[key] = r; n.setAttribute('stroke-dashoffset', v.toFixed(1)); }
-  }
-
-  /** The halo graphics (shown in the Halo and Halo Offset cameras). */
-  _haloHud(veh, car) {
-    const eng = veh.p.engine, ses = this.ses;
-    this.set('hKph', String(Math.round(veh.kph)));
-    this.set('hMph', String(Math.round(veh.kph * 0.621371)));
-    this._bar('hBrake', veh.brake); this._bar('hThr', veh.throttle);
-    this._bar('hDep', clamp(veh.deployKw / (eng.mgukKw || 350), 0, 1));
-    this._bar('hRech', clamp(veh.harvestKw / (eng.mgukKw || 350), 0, 1));
-    this._bar('hRpm', clamp((veh.rpm - 0) / 15000, 0, 1));
-    this.cls(this.k.hBoost, 'on', !!veh.boosting);
-    this.cls(this.k.hOt, 'on', !!veh.overtakeAvail);
-    this.cls(this.k.hAero, 'on', veh.aeroK > 0.5);
-    const gi = veh.gear < 0 ? -1 : veh.gear;
-    if (this.cache.hGear !== gi) { this.cache.hGear = gi; this.haloGears.forEach((n, k) => n.classList.toggle('on', k === gi)); }
-    const parts = car.driver.name.split(' ');
-    this.set('hPos', this.race ? String(car.pos) : '-');
-    this.set('hName', parts[parts.length - 1].toUpperCase());
-    const ahead = this.race ? ses.order[car.pos - 2] : null;
-    this.set('hNext', ahead ? `${ahead.pos} ${ahead.driver.name.split(' ').pop().toUpperCase()}` : '');
-  }
-
   update(dt, info = {}) {
     const ses = this.ses, car = ses.player, veh = car.veh, p = veh.p, eng = p.engine;
+    // in the Halo cameras the speed / gear / ERS graphics are drawn on the halo itself (3D)
     const halo = !!info.haloHud;
-    if (this.cache.haloOn !== halo) {
-      this.cache.haloOn = halo;
-      this.halo.classList.toggle('hidden', !halo);
-      this.dash.classList.toggle('hidden', halo);
-      this.halo.classList.toggle('offset', /offset/i.test(info.camera || ''));
-      this.halo.style.setProperty('--tc', car.team.color);
-    }
-    if (halo) this._haloHud(veh, car);
+    if (this.cache.haloOn !== halo) { this.cache.haloOn = halo; this.dash.classList.toggle('hidden', halo); }
     // --- every frame: the dashboard
     this.set('kph', Math.round(veh.kph));
     this.set('gear', veh.gear > 0 ? String(veh.gear) : veh.gear < 0 ? 'R' : 'N');
@@ -265,6 +172,7 @@ export class Hud {
     }
     if (eng.batteryMj) {
       this.k.ers.style.width = ((veh.battery / (eng.batteryMj * 1e6)) * 100).toFixed(0) + '%';
+      this.set('ersMode', ['ERS Harvest', 'ERS Medium', 'ERS Hotlap'][veh.ersMode] || 'ERS');
       const st = veh.deployKw > 25 ? 'Deploy' : veh.harvestKw > 25 ? 'Harvest' : '';
       if (st !== this.cache.ersSt) { this.cache.ersSt = st; this.k.ersSt.textContent = st; this.k.ersSt.className = 'st ' + (st === 'Deploy' ? 'dep' : 'har'); }
     }

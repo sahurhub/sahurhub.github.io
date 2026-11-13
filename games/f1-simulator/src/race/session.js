@@ -103,6 +103,7 @@ export class RaceSession {
       } else {
         veh.assist = { tc: 2, abs: 1, steer: true, autoGear: true, autoAero: true };
         car.ai = new AIDriver({ veh, track, line: this.line, ratings, difficulty: o.difficulty ?? 80, rng: this.rng });
+        car.ai.car = car;
       }
       this.cars.push(car);
     });
@@ -123,6 +124,7 @@ export class RaceSession {
     if (!on) { car.ai = null; return; }
     Object.assign(car.veh.assist, { tc: 2, abs: 1, steer: true, autoGear: true, autoAero: true });
     car.ai = new AIDriver({ veh: car.veh, track: this.track, line: this.line, ratings: car.ratings, difficulty, rng: this.rng });
+    car.ai.car = car;
   }
 
   say(text, type = 'info') {

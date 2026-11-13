@@ -11,6 +11,7 @@ export const DEFAULT_KEYS = {
   shiftDown: ['ControlLeft', 'ControlRight', 'KeyQ'],
   boost: ['Space'],
   aero: ['KeyF'],
+  ers: ['KeyM'],
   camera: ['KeyC'],
   lookBack: ['KeyB'],
   reset: ['KeyR'],
@@ -19,7 +20,7 @@ export const DEFAULT_KEYS = {
 
 export const ACTION_LABELS = {
   accelerate: 'Accelerate', brake: 'Brake / reverse', left: 'Steer left', right: 'Steer right',
-  shiftUp: 'Shift up', shiftDown: 'Shift down', boost: 'Boost / overtake', aero: 'Straight mode (manual)', camera: 'Change camera',
+  shiftUp: 'Shift up', shiftDown: 'Shift down', boost: 'Boost / overtake', aero: 'Straight mode (manual)', ers: 'ERS mode (Harvest / Medium / Hotlap)', camera: 'Change camera',
   lookBack: 'Look back', reset: 'Reset car', pause: 'Pause',
 };
 
@@ -123,6 +124,7 @@ export class Input {
     if (this.take('shiftUp')) c.shift = 1;
     else if (this.take('shiftDown')) c.shift = -1;
     if (this.take('aero')) c.aeroPress = true;
+    if (this.take('ers')) c.ersCycle = true;
   }
 
   clear() { this.pressed.clear(); this.down.clear(); this.steer = 0; this.throttle = 0; this.brake = 0; }

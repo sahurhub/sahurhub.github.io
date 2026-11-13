@@ -54,7 +54,7 @@
       "engineBrakeBase": 28, "engineBrakePerRpm": 0.0042,
       "inertia": 0.06,
       "efficiency": 0.955,
-      "batteryMj": 4.0, "harvestPerLapMj": 8.5, "regenKw": 350, "clipKw": 200,
+      "batteryMj": 5.0, "harvestPerLapMj": 8.5, "regenKw": 350, "clipKw": 200,
       "deployFullToKph": 290, "deployZeroAtKph": 355,
       "overtakeFullToKph": 337, "overtakeZeroAtKph": 355
     },
@@ -73,9 +73,9 @@
   "tyres": {
     "supplier": "Pirelli",
     "compounds": {
-      "soft":   { "label": "Soft",   "color": "#ff3333", "mu": 2.30, "wear": 1.55, "optTemp": 96,  "window": 26 },
-      "medium": { "label": "Medium", "color": "#ffd12e", "mu": 2.25, "wear": 1.00, "optTemp": 100, "window": 28 },
-      "hard":   { "label": "Hard",   "color": "#f0f0f0", "mu": 2.19, "wear": 0.66, "optTemp": 104, "window": 30 },
+      "soft":   { "label": "Soft",   "color": "#ff3333", "mu": 2.55, "wear": 1.55, "optTemp": 96,  "window": 26 },
+      "medium": { "label": "Medium", "color": "#ffd12e", "mu": 2.50, "wear": 1.00, "optTemp": 100, "window": 28 },
+      "hard":   { "label": "Hard",   "color": "#f0f0f0", "mu": 2.44, "wear": 0.66, "optTemp": 104, "window": 30 },
       "inter":  { "label": "Intermediate", "color": "#43b02a", "mu": 1.60, "wear": 1.2, "optTemp": 75, "window": 30 },
       "wet":    { "label": "Full Wet", "color": "#0067ad", "mu": 1.45, "wear": 1.0, "optTemp": 60, "window": 32 }
     }

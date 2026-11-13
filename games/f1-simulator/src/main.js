@@ -11,6 +11,7 @@ import { PHYSICS_DT } from './physics/vehicle.js';
 import { Input, DEFAULT_KEYS } from './core/input.js';
 import { GameAudio } from './audio/engineAudio.js';
 import { Hud } from './ui/hud.js';
+import { HaloHud3D } from './ui/haloHud3d.js';
 import { Menu } from './ui/menu.js';
 import * as store from './core/storage.js';
 import { TIPS } from './config.js';
@@ -86,7 +87,7 @@ class App {
       const session = new RaceSession({
         track: this.track, line: this.line, regs: this.regs, season: this.season,
         mode: opts.mode, laps: s.laps, difficulty: s.difficulty, playerDriverId: s.driver,
-        playerGrid: s.grid, assists: { ...s.assists }, compound: s.compound || 'soft',
+        playerGrid: s.grid, assists: { ...s.assists }, compound: s.compound || 'soft', seed: opts.seed,
         fuel: race ? 3 + s.laps * 1.35 : 6,
       });
       const models = [...new Set(session.cars.map((c) => c.team.model))];
@@ -107,7 +108,8 @@ class App {
       const round = this.season.calendar.find((r) => r.circuitId === this.circuitId);
       const title = round ? round.name : this.circuitName;
       const hud = new Hud($('hud'), session, { title });
-      Object.assign(this, { engine, trackVis, session, visuals, rig, hud, title, playerVis });
+      const haloHud = new HaloHud3D(playerVis, session.player.team);
+      Object.assign(this, { engine, trackVis, session, visuals, rig, hud, title, playerVis, haloHud });
       this.audio.start(this.regs.physics.engine);
       this.audio.setVolume(s.volume);
       // draw once so shaders compile before the lights sequence starts
@@ -169,6 +171,10 @@ class App {
       // lap records
       if (car.bestLap != null && car.bestLap !== this.bestSeen) { this.bestSeen = car.bestLap; this.saveRecord(car); }
       if (car.finished && !car.coast) car.coast = true;
+      if (veh.ersMode !== this.ersSeen) {
+        if (this.ersSeen != null) session.say('ERS ' + ['Harvest', 'Medium', 'Hotlap'][veh.ersMode], 'info');
+        this.ersSeen = veh.ersMode;
+      }
       if (session.state === 'finished' && !this.resultsShown) this.showResults();
     }
     if (!render) return;
@@ -177,6 +183,15 @@ class App {
     this.playerVis.group.updateMatrixWorld(true);
     const camDef = rig.update(veh, dt, this.playerVis);
     this.playerVis.setTcamVisible(!camDef.haloHud);
+    this.haloHud.setVisible(!!camDef.haloHud);
+    if (camDef.haloHud) {
+      const pc = session.player, ahead = session.mode === 'race' ? session.order[pc.pos - 2] : null;
+      this.haloHud.update(dt, veh, {
+        pos: session.mode === 'race' ? pc.pos : '-',
+        name: pc.driver.name.split(' ').pop(),
+        ahead: ahead ? `${ahead.pos}  ${ahead.driver.name.split(' ').pop().toUpperCase()}` : '',
+      });
+    }
     engine.focus(veh.x, veh.z);
     this.trackVis.setStartLights(session.state === 'grid' ? session.lights : 0);
     engine.render();

@@ -261,11 +261,35 @@ export class CarVisual {
     const fwZ = Math.min(len - 0.25, wf + 0.9), fwY = topAt(0.45, fwZ, 0.3);
     const rwY = topAt(0, rw[2] + 0.05, rw[1] + 0.05);
     const V = (x, y, z) => new THREE.Vector3(x, y, z);
+    // The halo hoop: for each direction around the helmet, look down along that line and find
+    // the first stretch of bodywork at hoop height. Used to lay the 3D halo graphics on it.
+    const hoop = [];
+    const o = new THREE.Vector3();
+    for (let deg = -100; deg <= 100; deg += 5) {
+      const a = (deg * Math.PI) / 180, dx = Math.sin(a), dz = Math.cos(a);
+      let r1 = null, r2 = null, top = -1;
+      for (let r = 0.18; r <= 0.62; r += 0.008) {
+        rc.set(o.set(H.x + dx * r, H.y + 0.9, H.z + dz * r), down);
+        const h = rc.intersectObjects(hits, true)[0];
+        const inBand = h && h.point.y > H.y - 0.05 && h.point.y < H.y + 0.3;
+        if (inBand) { if (r1 == null) r1 = r; r2 = r; top = Math.max(top, h.point.y); }
+        else if (r1 != null) break;
+      }
+      if (r1 != null) hoop.push({ deg, r: (r1 + r2) / 2, w: r2 - r1 + 0.008, y: top });
+    }
+    // drop outliers (a single direction that found something else)
+    this.hoop = hoop.filter((p, k) => {
+      const nb = hoop.filter((q) => Math.abs(q.deg - p.deg) <= 10 && q !== p);
+      if (nb.length < 2) return false;
+      const mr = nb.reduce((s, q) => s + q.r, 0) / nb.length;
+      return Math.abs(p.r - mr) < 0.06;
+    });
     // halo cameras: just behind and above the driver's helmet, looking over the halo
-    const camY = H.y + 0.4;
+    const camY = H.y + 0.5;
     this.fit = {
-      halo: { pos: V(0, camY, H.z - 0.42), look: V(0, -0.35, H.z + 12) },
-      haloOffset: { pos: V(-0.16, camY - 0.02, H.z - 0.4), look: V(-0.16, -0.35, H.z + 12) },
+      halo: { pos: V(0, camY, H.z - 0.55), look: V(0, -0.55, H.z + 12) },
+      // offset to the driver's left (+x is the car's left side)
+      haloOffset: { pos: V(0.17, camY - 0.02, H.z - 0.52), look: V(0.17, -0.55, H.z + 12) },
       eye: { pos: V(0, H.y + 0.03, H.z + 0.1), look: V(0, H.y - 0.12, H.z + 10) },
       nose: { pos: V(0, noseY + 0.07, noseZ), look: V(0, noseY - 0.05, noseZ + 10) },
       frontWing: { pos: V(0.48, fwY + 0.09, fwZ), look: V(0.42, fwY, fwZ + 10) },

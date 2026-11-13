@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><title>Track viewer</title>
+<style>html,body{margin:0;height:100%;background:#111;overflow:hidden}#v{position:fixed;inset:0}</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+</head>
+<body><div id="v"></div>
+<script type="module">
+// Debug page: the 3D circuit seen from above with the physics track drawn on top.
+//   white = centre line, green = track edges (track limits), yellow = outer kerb edge,
+//   red = walls, magenta = AI racing line.   view.at(s, size) looks at lap distance s.
+import * as THREE from 'three';
+import { loadTrack } from '../src/track/track.js';
+import { computeRacingLine } from '../src/track/racingLine.js';
+import { loadGltf } from '../src/render/gltf.js';
+const box = document.getElementById('v');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(box.clientWidth, box.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+box.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 2.2));
+const track = await loadTrack('monza');
+const line = computeRacingLine(track);
+const gl = await loadGltf(new URL(track.meta.model, new URL('../data/circuits/', import.meta.url)).href);
+gl.scene.traverse((o) => { if (o.isMesh) { o.material.alphaTest = 0.4; o.material.transparent = false; } });
+scene.add(gl.scene);
+const N = track.n;
+const lineOf = (fn, color) => {
+  const pts = [];
+  for (let i = 0; i <= N; i++) { const q = i % N; const [d, y] = fn(q); pts.push(new THREE.Vector3(track.x[q] + track.nx[q] * d, track.h[q] + track.bank[q] * d + 0.4 + y, track.z[q] + track.nz[q] * d)); }
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, depthTest: false }));
+  l.renderOrder = 5; scene.add(l);
+};
+lineOf((i) => [0, 0], 0xffffff);
+lineOf((i) => [track.wl[i], 0], 0x00ff44);
+lineOf((i) => [-track.wr[i], 0], 0x00ff44);
+lineOf((i) => [track.wl[i] + track.kerbL[i], 0], 0xffdd00);
+lineOf((i) => [-track.wr[i] - track.kerbR[i], 0], 0xffdd00);
+lineOf((i) => [track.wallL[i], 0], 0xff2222);
+lineOf((i) => [-track.wallR[i], 0], 0xff2222);
+lineOf((i) => [line.off[i], 0.05], 0xff33ff);
+const cam = new THREE.OrthographicCamera(-50, 50, 50, -50, 1, 2000);
+const p = { x: 0, z: 0, psi: 0 };
+window.view = {
+  track, line, scene,
+  at(s, size = 120) {
+    track.posAt(s, 0, p);
+    renderer.setSize(innerWidth, innerHeight);
+    const a = innerWidth / innerHeight;
+    cam.left = -size * a / 2; cam.right = size * a / 2; cam.top = size / 2; cam.bottom = -size / 2; cam.updateProjectionMatrix();
+    cam.position.set(p.x, 500, p.z); cam.up.set(Math.sin(p.psi), 0, Math.cos(p.psi)); cam.lookAt(p.x, 0, p.z);
+    renderer.render(scene, cam);
+    return { s, x: +p.x.toFixed(1), z: +p.z.toFixed(1) };
+  },
+};
+(function loop() { requestAnimationFrame(loop); if (window.view.last) renderer.render(scene, cam); })();
+window.viewReady = true;
+</script>
+</body></html>

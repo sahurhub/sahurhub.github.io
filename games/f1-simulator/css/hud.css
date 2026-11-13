@@ -67,7 +67,7 @@
 .h-pedals i, .h-ers i { display: block; height: 6px; background: #25252d; overflow: hidden; }
 .h-pedals i b, .h-ers i b { display: block; height: 100%; width: 0; }
 .h-pedals .t b { background: var(--green); } .h-pedals .b b { background: var(--red-2); margin-left: auto; }
-.h-ers { display: grid; grid-template-columns: 52px 1fr 86px; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; }
+.h-ers { display: grid; grid-template-columns: 92px 1fr 70px; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; letter-spacing: 1px; color: var(--dim); text-transform: uppercase; }
 .h-ers i b { background: linear-gradient(90deg, #ffb300, #ffe45e); }
 .h-ers .st { text-align: right; font-weight: 700; }
 .h-ers .st.dep { color: #ffe45e; } .h-ers .st.har { color: #5ed0ff; }
@@ -98,34 +98,4 @@
 .h-cam { right: 22px; bottom: 20px; padding: 5px 12px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; color: #c9c9d4; }
 .h-wrong { left: 50%; top: 40%; transform: translateX(-50%); padding: 10px 26px; font-size: 30px; font-weight: 900; font-style: italic; background: var(--red); }
 .h-fps { right: 22px; bottom: 54px; font-size: 12px; color: #c9c9d4; padding: 2px 8px; }
-/* Halo HUD (Halo / Halo Offset cameras), after the 2026 TV on-board graphics */
-.hh { position: absolute; left: 50%; bottom: 12vh; width: min(70vw, 1100px); transform: translateX(-50%); text-shadow: none; --tc: #27f4d2; }
-.hh.offset { left: 56%; }
-.hh-svg { width: 100%; height: auto; display: block; overflow: visible; font-family: var(--font); }
-.hh-band { fill: none; stroke: rgba(8, 24, 22, 0.62); stroke-width: 62; stroke-linecap: round; }
-.hh-edge { fill: none; stroke: var(--tc); stroke-opacity: .55; stroke-width: 1.5; }
-.hh-bar-bg { fill: none; stroke: rgba(255,255,255,.13); stroke-width: 9; }
-.hh-bar { fill: none; stroke-width: 9; }
-.hh-bar.brk { stroke: #ff3b30; } .hh-bar.thr { stroke: #36e07a; } .hh-bar.dep { stroke: #33e1c5; } .hh-bar.rch { stroke: #3fa8ff; }
-.hh-lab { fill: #e9f5f3; font-size: 13px; font-weight: 700; letter-spacing: 1.6px; }
-.hh-small { fill: #bfe6df; font-size: 12px; font-weight: 700; letter-spacing: 1.4px; text-anchor: middle; }
-.hh-tick { stroke: #dff; stroke-width: 2; }
-.hh-rpm-bg { fill: none; stroke: rgba(255,255,255,.12); stroke-width: 7; }
-.hh-rpm { fill: none; stroke: var(--tc); stroke-width: 7; }
-.hg-box { fill: rgba(255,255,255,.06); }
-.hg-num { fill: #cfe; font-size: 17px; font-weight: 700; text-anchor: middle; }
-[data-gear].on .hg-box { fill: #8bdc3a; } [data-gear].on .hg-num { fill: #0b1a07; }
-.hh-aero-l { fill: none; stroke: rgba(255,255,255,.25); stroke-width: 3; stroke-linecap: round; }
-.hh-aero.on .hh-aero-l { stroke: #36e07a; }
-.hh-aero.on .hh-lab { fill: #7dffb0; }
-.hh-name { fill: #fff; font-size: 26px; font-weight: 900; letter-spacing: 1px; }
-.hh-posbox { fill: #fff; }
-.hh-name2 { fill: #d7e8e5; font-size: 17px; font-weight: 700; letter-spacing: 1px; }
-.hh-dial { fill: rgba(6, 20, 19, .82); }
-.hh-dial-edge { fill: none; stroke: var(--tc); stroke-width: 3; }
-.hh-speed { fill: #fff; font-size: 44px; font-weight: 900; text-anchor: middle; }
-.hh-mph { fill: #fff; font-size: 22px; font-weight: 700; text-anchor: middle; }
-.hh-chip { fill: rgba(255,255,255,.08); stroke: rgba(255,255,255,.2); }
-.hh-chip.on { fill: #3ad36d; stroke: #3ad36d; }
-.hh-chip-t { fill: #e8f6f3; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-anchor: middle; }
 @media (max-width: 900px) { .tw, .bn { display: none; } .h-map { display: none; } }

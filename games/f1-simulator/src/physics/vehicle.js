@@ -93,6 +93,7 @@ export class Vehicle {
     this.smOpen = false; this.smArmed = false; this.wasInZone = false; this.inZone = false;
     this.y = 0; this.slopeF = 0; this.slopeL = 0;
     this.overtakeAvail = false; this.overtaking = false;
+    if (this.ersMode == null) this.ersMode = 1;
     this.dist = 0;
     this.offWheels = 0;
     this.wallHit = 0;
@@ -141,6 +142,7 @@ export class Vehicle {
 
     let throttle = clamp(c.throttle, 0, 1), brake = clamp(c.brake, 0, 1);
     const parked = !!this.parked; // held on the grid before the start
+    if (c.ersCycle) { this.ersMode = (this.ersMode + 1) % 3; c.ersCycle = false; }
     if (parked) { throttle = 0; brake = 1; if (this.gear < 1) this.gear = 1; }
 
     // ---- gearbox logic ---------------------------------------------------------------------
@@ -255,11 +257,18 @@ export class Vehicle {
       const zeroAt = ot ? eng.overtakeZeroAtKph : eng.deployZeroAtKph;
       this.overtaking = ot;
       const taper = kph <= fullTo ? 1 : kph >= zeroAt ? 0 : (zeroAt - kph) / (zeroAt - fullTo);
-      const vCut = boost ? 500 : 215 + 150 * soc;
+      // ERS mode (like the deploy modes on the steering wheel):
+      //   0 Harvest - no deployment (except Boost), recharges hard on the straights
+      //   1 Medium  - balanced: full power out of corners, saves energy at high speed
+      //   2 Hotlap  - deploys everywhere it is allowed; empties the battery in about a lap
+      const mode = this.ersMode;
+      const vCut = boost ? 500 : mode === 0 ? -100 : mode === 2 ? 235 + 110 * soc : 200 + 130 * soc;
+      const share = boost || mode === 2 ? 1 : 0.8;
       const cutK = clamp((vCut + 15 - kph) / 30, 0, 1);
-      if (throttle > 0.02 && this.battery > 0) pK = eng.mgukKw * 1000 * taper * cutK * throttle;
-      if (throttle > 0.95 && !boost && kph > vCut + 15 && soc < 0.9 && this.harvestLap < eng.harvestPerLapMj * 1e6) {
-        pClip = (eng.clipKw || 110) * 1000 * clamp((kph - vCut - 15) / 20, 0, 1);
+      if (throttle > 0.02 && this.battery > 0) pK = eng.mgukKw * 1000 * taper * cutK * throttle * share;
+      const clipFrom = mode === 0 ? 170 : vCut + 15;
+      if (throttle > 0.95 && !boost && kph > clipFrom && soc < 0.95 && this.harvestLap < eng.harvestPerLapMj * 1e6) {
+        pClip = (eng.clipKw || 110) * 1000 * clamp((kph - clipFrom) / 20, 0, 1);
       }
       this.boosting = boost && pK > 0;
     }

@@ -19,6 +19,7 @@ Add `?mute` to the address to run with no sound (used for automated testing).
 | Steer | A D / Left Right |
 | Shift up / down (manual gears) | Shift or E / Ctrl or Q |
 | Boost (overtake mode when earned) | Space |
+| ERS mode: Harvest / Medium / Hotlap | M |
 | Straight mode (only if set to "Button") | F |
 | Camera | C |
 | Look back | B |
@@ -35,6 +36,10 @@ Controller: left stick steers, right trigger accelerates, left trigger brakes, b
   `src/cars` 3D car loading, `src/ui` menus and HUD, `src/audio` sound, `src/core` helpers
 - `assets/cars/<year>/` car models (made with `tools/blender/process_car.py`)
 - `tools/test.html` physics test bench (runs races without graphics)
+- `tools/racecheck.js` race checker for the game page (contacts, offs, resets per race; how
+  to use it is at the top of the file)
+- `tools/remeasure.html` re-measures the track edges from the circuit model, `tools/trackview.html`
+  draws the measured edges, kerbs and racing line over the model from above
 - `docs/APPROXIMATIONS.md` what is real, what is estimated, what is not built yet
 
 ## Credits
@@ -46,8 +51,8 @@ Controller: left stick steers, right trigger accelerates, left trigger brakes, b
 - Monza 3D model: "Autodromo Nazionale Monza Circuit 2020 layout" by Tyler_Dave on Sketchfab,
   labelled CC Attribution. Its banners show it comes from the game Assetto Corsa (Kunos
   Simulazioni), so the uploader probably did not have the right to give it away; it may be
-  taken down on request. Simplified with `tools/blender` steps; `data/circuits/monza.centerline.json`
-  was measured from it.
+  taken down on request. Simplified with `tools/blender` steps; the physics track
+  `data/circuits/monza.centerline.v3.json` was measured from it with `tools/remeasure.html`.
 - Monza centre line used for alignment: TUMFTM racetrack-database (LGPL-3.0),
   https://github.com/TUMFTM/racetrack-database
 - three.js (MIT). Titillium Web font (SIL Open Font Licence).

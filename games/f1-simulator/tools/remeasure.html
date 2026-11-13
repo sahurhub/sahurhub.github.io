@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><title>Track re-measure</title>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }</script>
+</head>
+<body style="background:#111;color:#ccc;font-family:monospace">
+<p>Measures the physics track from the 3D circuit model. Run from the console: <code>await rm.pass()</code> (a few times), then <code>await rm.finish()</code>, then <code>await rm.save('monza.centerline.v3.json')</code>.</p>
+<script type="module">
+// Iterative centre-line fit: cast rays straight down across the road every 0.2 m at points
+// 2 m apart, find the racing surface between the white lines, re-centre, smooth a little,
+// repeat. Because the cross-sections are re-aimed after every pass they end up square to the
+// real road, which is what makes tight chicanes come out right.
+import * as THREE from 'three';
+import { computeBoundsTree, acceleratedRaycast } from 'https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js';
+import { loadTrack } from '../src/track/track.js';
+import { loadGltf } from '../src/render/gltf.js';
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+const KIND = (n) => /^groove/.test(n) ? 0 : /^apsh-shader/.test(n) ? 1 : /^whiteline/.test(n) ? 2 : /^curb/.test(n) ? 3
+  : /^(grass|grs_brd|top_)/.test(n) ? 4 : /^sand/.test(n) ? 5 : /^asph-pitlane/.test(n) ? 6 : 7;
+const WALL = /^(walls|tyres|wall2|fences1|fences2|metals|grille|brd2|bridges|box|gstand)/;
+
+const track = await loadTrack('monza');
+const gl = await loadGltf(new URL(track.meta.model, new URL('../data/circuits/', import.meta.url)).href);
+gl.scene.updateMatrixWorld(true);
+const surf = [], groove = [], walls = [];
+gl.scene.traverse((o) => {
+  if (!o.isMesh) return;
+  const n = (o.material.name || '').toLowerCase();
+  o.geometry.computeBoundsTree();
+  o.userData.kind = KIND(n);
+  if (o.userData.kind === 0) groove.push(o);
+  else if (o.userData.kind <= 6) surf.push(o);
+  if (WALL.test(n)) walls.push(o);
+});
+const rc = new THREE.Raycaster(); rc.firstHitOnly = true;
+const o3 = new THREE.Vector3(), DOWN = new THREE.Vector3(0, -1, 0), dir = new THREE.Vector3();
+// The rubbered racing line ("groove") is a thin layer drawn just above the road, which would
+// hide white lines painted underneath. So look at the road surface without it, and only use
+// the groove to tell racing surface from run-off asphalt.
+function probe(x, z) {
+  o3.set(x, 60, z); rc.set(o3, DOWN); rc.far = 200;
+  const h = rc.intersectObjects(surf, false)[0];
+  if (!h) return [9, NaN];
+  const k = h.object.userData.kind;
+  if (k === 1 && rc.intersectObjects(groove, false).length) return [0, h.point.y];
+  return [k, h.point.y];
+}
+
+// working centre line: even 2 m spacing
+let X = Float64Array.from(track.x), Z = Float64Array.from(track.z);
+let WL = Float64Array.from(track.wl), WR = Float64Array.from(track.wr);
+function frames() {
+  const N = X.length, nx = new Float64Array(N), nz = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    const a = (i - 1 + N) % N, b = (i + 1) % N;
+    let tx = X[b] - X[a], tz = Z[b] - Z[a]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
+    nx[i] = tz; nz[i] = -tx;              // left of travel (same as Track)
+  }
+  return { nx, nz };
+}
+function resample(step = 2) {
+  const N = X.length, cum = [0];
+  for (let i = 0; i < N; i++) { const j = (i + 1) % N; cum.push(cum[i] + Math.hypot(X[j] - X[i], Z[j] - Z[i])); }
+  const L = cum[N], M = Math.round(L / step), nX = new Float64Array(M), nZ = new Float64Array(M), nL = new Float64Array(M), nR = new Float64Array(M);
+  let k = 0;
+  for (let m = 0; m < M; m++) {
+    const s = (m * L) / M;
+    while (cum[k + 1] < s) k++;
+    const t = (s - cum[k]) / (cum[k + 1] - cum[k] || 1), j = (k + 1) % N;
+    nX[m] = X[k] + (X[j] - X[k]) * t; nZ[m] = Z[k] + (Z[j] - Z[k]) * t;
+    nL[m] = WL[k] + (WL[j] - WL[k]) * t; nR[m] = WR[k] + (WR[j] - WR[k]) * t;
+  }
+  X = nX; Z = nZ; WL = nL; WR = nR;
+  return L;
+}
+const smooth = (a, half, median = false) => {
+  const N = a.length, out = new Float64Array(N), w = [];
+  for (let i = 0; i < N; i++) {
+    w.length = 0;
+    for (let k = -half; k <= half; k++) w.push(a[(i + k + N) % N]);
+    if (median) { w.sort((p, q) => p - q); out[i] = w[half]; } else out[i] = w.reduce((p, q) => p + q, 0) / w.length;
+  }
+  return out;
+};
+const DS = []; for (let d = -24; d <= 24.0001; d += 0.2) DS.push(+d.toFixed(2));
+/** One cross-section: returns [left edge, right edge] distances from the point, or null. */
+function section(i, nx, nz) {
+  const kk = DS.map((d) => probe(X[i] + nx[i] * d, Z[i] + nz[i] * d)[0]);
+  // every stretch of asphalt across the road, with what bounds it on each side
+  const cands = [];
+  let k = 0;
+  while (k < DS.length) {
+    if (kk[k] > 1) { k++; continue; }
+    let e = k; while (e + 1 < DS.length && kk[e + 1] <= 1) e++;
+    if (k > 0 && e < DS.length - 1) {
+      let a = k - 1, b = e + 1;
+      const wl = kk[a] === 2, wr = kk[b] === 2;                       // painted line on that side
+      while (a - 1 >= 0 && kk[a - 1] === 2) a--;                        // include the line itself
+      while (b + 1 < DS.length && kk[b + 1] === 2) b++;
+      const lo = wl ? DS[a] - 0.1 : DS[k] - 0.1, hi = wr ? DS[b] + 0.1 : DS[e] + 0.1;
+      let g = 0; for (let m = k; m <= e; m++) if (kk[m] === 0) g++;
+      const width = hi - lo, rubber = g / (e - k + 1);
+      if (width >= 7 && width <= 18 && rubber >= 0.25) cands.push({ lo, hi, mid: (lo + hi) / 2, lines: (wl ? 1 : 0) + (wr ? 1 : 0) });
+    }
+    k = e + 1;
+  }
+  if (!cands.length) return null;
+  // nearest to the current centre; a stretch with painted lines on both sides wins ties
+  cands.sort((p, q) => (Math.abs(p.mid) - p.lines * 1.5) - (Math.abs(q.mid) - q.lines * 1.5));
+  const c = cands[0];
+  if (Math.abs(c.mid) > 14) return null;
+  return [c.hi, -c.lo];
+}
+window.rm = {
+  async pass() {
+    const t0 = performance.now(), { nx, nz } = frames(), N = X.length;
+    const off = new Float64Array(N), ok = new Uint8Array(N), wl = new Float64Array(N), wr = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const s = section(i, nx, nz);
+      if (s) { ok[i] = 1; off[i] = (s[0] - s[1]) / 2; wl[i] = wr[i] = (s[0] + s[1]) / 2; }
+    }
+    // fill failures from neighbours
+    for (const arr of [off, wl, wr]) {
+      for (let i = 0; i < N; i++) if (!ok[i]) {
+        let a = i, b = i, ka = 0, kb = 0;
+        while (!ok[(a - 1 + N) % N] && ka < N) { a = (a - 1 + N) % N; ka++; }
+        while (!ok[(b + 1) % N] && kb < N) { b = (b + 1) % N; kb++; }
+        const pa = (a - 1 + N) % N, pb = (b + 1) % N, t = (ka + 1) / (ka + kb + 2);
+        arr[i] = arr[pa] + (arr[pb] - arr[pa]) * t;
+      }
+    }
+    const offS = smooth(smooth(off, 2, true), 1), wS = smooth(smooth(wl, 3, true), 2);
+    let maxMove = 0;
+    for (let i = 0; i < N; i++) {
+      const m = Math.max(-3, Math.min(3, offS[i]));
+      X[i] += nx[i] * m; Z[i] += nz[i] * m; WL[i] = WR[i] = wS[i];
+      maxMove = Math.max(maxMove, Math.abs(m));
+    }
+    const sx = smooth(X, 1), sz = smooth(Z, 1); X = sx; Z = sz;
+    const L = resample(2);
+    return { found: `${ok.reduce((p, q) => p + q, 0)}/${N}`, maxMove: +maxMove.toFixed(2), meanMove: +(offS.reduce((p, q) => p + Math.abs(q), 0) / N).toFixed(3), lap: +L.toFixed(1), ms: Math.round(performance.now() - t0) };
+  },
+  async finish() {
+    const t0 = performance.now(), { nx, nz } = frames(), N = X.length;
+    const H = new Float64Array(N), B = new Float64Array(N), out = [];
+    // final edges, measured from the final centre line (left and right separately)
+    {
+      const l = Float64Array.from(WL), r = Float64Array.from(WR);
+      for (let i = 0; i < N; i++) { const s = section(i, nx, nz); if (s) { l[i] = s[0]; r[i] = s[1]; } }
+      WL = smooth(smooth(l, 2, true), 1); WR = smooth(smooth(r, 2, true), 1);
+    }
+    const kerb = (i, side, w) => {
+      let k = 0, d = w - 0.2, steps = 0;
+      while (steps < 4 && probe(X[i] + nx[i] * d * side, Z[i] + nz[i] * d * side)[0] <= 2) { d += 0.2; steps++; }
+      while (probe(X[i] + nx[i] * d * side, Z[i] + nz[i] * d * side)[0] === 3 && k < 4) { k += 0.2; d += 0.2; }
+      const cnt = { G: 0, S: 0, A: 0 };
+      for (let m = 0; m < 32; m++) {
+        const kd = probe(X[i] + nx[i] * (d + m * 0.25) * side, Z[i] + nz[i] * (d + m * 0.25) * side)[0];
+        if (kd === 4) cnt.G++; else if (kd === 5) cnt.S++; else if (kd === 1 || kd === 6 || kd === 0) cnt.A++;
+      }
+      const run = Object.keys(cnt).reduce((p, q) => (cnt[q] > cnt[p] ? q : p), 'G');
+      return [+k.toFixed(2), run];
+    };
+    const wall = (i, side, h, w) => {
+      let best = 120;
+      // direction of travel (tX, tZ): the left normal is (tZ, -tX), so tX = -nz, tZ = nx
+      const tX = -nz[i], tZ = nx[i];
+      for (const da of [-1.5, 0, 1.5]) for (const up of [0.45, 0.9]) {
+        o3.set(X[i] + tX * da, h + up, Z[i] + tZ * da);
+        dir.set(nx[i] * side, 0, nz[i] * side);
+        rc.set(o3, dir); rc.far = 120;
+        const hit = rc.intersectObjects(walls, false)[0];
+        if (hit) best = Math.min(best, hit.distance);
+      }
+      return +Math.max(best, w + 1.2).toFixed(2);
+    };
+    for (let i = 0; i < N; i++) {
+      const h = probe(X[i], Z[i])[1];
+      const hl = probe(X[i] + nx[i] * WL[i] * 0.85, Z[i] + nz[i] * WL[i] * 0.85)[1];
+      const hr = probe(X[i] - nx[i] * WR[i] * 0.85, Z[i] - nz[i] * WR[i] * 0.85)[1];
+      H[i] = h; B[i] = (hl - hr) / (0.85 * (WL[i] + WR[i]));
+    }
+    const fill = (a) => { for (let i = 0; i < N; i++) if (!isFinite(a[i])) a[i] = a[(i - 1 + N) % N]; return a; };
+    const Hs = smooth(fill(H), 2), Bs = smooth(smooth(fill(B), 3, true), 3);
+    for (let i = 0; i < N; i++) {
+      const [kr, rr] = kerb(i, -1, WR[i]), [kl, rl] = kerb(i, 1, WL[i]);
+      out.push([+X[i].toFixed(3), +(-Z[i]).toFixed(3), +WR[i].toFixed(2), +WL[i].toFixed(2), +Hs[i].toFixed(3), +Bs[i].toFixed(4),
+        wall(i, -1, Hs[i], WR[i]), wall(i, 1, Hs[i], WL[i]), kr, kl, rr, rl]);
+    }
+    this.out = out;
+    let hmin = Infinity, hmax = -Infinity, wmin = Infinity, wmax = 0;
+    for (const p of out) { hmin = Math.min(hmin, p[4]); hmax = Math.max(hmax, p[4]); wmin = Math.min(wmin, p[2] + p[3]); wmax = Math.max(wmax, p[2] + p[3]); }
+    return { points: out.length, height: [hmin.toFixed(2), hmax.toFixed(2)], width: [wmin.toFixed(1), wmax.toFixed(1)], ms: Math.round(performance.now() - t0) };
+  },
+  async save(name) {
+    const data = {
+      source: 'Measured in the browser from the Sketchfab Monza 2020 model (white lines and racing surface), iterative centre-line fit, 2 m spacing. Starts at the start line.',
+      columns: ['x_east_m', 'y_north_m', 'width_right_m', 'width_left_m', 'height_m', 'bank_left_up', 'wall_right_m', 'wall_left_m', 'kerb_right_m', 'kerb_left_m', 'runoff_right', 'runoff_left'],
+      points: this.out,
+    };
+    const r = await fetch('http://localhost:8771/' + name, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    return r.status;
+  },
+  /**
+   * Remove kinks: anywhere the line turns more sharply than any real corner (radius under
+   * 10 m), relax the points around it (each becomes the average of its neighbours, the ends
+   * of the stretch stay put) until it is smooth.
+   */
+  despike(maxTurn = 0.35, half = 5, iters = 20) {
+    const N = X.length;
+    const turns = () => {
+      const t = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const a = (i - 1 + N) % N, b = (i + 1) % N;
+        const h1 = Math.atan2(X[i] - X[a], Z[i] - Z[a]), h2 = Math.atan2(X[b] - X[i], Z[b] - Z[i]);
+        let d = h2 - h1; d = Math.atan2(Math.sin(d), Math.cos(d)); t[i] = d;
+      }
+      return t;
+    };
+    const count = () => { const t = turns(); let c = 0; for (let i = 0; i < N; i++) if (Math.abs(t[i]) > maxTurn) c++; return c; };
+    const before = count();
+    for (let round = 0; round < 6; round++) {
+      const t = turns(), mark = new Uint8Array(N);
+      for (let i = 0; i < N; i++) if (Math.abs(t[i]) > maxTurn) for (let k = -half; k <= half; k++) mark[(i + k + N) % N] = 1;
+      for (let it = 0; it < iters; it++) {
+        const nX = Float64Array.from(X), nZ = Float64Array.from(Z);
+        for (let i = 0; i < N; i++) if (mark[i]) {
+          const a = (i - 1 + N) % N, b = (i + 1) % N;
+          nX[i] = (X[a] + X[b]) / 2; nZ[i] = (Z[a] + Z[b]) / 2;
+        }
+        X = nX; Z = nZ;
+      }
+    }
+    resample(2);
+    return { kinksBefore: before, kinksAfter: count() };
+  },
+  /**
+   * Straights only: grid boxes and pit-lane lines can make the line wiggle on the straights.
+   * Away from the circuit's corners (each corner +-200 m is left alone) the line is relaxed
+   * until it runs smooth.
+   */
+  dewiggle(protect = 200, iters = 80) {
+    const N = X.length, L = N * 2, corners = track.meta.corners.map((c) => c.s);
+    const free = new Uint8Array(N);
+    for (let i = 0; i < N; i++) {
+      const s = i * 2;
+      free[i] = corners.every((c) => { let d = Math.abs(s - c); d = Math.min(d, L - d); return d > protect; }) ? 1 : 0;
+    }
+    for (let it = 0; it < iters; it++) {
+      const nX = Float64Array.from(X), nZ = Float64Array.from(Z);
+      for (let i = 0; i < N; i++) if (free[i]) {
+        const a = (i - 1 + N) % N, b = (i + 1) % N;
+        nX[i] = (X[a] + X[b]) / 2; nZ[i] = (Z[a] + Z[b]) / 2;
+      }
+      X = nX; Z = nZ;
+    }
+    resample(2);
+    // report remaining tight spots away from corners
+    const out = [];
+    for (let i = 0; i < X.length; i++) {
+      const a = (i - 1 + X.length) % X.length, b = (i + 1) % X.length;
+      const h1 = Math.atan2(X[i] - X[a], Z[i] - Z[a]), h2 = Math.atan2(X[b] - X[i], Z[b] - Z[i]);
+      let d = h2 - h1; d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (Math.abs(d) / 2 > 1 / 40 && free[Math.min(i, N - 1)]) out.push(i * 2);
+    }
+    return { freePoints: free.reduce((p, q) => p + q, 0), tightLeftOnStraights: out.length };
+  },
+  /** Lap-distance ranges where the cross-section fails or an edge is off the racing surface. */
+  diag() {
+    const { nx, nz } = frames(), N = X.length, runs = [];
+    let cur = null;
+    for (let i = 0; i <= N; i++) {
+      let bad = '';
+      if (i < N) {
+        if (!section(i, nx, nz)) bad += 'S';
+        const l = probe(X[i] + nx[i] * (WL[i] - 0.4), Z[i] + nz[i] * (WL[i] - 0.4))[0], r = probe(X[i] - nx[i] * (WR[i] - 0.4), Z[i] - nz[i] * (WR[i] - 0.4))[0];
+        if (l > 2) bad += 'L'; if (r > 2) bad += 'R';
+      }
+      if (bad && !cur) cur = { from: i * 2, to: i * 2, kinds: new Set(bad) };
+      else if (bad) { cur.to = i * 2; for (const c of bad) cur.kinds.add(c); }
+      else if (cur) { if (cur.to - cur.from >= 6) runs.push(`${cur.from}-${cur.to} ${[...cur.kinds].join('')}`); cur = null; }
+    }
+    return runs;
+  },
+  /** Surface classes across the road at lap distance s (right edge -16 m ... left edge +16 m). */
+  strip(s) {
+    const { nx, nz } = frames(), i = Math.round(s / 2) % X.length;
+    const code = 'gAWKGSPx.';
+    return `w=${WR[i].toFixed(1)}/${WL[i].toFixed(1)} R|` + DS.map((d) => code[probe(X[i] + nx[i] * d, Z[i] + nz[i] * d)[0]] || ' ').join('') + '|L';
+  },
+  /** How much of the centre line and edges sit on real racing surface (quality check). */
+  check() {
+    const { nx, nz } = frames(), N = X.length;
+    let c = 0, e = 0;
+    for (let i = 0; i < N; i++) {
+      if (probe(X[i], Z[i])[0] <= 2) c++;
+      const l = probe(X[i] + nx[i] * (WL[i] - 0.4), Z[i] + nz[i] * (WL[i] - 0.4))[0], r = probe(X[i] - nx[i] * (WR[i] - 0.4), Z[i] - nz[i] * (WR[i] - 0.4))[0];
+      if (l <= 2 && r <= 2) e++;
+    }
+    return { centreOnTrack: `${c}/${N}`, bothEdgesInsideOnTrack: `${e}/${N}` };
+  },
+};
+window.rmReady = true;
+</script>
+</body></html>

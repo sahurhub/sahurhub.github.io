@@ -9,7 +9,7 @@
 
   var LIQUID_GLASS_URL = 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
   // Bump when desktop.js or desktop.css change, so browsers fetch the new copies.
-  var DESKTOP_VERSION = '?v=20261114';
+  var DESKTOP_VERSION = '?v=20261114c';
   var KEYS = {
     theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent',
     openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow'
@@ -1118,7 +1118,7 @@
     slot.innerHTML =
       '<article class="featured' + (g.cover ? ' has-cover' : '') + '" style="' + artStyle(g) + '">' +
         (g.cover ? coverImg(g, 'featured-cover') : '') +
-        '<span class="featured-shine" aria-hidden="true"></span>' +
+        '<span class="featured-clip" aria-hidden="true"><span class="featured-shine"></span></span>' +
         '<span class="snowcap" aria-hidden="true"></span>' +
         '<button class="featured-hit" type="button" data-open="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml(g.title + ', featured opsec. Open details') + '"></button>' +
         (g.cover ? '' : '<div class="featured-art">' + glyph(g.icon) + '</div>') +
@@ -2179,6 +2179,11 @@
       content.addEventListener(type, function () {
         content.querySelectorAll('.card.is-pressed').forEach(function (c) { c.classList.remove('is-pressed'); });
       });
+    });
+
+    // Pictures and links can't be dragged off the page (Firefox ignores the CSS for this).
+    document.addEventListener('dragstart', function (e) {
+      if (!(e.target && e.target.closest && e.target.closest('input, textarea'))) e.preventDefault();
     });
 
     settingsBtn.addEventListener('click', function () {

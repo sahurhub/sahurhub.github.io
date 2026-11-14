@@ -554,7 +554,7 @@
 .dt-seg button[aria-checked="true"] { background: var(--dt-seg-on); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22); }
 
 /* Text windows */
-.dt-doc { padding: 0 26px 24px; font-size: 14.5px; line-height: 1.55; -webkit-user-select: text; user-select: text; }
+.dt-doc { padding: 0 26px 24px; font-size: 14.5px; line-height: 1.55; }
 .dt-doc h2 { margin: 2px 0 8px; font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
 .dt-doc p { margin: 8px 0; }
 .dt-doc ul { margin: 10px 0; padding-left: 20px; }

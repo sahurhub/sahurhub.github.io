@@ -288,6 +288,7 @@
   var scrim = $('scrim');
   var settingsBtn = $('settings-btn');
   var statsBtn = $('stats-btn');
+  var streakChip = $('streak-chip');
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
   var chatGlass = $('chat-glass');
@@ -995,6 +996,26 @@
 
   function plural2(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
 
+  // Streak: days in a row with a visit, ending today (or yesterday).
+  function streakOf(s) {
+    var S = window.SahurHubStats;
+    var streak = 0;
+    var c = new Date();
+    c.setHours(12, 0, 0, 0); // noon avoids daylight-saving surprises
+    if (s.days[S.dayKey(c.getTime())] == null) c.setDate(c.getDate() - 1);
+    while (s.days[S.dayKey(c.getTime())] != null) { streak++; c.setDate(c.getDate() - 1); }
+    return streak;
+  }
+
+  // The "Streak" pill under the Stats button.
+  function updateStreakChip() {
+    if (!window.SahurHubStats || !streakChip) return;
+    var n = streakOf(window.SahurHubStats.load());
+    streakChip.querySelector('.streak-fire').textContent = '\u{1F525}';
+    streakChip.querySelector('.streak-text').textContent = 'Streak: ' + n;
+    streakChip.setAttribute('aria-label', 'Streak: ' + plural2(n, 'day', 'days') + '. Open stats');
+  }
+
   function statsData() {
     var S = window.SahurHubStats;
     var s = S.load();
@@ -1023,12 +1044,7 @@
       week.push({ ms: ms, today: i === 0, day: d.toLocaleDateString(undefined, { weekday: 'short' }) });
     }
 
-    // Streak: days in a row with a visit, ending today (or yesterday).
-    var streak = 0;
-    var c = new Date();
-    c.setHours(12, 0, 0, 0);
-    if (s.days[S.dayKey(c.getTime())] == null) c.setDate(c.getDate() - 1);
-    while (s.days[S.dayKey(c.getTime())] != null) { streak++; c.setDate(c.getDate() - 1); }
+    var streak = streakOf(s);
     var best = 0;
     var run = 0;
     var prev = null;
@@ -1173,6 +1189,7 @@
     sheet.style.removeProperty('translate');
     stopStatsRefresh();
     sheetBody.innerHTML = statsHtml();
+    updateStreakChip();
     showSheet();
     // Keep the numbers ticking while it is open (stats.js saves about every 10 seconds).
     statsTimer = setInterval(function () { if (state.statsOpen) renderStats(); }, 5000);
@@ -1201,6 +1218,7 @@
     window.SahurHubStats.reset();
     window.SahurHubStats.markVisit();
     renderStats();
+    updateStreakChip();
     showToast('Stats reset');
   }
 
@@ -2439,6 +2457,14 @@
       bounce(statsBtn.querySelector('[data-icon]'));
       openStats();
     });
+    streakChip.addEventListener('click', openStats);
+    // Coming back to the tab (maybe on a new day) updates the streak.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && window.SahurHubStats) {
+        window.SahurHubStats.markVisit();
+        updateStreakChip();
+      }
+    });
 
     settingsBtn.addEventListener('click', function () {
       bounce(settingsBtn.querySelector('[data-icon]'));
@@ -2560,6 +2586,7 @@
       window.SahurHubStats.markVisit();
       window.SahurHubStats.track('site');
     }
+    updateStreakChip();
     $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
     drawWallpaper();

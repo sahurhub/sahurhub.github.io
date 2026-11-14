@@ -86,6 +86,18 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // The game's files are in games/delivery-rush/ in this repository.
+    id: "delivery-rush",
+    title: "Delivery Rush",
+    category: "Simulator",
+    tags: ["delivery", "parcels", "city", "vehicles", "van", "truck", "bike", "upgrades", "3d", "simulator"],
+    description: "Start on foot, deliver parcels across a 3D city and work your way up to a Super Delivery Truck. Upgrade your ride and unlock five districts.",
+    icon: "car",
+    colors: ["#ff9d4d", "#e9661b"],
+    url: "games/delivery-rush/",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

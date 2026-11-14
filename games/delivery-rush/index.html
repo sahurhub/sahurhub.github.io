@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delivery Rush</title>
+  <meta name="description" content="DELIVERY RUSH - a 3D delivery simulator. Take jobs, deliver parcels across five districts, earn money and upgrade from on foot to a Super Delivery Truck.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="game"></div>
+  <canvas id="speedlines"></canvas>
+  <div id="hud" class="hidden"></div>
+  <div id="world-ui"></div>
+  <div id="menus"></div>
+  <div id="toasts"></div>
+  <div id="loading">
+    <div class="loading-card">
+      <div class="logo"><span class="logo-a">DELIVERY</span><span class="logo-b">RUSH</span></div>
+      <div class="loading-bar"><div id="loading-fill"></div></div>
+      <div class="loading-what" id="loading-what">Starting up</div>
+      <div class="loading-tip" id="loading-tip"></div>
+    </div>
+  </div>
+  <noscript>DELIVERY RUSH needs JavaScript.</noscript>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

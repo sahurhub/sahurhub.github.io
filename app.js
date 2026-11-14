@@ -153,6 +153,7 @@
     close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
     sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.1M12 19.3v2.1M4.7 4.7l1.5 1.5M17.8 17.8l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.7 19.3l1.5-1.5M17.8 6.2l1.5-1.5"/>',
     moon: '<path d="M19.6 14.6A8 8 0 0 1 9.4 4.4a8 8 0 1 0 10.2 10.2Z"/>',
+    stats: '<path d="M5.5 19.5v-6.5M12 19.5V5M18.5 19.5v-9.5" stroke-width="2.6"/>',
     gear: '<path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 3.2l1.4.2.5 2.1 1.6.7 1.9-1.1 1.9 1.9-1.1 1.9.7 1.6 2.1.5.2 1.4-.2 1.4-2.1.5-.7 1.6 1.1 1.9-1.9 1.9-1.9-1.1-1.6.7-.5 2.1-1.4.2-1.4-.2-.5-2.1-1.6-.7-1.9 1.1-1.9-1.9 1.1-1.9-.7-1.6-2.1-.5L3.2 12l.2-1.4 2.1-.5.7-1.6-1.1-1.9 1.9-1.9 1.9 1.1 1.6-.7.5-2.1ZM12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 1 0 0-6.4Z"/>',
     play: '<path d="M8 5.6v12.8a.8.8 0 0 0 1.2.7l10.3-6.4a.8.8 0 0 0 0-1.4L9.2 4.9A.8.8 0 0 0 8 5.6Z" fill="currentColor" stroke="none"/>',
     chevron: '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
@@ -266,6 +267,7 @@
     recent: storage.get(KEYS.recent, []).filter(function (r) { return r && BY_ID[r.id]; }),
     openMode: storage.get(KEYS.openMode, 'blank'),
     settingsOpen: false,
+    statsOpen: false,
     // Simple glass is the default; the head script in index.html reads the same key.
     glass: storage.getRaw(KEYS.glass) === 'liquid' ? 'liquid' : 'simple',
     snowLevel: snowLevelFrom(storage.getRaw(KEYS.snow))
@@ -285,6 +287,7 @@
   var compactTitle = $('compact-title');
   var scrim = $('scrim');
   var settingsBtn = $('settings-btn');
+  var statsBtn = $('stats-btn');
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
   var chatGlass = $('chat-glass');
@@ -315,10 +318,10 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, statsBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
 
-  // The sheet shows either a game's details or Settings.
-  function sheetIsOpen() { return !!(state.sheetGame || state.settingsOpen); }
+  // The sheet shows a game's details, Settings or Stats.
+  function sheetIsOpen() { return !!(state.sheetGame || state.settingsOpen || state.statsOpen); }
 
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 
@@ -337,7 +340,7 @@
       shadowOffsetY: 4
     };
     var extra;
-    if (el === settingsBtn || el === desktopBtn) extra ={ blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
+    if (el === settingsBtn || el === desktopBtn || el === statsBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
     else if (el === nextupGlass || el === chatGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
@@ -353,7 +356,7 @@
   }
 
   function visibleGlass() {
-    var list = [settingsBtn, desktopBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [settingsBtn, desktopBtn, statsBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
     if (sheetIsOpen()) list.push(sheet);
     return list;
@@ -964,10 +967,241 @@
     lastFocus = document.activeElement;
     state.sheetGame = null;
     state.settingsOpen = true;
+    state.statsOpen = false;
+    stopStatsRefresh();
+    sheet.classList.remove('is-stats');
     sheet.classList.add('is-settings');
     sheet.style.removeProperty('translate');
     sheetBody.innerHTML = settingsHtml();
     showSheet();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Stats: time on SahurHub and in each opsec. stats.js counts it and keeps it
+  // on this device only; this part shows it (the Stats button, left of Chat).
+  // ---------------------------------------------------------------------------
+
+  var statsTimer = 0;
+  var statsResetArmed = 0;
+
+  function fmtTime(ms) {
+    ms = Math.max(0, ms || 0);
+    if (ms < 60000) return Math.floor(ms / 1000) + 's';
+    var mins = Math.floor(ms / 60000);
+    var h = Math.floor(mins / 60);
+    var m = mins % 60;
+    return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm' : m + 'm';
+  }
+
+  function plural2(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  function statsData() {
+    var S = window.SahurHubStats;
+    var s = S.load();
+    var gameMs = 0;
+    var plays = 0;
+    var played = [];
+    Object.keys(s.games).forEach(function (id) {
+      var r = s.games[id];
+      var g = BY_ID[id];
+      if (!g || !r) return; // an opsec that was removed from games.js
+      gameMs += r.ms || 0;
+      plays += r.plays || 0;
+      if ((r.ms || 0) > 0 || (r.plays || 0) > 0) played.push({ game: g, ms: r.ms || 0, plays: r.plays || 0 });
+    });
+    played.sort(function (a, b) { return b.ms - a.ms || b.plays - a.plays; });
+
+    // Last 7 days, oldest first (noon avoids daylight-saving surprises).
+    var week = [];
+    var weekMs = 0;
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      var ms = s.days[S.dayKey(d.getTime())] || 0;
+      weekMs += ms;
+      week.push({ ms: ms, today: i === 0, day: d.toLocaleDateString(undefined, { weekday: 'short' }) });
+    }
+
+    // Streak: days in a row with a visit, ending today (or yesterday).
+    var streak = 0;
+    var c = new Date();
+    c.setHours(12, 0, 0, 0);
+    if (s.days[S.dayKey(c.getTime())] == null) c.setDate(c.getDate() - 1);
+    while (s.days[S.dayKey(c.getTime())] != null) { streak++; c.setDate(c.getDate() - 1); }
+    var best = 0;
+    var run = 0;
+    var prev = null;
+    Object.keys(s.days).sort().forEach(function (k) {
+      var t = new Date(k + 'T12:00:00').getTime();
+      run = prev !== null && Math.round((t - prev) / 86400000) === 1 ? run + 1 : 1;
+      best = Math.max(best, run);
+      prev = t;
+    });
+    best = Math.max(best, streak, s.best || 0);
+    if (best > (s.best || 0)) { s.best = best; S.save(s); }
+
+    var playable = GAMES.filter(function (g) { return g.url; });
+    var tried = playable.filter(function (g) {
+      var r = s.games[g.id];
+      return r && ((r.plays || 0) > 0 || (r.ms || 0) > 0);
+    }).length;
+
+    return {
+      first: s.first, siteMs: s.site, gameMs: gameMs, total: s.site + gameMs, plays: plays, played: played,
+      todayMs: s.days[S.dayKey(Date.now())] || 0, week: week, weekMs: weekMs,
+      streak: streak, best: best, tried: tried, playableCount: playable.length
+    };
+  }
+
+  // Milestones. "goal" can be a number or depend on the data.
+  var MILESTONES = [
+    { icon: 'star', name: 'First hour', desc: 'Spend 1 hour on SahurHub', time: true, value: function (d) { return d.total; }, goal: 3600e3 },
+    { icon: 'star', name: '10 hours', desc: 'Spend 10 hours on SahurHub', time: true, value: function (d) { return d.total; }, goal: 36000e3 },
+    { icon: 'crown', name: '50 hours', desc: 'Spend 50 hours on SahurHub', time: true, value: function (d) { return d.total; }, goal: 180000e3 },
+    { icon: 'target', name: 'Explorer', desc: 'Try 3 different opsecs', value: function (d) { return d.tried; }, goal: 3 },
+    { icon: 'gem', name: 'Completionist', desc: 'Try every opsec', value: function (d) { return d.tried; }, goal: function (d) { return Math.max(1, d.playableCount); } },
+    { icon: 'bolt', name: 'On a roll', desc: 'Visit 3 days in a row', value: function (d) { return d.best; }, goal: 3 },
+    { icon: 'bolt', name: 'Week streak', desc: 'Visit 7 days in a row', value: function (d) { return d.best; }, goal: 7 },
+    { icon: 'crown', name: 'Month streak', desc: 'Visit 30 days in a row', value: function (d) { return d.best; }, goal: 30 },
+    { icon: 'controller', name: '10 plays', desc: 'Press Play 10 times', value: function (d) { return d.plays; }, goal: 10 },
+    { icon: 'controller', name: '100 plays', desc: 'Press Play 100 times', value: function (d) { return d.plays; }, goal: 100 },
+    { icon: 'rocket', name: 'Marathon', desc: 'Play one opsec for 2 hours', time: true, value: function (d) { return d.played.length ? d.played[0].ms : 0; }, goal: 7200e3 }
+  ];
+
+  function statTile(label, value, extraClass, sub) {
+    return '<div class="stat-tile' + (extraClass ? ' ' + extraClass : '') + '">' +
+      '<span class="stat-label">' + escapeHtml(label) + '</span>' +
+      '<span class="stat-value">' + escapeHtml(value) + '</span>' +
+      (sub ? '<span class="stat-sub">' + escapeHtml(sub) + '</span>' : '') + '</div>';
+  }
+
+  function statsHtml() {
+    var d = statsData();
+    var since = new Date(d.first).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Last 7 days: one bar per day, height relative to the busiest day.
+    var max = Math.max.apply(null, d.week.map(function (w) { return w.ms; }));
+    var chart = '<div class="wk-chart">' + d.week.map(function (w) {
+      var pct = max > 0 ? Math.max(w.ms > 0 ? 3 : 0, Math.round(w.ms / max * 100)) : 0;
+      return '<div class="wk-col' + (w.today ? ' is-today' : '') + (w.ms ? '' : ' is-zero') + '" tabindex="0" style="--h:' + pct + '%" aria-label="' + escapeHtml(w.day + ': ' + fmtTime(w.ms)) + '">' +
+        '<span class="wk-tip">' + escapeHtml(fmtTime(w.ms)) + '</span><span class="wk-bar"></span></div>';
+    }).join('') + '</div>' +
+      '<div class="wk-days" aria-hidden="true">' + d.week.map(function (w) {
+        return '<span class="wk-day' + (w.today ? ' is-today' : '') + '">' + escapeHtml(w.today ? 'Today' : w.day) + '</span>';
+      }).join('') + '</div>';
+
+    var top = d.played.length ? d.played[0].ms : 0;
+    var mostPlayed = d.played.length
+      ? '<div class="mp-list">' + d.played.map(function (p, i) {
+          var g = p.game;
+          return '<div class="mp-row" style="' + artStyle(g) + '">' +
+            '<span class="mp-rank">' + (i + 1) + '</span>' +
+            '<span class="list-icon">' + gameArt(g) + '</span>' +
+            '<span class="mp-text"><span class="mp-title">' + escapeHtml(g.title) + '</span>' +
+              '<span class="mp-sub">' + escapeHtml(plural2(p.plays, 'play', 'plays')) + '</span>' +
+              '<span class="mp-bar"><span style="width:' + (top ? Math.round(p.ms / top * 100) : 0) + '%"></span></span></span>' +
+            '<span class="mp-time">' + escapeHtml(fmtTime(p.ms)) + '</span></div>';
+        }).join('') + '</div>'
+      : '<p class="stats-empty">Play an opsec and it will show up here.</p>';
+
+    var unlocked = 0;
+    var badges = MILESTONES.map(function (m) {
+      var value = m.value(d);
+      var goal = typeof m.goal === 'function' ? m.goal(d) : m.goal;
+      var done = value >= goal;
+      if (done) unlocked++;
+      var progress = done ? 'Unlocked' : (m.time ? fmtTime(value) + ' / ' + fmtTime(goal) : Math.min(value, goal) + ' / ' + goal);
+      return '<div class="mile' + (done ? '' : ' is-locked') + '">' +
+        '<span class="mile-icon">' + glyph(m.icon) + '</span>' +
+        '<span class="mile-text"><span class="mile-name">' + escapeHtml(m.name) + '</span>' +
+          '<span class="mile-desc">' + escapeHtml(m.desc) + '</span>' +
+          '<span class="mile-prog">' + escapeHtml(progress) + '</span></span></div>';
+    }).join('');
+
+    var triedPct = d.playableCount ? Math.round(d.tried / d.playableCount * 100) : 0;
+
+    return '<h2 class="sheet-title" id="sheet-title">Your stats</h2>' +
+      '<p class="stats-since">On this device since ' + escapeHtml(since) + '</p>' +
+      '<div class="stat-tiles">' +
+        statTile('On SahurHub', fmtTime(d.siteMs)) +
+        statTile('In opsecs', fmtTime(d.gameMs)) +
+        statTile('Total', fmtTime(d.total), 'is-main') +
+      '</div>' +
+      '<div class="stat-tiles">' +
+        statTile('Today', fmtTime(d.todayMs)) +
+        statTile('Last 7 days', fmtTime(d.weekMs)) +
+        statTile('Streak', plural2(d.streak, 'day', 'days'), '', 'Best: ' + plural2(d.best, 'day', 'days')) +
+      '</div>' +
+      '<section class="set-group"><h3 class="set-title">Last 7 days</h3>' + chart + '</section>' +
+      '<section class="set-group"><h3 class="set-title">Most played</h3>' + mostPlayed + '</section>' +
+      '<section class="set-group"><h3 class="set-title">Opsecs tried</h3>' +
+        '<div class="tried"><span class="tried-num">' + d.tried + '<small> of ' + d.playableCount + '</small></span>' +
+        '<span class="tried-sub">' + escapeHtml(plural2(d.plays, 'play', 'plays') + ' in total') + '</span></div>' +
+        '<div class="tried-bar"><span style="width:' + triedPct + '%"></span></div>' +
+      '</section>' +
+      '<section class="set-group"><h3 class="set-title">Milestones <span class="set-count">' + unlocked + ' of ' + MILESTONES.length + '</span></h3>' +
+        '<div class="miles">' + badges + '</div>' +
+      '</section>' +
+      '<p class="stats-note">Time counts while SahurHub, or an opsec opened in about:blank or SahurHub mode, is on screen. ' +
+        'Opsecs opened in a normal new tab only count as plays. Stats are saved on this device only.</p>' +
+      '<button class="btn btn-tinted stats-reset" type="button" data-stats-reset>Reset stats</button>';
+  }
+
+  function renderStats() {
+    var top = sheetBody.scrollTop;
+    sheetBody.innerHTML = statsHtml();
+    sheetBody.scrollTop = top;
+    if (statsResetArmed) armResetButton();
+  }
+
+  function stopStatsRefresh() {
+    clearInterval(statsTimer);
+    statsTimer = 0;
+    clearTimeout(statsResetArmed);
+    statsResetArmed = 0;
+  }
+
+  function openStats() {
+    if (!window.SahurHubStats) return;
+    lastFocus = document.activeElement;
+    state.sheetGame = null;
+    state.settingsOpen = false;
+    state.statsOpen = true;
+    sheet.classList.remove('is-settings');
+    sheet.classList.add('is-stats');
+    sheet.style.removeProperty('translate');
+    stopStatsRefresh();
+    sheetBody.innerHTML = statsHtml();
+    showSheet();
+    // Keep the numbers ticking while it is open (stats.js saves about every 10 seconds).
+    statsTimer = setInterval(function () { if (state.statsOpen) renderStats(); }, 5000);
+  }
+
+  function armResetButton() {
+    var btn = sheetBody.querySelector('[data-stats-reset]');
+    if (!btn) return;
+    btn.classList.add('is-armed');
+    btn.textContent = 'Tap again to reset everything';
+  }
+
+  // Reset needs two taps so it can't happen by accident.
+  function onStatsReset() {
+    if (!statsResetArmed) {
+      armResetButton();
+      statsResetArmed = setTimeout(function () {
+        statsResetArmed = 0;
+        var btn = sheetBody.querySelector('[data-stats-reset]');
+        if (btn) { btn.classList.remove('is-armed'); btn.textContent = 'Reset stats'; }
+      }, 4000);
+      return;
+    }
+    clearTimeout(statsResetArmed);
+    statsResetArmed = 0;
+    window.SahurHubStats.reset();
+    window.SahurHubStats.markVisit();
+    renderStats();
+    showToast('Stats reset');
   }
 
   // ---------------------------------------------------------------------------
@@ -1671,21 +1905,23 @@
       showToast(g.title + ' is coming soon');
       return;
     }
+    if (window.SahurHubStats) window.SahurHubStats.recordPlay(g.id); // Stats: play count
     var url = new URL(g.url, location.href).href;
     var mode = g.newTabOnly ? 'tab' : state.openMode;
     if (mode === 'site') {
-      // Games in this repository open directly. Others play inside play.html,
-      // so the address stays on SahurHub.
-      location.href = new URL(url).origin === location.origin ? url : 'play.html?g=' + encodeURIComponent(g.id);
+      // Every opsec plays inside play.html, so the address stays on SahurHub
+      // and Stats can count the time.
+      location.href = 'play.html?g=' + encodeURIComponent(g.id);
       return;
     }
-    if (mode === 'blank') { openInBlank(url); return; }
+    if (mode === 'blank') { openInBlank(url, g.id); return; }
+    // A normal new tab: its time can't be counted (only the play above).
     window.open(url, '_blank', 'noopener');
   }
 
   // Opens a new about:blank tab with the game filling it, so the address bar
   // only says about:blank.
-  function openInBlank(url) {
+  function openInBlank(url, gameId) {
     var w = window.open('about:blank', '_blank');
     if (!w) { showToast('Your browser blocked the new tab. Allow pop-ups for SahurHub.'); return; }
     try {
@@ -1706,6 +1942,13 @@
       frame.setAttribute('allowfullscreen', '');
       frame.addEventListener('load', function () { try { frame.focus(); } catch (e) { /* ignore */ } });
       d.body.appendChild(frame);
+      // Stats: count time in this tab (it runs there, so it keeps counting
+      // even if the SahurHub tab is closed).
+      if (window.SahurHubStats && gameId) {
+        var timer = d.createElement('script');
+        timer.textContent = '(' + window.SahurHubStats.trackerSource + ')("game", ' + JSON.stringify(gameId) + ');';
+        d.body.appendChild(timer);
+      }
       w.opener = null;
     } catch (e) {
       w.location.href = url;
@@ -1767,7 +2010,9 @@
     lastFocus = document.activeElement;
     state.sheetGame = g;
     state.settingsOpen = false;
-    sheet.classList.remove('is-settings');
+    state.statsOpen = false;
+    stopStatsRefresh();
+    sheet.classList.remove('is-settings', 'is-stats');
     // Set colors as variables only; the glass library keeps its own inline styles here.
     sheet.style.setProperty('--c1', g.c1);
     sheet.style.setProperty('--c2', g.c2);
@@ -1812,6 +2057,8 @@
     if (!sheetIsOpen()) return;
     state.sheetGame = null;
     state.settingsOpen = false;
+    state.statsOpen = false;
+    stopStatsRefresh();
     sheet.classList.remove('open');
     scrim.classList.remove('open');
     sheet.inert = true;
@@ -2083,6 +2330,8 @@
     var snowOpt = target.closest('[data-snow-level]');
     if (snowOpt) { setSnowLevel(snowOpt.getAttribute('data-snow-level')); return; }
 
+    if (target.closest('[data-stats-reset]')) { onStatsReset(); return; }
+
     var play = target.closest('[data-play]');
     if (play) { playGame(BY_ID[play.getAttribute('data-play')]); return; }
 
@@ -2184,6 +2433,11 @@
     // Pictures and links can't be dragged off the page (Firefox ignores the CSS for this).
     document.addEventListener('dragstart', function (e) {
       if (!(e.target && e.target.closest && e.target.closest('input, textarea'))) e.preventDefault();
+    });
+
+    statsBtn.addEventListener('click', function () {
+      bounce(statsBtn.querySelector('[data-icon]'));
+      openStats();
     });
 
     settingsBtn.addEventListener('click', function () {
@@ -2301,6 +2555,11 @@
   function start() {
     fillIcons(document);
     applyThemeAttrs(themeChoice());
+    // Stats: mark today as visited and count time while SahurHub is on screen.
+    if (window.SahurHubStats) {
+      window.SahurHubStats.markVisit();
+      window.SahurHubStats.track('site');
+    }
     $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
     drawWallpaper();

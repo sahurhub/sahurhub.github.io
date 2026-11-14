@@ -52,11 +52,13 @@
   --corner-right: max(16px, calc((100vw - 1240px) / 2 + 24px));
   --desktop-w: 116px;
   --chat-w: 92px;
+  --stats-w: 96px;
+  --top-gap: 10px; /* space between the top-right buttons */
 
   color-scheme: light;
 }
 @media (max-width: 520px) {
-  :root { --desktop-w: 44px; --chat-w: 44px; }
+  :root { --desktop-w: 44px; --chat-w: 44px; --stats-w: 44px; --top-gap: 6px; }
 }
 
 :root[data-theme="dark"] {
@@ -840,7 +842,7 @@ body.ready .glass-top { translate: 0 0; }
 @media (hover: hover) { #settings-btn:hover .settings-icon { transform: rotate(60deg); } }
 
 #desktop-btn {
-  right: calc(var(--corner-right) + 54px);
+  right: calc(var(--corner-right) + 44px + var(--top-gap));
   width: var(--desktop-w);
   height: 44px;
   padding: 0 4px;
@@ -861,9 +863,30 @@ body.ready .glass-top { translate: 0 0; }
   #desktop-btn .desktop-label { display: none; }
 }
 
+/* Stats button (left of Chat) */
+#stats-btn {
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + 3 * var(--top-gap));
+  width: var(--stats-w);
+  height: 44px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+#stats-btn [data-icon] { width: 21px; height: 21px; }
+@media (max-width: 520px) {
+  #stats-btn { padding: 0; }
+  #stats-btn .stats-label { display: none; }
+}
+
 /* Chat button (left of Desktop): a plain button on top of an empty glass shape. */
 #chat-glass {
-  right: calc(var(--corner-right) + 54px + var(--desktop-w) + 10px);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
   width: var(--chat-w);
   height: 44px;
   pointer-events: none;
@@ -873,7 +896,7 @@ body.ready .glass-top { translate: 0 0; }
   position: fixed;
   z-index: 31;
   top: calc(var(--safe-top) + 12px);
-  right: calc(var(--corner-right) + 54px + var(--desktop-w) + 10px);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
   width: var(--chat-w);
   height: 44px;
   border-radius: 22px;
@@ -1272,6 +1295,119 @@ html.lg-ready #sheet::after {
   .seg-full .seg-btn { font-size: 12.5px; padding: 9px 2px; }
 }
 
+/* ---------- Stats (shown in the sheet) ---------- */
+
+.stats-since { margin-top: 4px; font-size: 14px; color: var(--label-2); }
+.stat-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.stat-tiles:first-of-type { margin-top: 16px; }
+.stat-tile { min-width: 0; padding: 12px 12px 11px; border-radius: 18px; background: var(--fill); }
+.stat-label { display: block; font-size: 12.5px; font-weight: 650; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-value { display: block; margin-top: 3px; font-size: 22px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-tile.is-main .stat-value { color: var(--accent); }
+.stat-sub { display: block; margin-top: 2px; font-size: 12px; color: var(--label-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-count { margin-left: 4px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--label-3); }
+
+/* Last 7 days: one bar per day (single color, so no legend). The value shows
+   on hover or tap; today's value always shows. */
+.wk-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  height: 120px;
+  padding-top: 22px;
+  border-bottom: 1px solid var(--separator);
+}
+.wk-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  border-radius: 6px;
+  outline-offset: 2px;
+  cursor: default;
+}
+.wk-bar { width: min(26px, 62%); height: var(--h); border-radius: 4px 4px 0 0; background: var(--accent); }
+.wk-col.is-zero .wk-bar { height: 0; }
+.wk-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--h) + 4px);
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--label);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.wk-col:hover .wk-tip,
+.wk-col:focus-visible .wk-tip,
+.wk-col.is-today .wk-tip { opacity: 1; }
+.wk-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin-top: 6px; }
+.wk-day { min-width: 0; overflow: hidden; text-align: center; font-size: 12px; color: var(--label-2); white-space: nowrap; }
+.wk-day.is-today { color: var(--label); font-weight: 700; }
+
+.mp-list { display: flex; flex-direction: column; gap: 6px; }
+.mp-row {
+  display: grid;
+  grid-template-columns: 16px 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 10px;
+  border-radius: 16px;
+  background: var(--fill);
+}
+.mp-rank { font-size: 13px; font-weight: 750; text-align: center; color: var(--label-2); }
+.mp-row .list-icon { width: 40px; height: 40px; border-radius: 11px; }
+.mp-text { min-width: 0; }
+.mp-title { display: block; font-size: 15px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-sub { display: block; font-size: 12.5px; color: var(--label-2); }
+.mp-bar { display: block; height: 4px; margin-top: 5px; border-radius: 2px; overflow: hidden; background: var(--fill-strong); }
+.mp-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.mp-time { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stats-empty { padding: 14px; border-radius: 16px; background: var(--fill); font-size: 14px; color: var(--label-2); }
+
+.tried { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.tried-num { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+.tried-num small { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--label-2); }
+.tried-sub { font-size: 13.5px; color: var(--label-2); }
+.tried-bar { height: 8px; margin-top: 8px; border-radius: 4px; overflow: hidden; background: var(--fill-strong); }
+.tried-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+
+.miles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 8px; }
+.mile { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; border-radius: 16px; background: var(--fill); }
+.mile-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #ffd60a, #ff9f0a);
+  box-shadow: 0 4px 12px rgba(255, 159, 10, 0.3);
+}
+.mile-icon .glyph { width: 58%; height: 58%; }
+.mile.is-locked .mile-icon { color: var(--label-3); background: var(--fill-strong); box-shadow: none; }
+.mile-text { min-width: 0; }
+.mile-name { display: block; font-size: 14.5px; font-weight: 700; }
+.mile-desc { display: block; font-size: 12.5px; line-height: 1.3; color: var(--label-2); }
+.mile-prog { display: block; margin-top: 2px; font-size: 12px; font-weight: 650; color: var(--accent); font-variant-numeric: tabular-nums; }
+.mile.is-locked .mile-name { color: var(--label-2); }
+.mile.is-locked .mile-prog { color: var(--label-3); }
+
+.stats-note { margin-top: 20px; font-size: 12.5px; line-height: 1.45; color: var(--label-2); }
+.stats-reset { width: 100%; height: 44px; margin-top: 12px; border-radius: 22px; font-size: 15px; }
+.stats-reset.is-armed { background: #ff3b30; color: #fff; }
+#sheet.is-stats .sheet-body { padding-bottom: 26px; }
+@media (max-width: 400px) {
+  .stat-tiles { gap: 7px; }
+  .stat-tile { padding: 10px 10px 9px; }
+  .stat-value { font-size: 18px; }
+}
+
 /* ---------- Toast ---------- */
 
 #toast {
@@ -1325,7 +1461,7 @@ html.lg-ready #sheet::after {
   left: var(--nu-left);
   top: calc(var(--safe-top) + 12px);
   height: 44px;
-  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--chat-w) - 34px);
+  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--chat-w) - var(--stats-w) - 3 * var(--top-gap) - 10px);
   padding: 0 16px 0 14px;
   border-radius: 22px;
   overflow: hidden;

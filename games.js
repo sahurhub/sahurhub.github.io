@@ -95,6 +95,7 @@ window.SAHURHUB_GAMES = [
     icon: "car",
     colors: ["#ff9d4d", "#e9661b"],
     url: "games/delivery-rush/",
+    cover: "covers/delivery-rush.jpg",
     isNew: true
   },
   {

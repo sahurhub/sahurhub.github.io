@@ -884,7 +884,8 @@ body.ready .glass-top { translate: 0 0; }
   #stats-btn .stats-label { display: none; }
 }
 
-/* "Streak: N" pill, centered under the Stats button. Tapping it opens Stats. */
+/* "Streak: N" text (no background), centered under the Stats button.
+   Tapping it opens Stats. */
 #streak-chip {
   position: fixed;
   z-index: 30;
@@ -895,15 +896,14 @@ body.ready .glass-top { translate: 0 0; }
   align-items: center;
   gap: 5px;
   height: 26px;
-  padding: 0 11px 0 9px;
-  border-radius: 13px;
+  padding: 0 4px;
+  border-radius: 8px;
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  color: var(--glass-label);
-  background: var(--glass-simple);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--glass-simple-edge);
+  color: var(--label);
+  background: none;
   translate: 0 -120px;
   transition: translate 0.8s var(--spring), scale 0.25s var(--spring);
 }

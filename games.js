@@ -99,6 +99,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // The game's files are in games/turbo-town/ in this repository. Players sign in with
+    // their SahurHub Chat account; the game server is turbotown-79-72-86-205.nip.io.
+    id: "turbo-town",
+    title: "Turbo Town",
+    category: "Racing",
+    tags: ["karts", "kart racing", "drift", "items", "grand prix", "time trials", "multiplayer", "online", "friends", "3d", "racing"],
+    description: "Bright 3D kart racing: 8 seasonal maps, 8 karts, items and drift boosts. Race the computer or your friends online. Sign in with your SahurHub Chat account.",
+    icon: "car",
+    colors: ["#ffd23f", "#2fb6ff"],
+    url: "games/turbo-town/",
+    cover: "covers/turbo-town.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

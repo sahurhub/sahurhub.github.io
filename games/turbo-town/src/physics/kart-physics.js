@@ -193,8 +193,7 @@ function groundStep(k, world, dt, sp, pressed, control) {
     const turnF = Math.min(1, sAbs / 5) * (1 - 0.4 * Math.min(1, sAbs / P.top));
     yawRate = -k.steer * P.turn * turnF * sp.handling * (vf < -0.2 ? -1 : 1);
   }
-  yawRate *= 1 + 0.7 * instab;
-  if (instab > 0) yawRate += Math.sin(k.time * 9.3) * 0.35 * instab; // twitchy at top speed
+  yawRate *= 1 + 0.7 * instab; // wobbly karts steer a bit sharper at top speed (no shaking)
   k.yaw += yawRate * dt;
   k.yawRate = yawRate;
   // turning hard at speed scrubs speed off, more for karts with weak handling
@@ -232,7 +231,7 @@ function groundStep(k, world, dt, sp, pressed, control) {
 // at speed for AUTO_HOLD seconds puts the kart into a drift (a big sideways slide that
 // turns tighter); holding the turn keeps it drifting; letting go (or steering the other
 // way for a moment) ends it. There is no boost at the end. st is a small state object.
-export const AUTO_HOLD = 1.3;
+export const AUTO_HOLD = 1.0;
 const AUTO_SPEED = 12, AUTO_GRACE = 0.15, AUTO_OPPOSITE = 0.25;
 export function autoDrift(k, steer, throttle, st, dt) {
   const d = k.drift;

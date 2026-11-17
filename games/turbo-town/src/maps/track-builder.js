@@ -60,6 +60,19 @@ export function buildTrackWorld(track, vis) {
   return ctx;
 }
 
+// nearest main-road sample to (x, z), searching around lap distance s: { d, p }
+function mainNear(track, x, z, s) {
+  const main = track.main, n = main.pts.length;
+  const i0 = Math.round(s / main.step);
+  let best = Infinity, bp = main.pts[0];
+  for (let k = -30; k <= 30; k++) {
+    const p = main.pts[(((i0 + k) % n) + n) % n];
+    const d = (p.x - x) ** 2 + (p.z - z) ** 2;
+    if (d < best) { best = d; bp = p; }
+  }
+  return { d: Math.sqrt(best), p: bp };
+}
+
 // ------------------------------------------------------------------ cross-section height
 
 // height of a path cross-section at lateral offset lat (verges slope gently down)
@@ -292,10 +305,22 @@ function buildRibbons(ctx, path) {
 
   const road = { pos: [], col: [], uv: [] }, ground = { pos: [], col: [], uv: [] }, wood = { pos: [], col: [], uv: [] };
   const coll = [];
+  // shortcuts: where a shortcut lies completely on the main road (where it leaves and
+  // joins) nothing is drawn; where it overlaps the main road it is kept just below it
+  // (the main road is banked on corners, so a flat shortcut used to poke through it)
+  const onMain = isMain ? null : path.pts.map((p) => {
+    const m = mainNear(track, p.x, p.z, p.s);
+    return m.d + p.w / 2 < m.p.w / 2 + 0.3 && Math.abs(m.p.y - p.y) < 2;
+  });
+  const underMain = (v) => {
+    const g = world.ground(v[0], v[1] + 0.7, v[2]);
+    if (g && g.surf === SURF.ROAD && g.y > v[1] - 0.7) v[1] = Math.min(v[1], g.y - 0.05);
+  };
 
   for (let i = 0; i < segs; i++) {
     const a = path.pts[i], b = path.pts[(i + 1) % n];
     if (isMain && (ctx.inGap(a.s) || ctx.inGap(b.s))) continue;
+    if (onMain && (onMain[i] || onMain[(i + 1) % n])) continue;
     const bridge = isMain && (ctx.inBridge(a.s) || ctx.inBridge(b.s));
     const hwa = a.w / 2, hwb = b.w / 2;
     // lateral offsets are given per sample, so build each strip with interpolated widths
@@ -303,6 +328,7 @@ function buildRibbons(ctx, path) {
       // fa0/fa1: functions (p, hw) -> lateral
       const P = [[a, fa0(a, hwa)], [a, fa1(a, hwa)], [b, fa1(b, hwb)], [b, fa0(b, hwb)]];
       const V = P.map(([p, l]) => [p.x + p.rx * l, yLat(p, l) - lower, p.z + p.rz * l, p, l]);
+      if (!isMain) V.forEach(underMain);
       for (const j of [0, 1, 2, 0, 2, 3]) {
         const v = V[j];
         buf.pos.push(v[0], v[1], v[2]);

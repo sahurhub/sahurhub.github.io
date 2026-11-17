@@ -8,6 +8,7 @@ const KEYMAP = {
   KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
   Space: 'item', ShiftLeft: 'back', ShiftRight: 'back', KeyQ: 'back', Escape: 'pause',
+  Backquote: 'quickpause', // ` : pause at once (online: votes for a pause, no menu)
 };
 
 export class Input {

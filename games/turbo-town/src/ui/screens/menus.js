@@ -1,14 +1,14 @@
 // TURBO TOWN - menu screens.
 import { h, btn, header, statBar, icon } from '../ui.js';
 import { KARTS, KART_BY_ID } from '../../shared/karts.js';
-import { DRIVERS, CUPS, MAP_INFO, AI_DIFFICULTIES, levelFromXp } from '../../shared/rules.js';
+import { CUPS, MAP_INFO, AI_DIFFICULTIES, levelFromXp } from '../../shared/rules.js';
 import { MAP_BY_ID } from '../../maps/index.js';
 import { fmtTime } from '../hud.js';
 import { saveSettings } from '../../save/settings.js';
 import { QUALITY } from '../../render/renderer.js';
 import { Multiplayer } from './online.js';
 import { Admin } from './admin.js';
-import { PAINTS, WHEELS, ACCS, TITLES, FRAMES, BOOSTS } from '../../shared/cosmetics.js';
+import { PAINTS, WHEELS, ACCS, SKINS, TITLES, FRAMES, BOOSTS } from '../../shared/cosmetics.js';
 import { ACHIEVEMENTS } from '../../shared/achievements.js';
 
 const SEASON_COLORS = { spring: '#ff7ab8', summer: '#ffb02e', autumn: '#ff6b2c', winter: '#4fc3ff' };
@@ -50,17 +50,16 @@ export function MainMenu(ui) {
   return { el, noBack: true };
 }
 
-// ------------------------------------------------------------------ kart + driver select
+// ------------------------------------------------------------------ kart select
 
 export function KartSelect(ui, params) {
   const app = ui.app, prof = app.profile;
   const p = prof.get();
-  let kart = p.kart, driver = p.driver;
-  const show = () => app.game.showroom.showKart(kart, driver, { paint: prof.lookFor(kart).paint, cosmetics: app.cosmeticsFor(kart), locked: !prof.hasKart(kart) });
+  let kart = p.kart;
+  const show = () => app.game.showroom.showKart(kart, { paint: prof.lookFor(kart).paint, cosmetics: app.cosmeticsFor(kart), locked: !prof.hasKart(kart) });
   const info = h('div', { class: 'kart-info panel' });
   const kartList = h('div', { class: 'pick-row' });
-  const drvList = h('div', { class: 'pick-row' });
-  const go = btn({ label: 'Choose', icon: 'check', color: '#3ddc84', onClick: async () => { await prof.select(kart, driver); params.next(); } });
+  const go = btn({ label: 'Choose', icon: 'check', color: '#3ddc84', onClick: async () => { await prof.select(kart); params.next(); } });
   const render = () => {
     const def = KART_BY_ID[kart];
     const owned = prof.hasKart(kart);
@@ -70,7 +69,6 @@ export function KartSelect(ui, params) {
       owned ? null : h('p', { class: 'lockline', html: icon('lock') + ` Unlocks at level ${def.level} for ${def.price} coins (buy it in the Garage)` }));
     go.disabled = !owned;
     kartList.querySelectorAll('.pick').forEach((b) => b.classList.toggle('on', b.dataset.id === kart));
-    drvList.querySelectorAll('.pick').forEach((b) => b.classList.toggle('on', b.dataset.id === driver));
     show();
   };
   for (const k of KARTS) {
@@ -78,13 +76,8 @@ export function KartSelect(ui, params) {
     b.addEventListener('click', () => { kart = k.id; render(); });
     kartList.appendChild(b);
   }
-  for (const d of DRIVERS) {
-    const b = h('button', { class: 'pick', 'data-id': d.id, style: { '--c': d.color } }, h('span', { class: 'pick-dot' }), d.name + ' the ' + d.animal);
-    b.addEventListener('click', () => { driver = d.id; render(); });
-    drvList.appendChild(b);
-  }
   const el = h('div', { class: 'menu-side' }, header(ui, 'Choose your kart'),
-    h('div', { class: 'side-col' }, h('h3', {}, 'Kart'), kartList, h('h3', {}, 'Driver'), drvList, info, go));
+    h('div', { class: 'side-col' }, h('h3', {}, 'Kart'), kartList, info, go));
   render();
   let detach = null;
   return { el, enter() { detach = app.game.showroom.attach(app.game.r.canvas); }, leave() { if (detach) detach(); } };
@@ -182,7 +175,7 @@ export function Garage(ui) {
   const tabs = h('div', { class: 'seg' });
   const preview = (over = {}) => {
     const look = { ...prof.lookFor(kart), ...over };
-    app.game.showroom.showKart(kart, prof.get().driver, { paint: look.paint, cosmetics: { wheels: look.wheels, acc: look.acc }, locked: !prof.hasKart(kart) });
+    app.game.showroom.showKart(kart, { paint: look.paint, cosmetics: { wheels: look.wheels, acc: look.acc, skin: look.skin }, locked: !prof.hasKart(kart) });
   };
   const render = () => {
     const def = KART_BY_ID[kart];
@@ -205,17 +198,22 @@ export function Garage(ui) {
       // cosmetics never change how the kart drives
       const un = prof.unlocked();
       const cur = prof.lookFor(kart);
-      const items = tab === 'paint' ? PAINTS : tab === 'wheels' ? WHEELS : ACCS;
-      const key = tab === 'paint' ? 'paint' : tab === 'wheels' ? 'wheels' : 'acc';
-      const curId = tab === 'paint' ? cur.paintId : tab === 'wheels' ? cur.wheels : cur.acc;
-      const unl = tab === 'paint' ? un.paints : tab === 'wheels' ? un.wheels : un.accs;
-      panel.append(h('h2', {}, def.name + ': ' + (tab === 'paint' ? 'Paint' : tab === 'wheels' ? 'Wheels' : 'Accessory')), h('p', { class: 'muted' }, 'Just for looks: these never change how a kart drives.'));
+      const T = {
+        paint: { items: PAINTS, key: 'paint', cur: cur.paintId, unl: un.paints, title: 'Paint' },
+        wheels: { items: WHEELS, key: 'wheels', cur: cur.wheels, unl: un.wheels, title: 'Wheels' },
+        acc: { items: ACCS, key: 'acc', cur: cur.acc, unl: un.accs, title: 'Accessory' },
+        skin: { items: SKINS, key: 'skin', cur: cur.skin, unl: un.skins || [null], title: 'Skin' },
+      }[tab];
+      const { items, key, unl } = T, curId = T.cur;
+      panel.append(h('h2', {}, def.name + ': ' + T.title), h('p', { class: 'muted' }, tab === 'skin'
+        ? 'A different car body. Just for looks: it never changes how the kart drives. The Sponsors skin keeps its own colours, so paint does not change it.'
+        : 'Just for looks: these never change how a kart drives.'));
       const grid = h('div', { class: 'cos-grid' });
       for (const c of items) {
         const open = c.id === null || unl.includes(c.id);
         const colors = c.colors || (tab === 'paint' ? def.colors : null);
         const sw = h('button', { class: 'cos' + (c.id === curId ? ' on' : '') + (open ? '' : ' locked'), type: 'button' },
-          colors ? h('span', { class: 'cos-sw', style: { background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)` } }) : h('span', { class: 'cos-sw icon-sw', html: icon(tab === 'wheels' ? 'kart' : 'star') }),
+          colors ? h('span', { class: 'cos-sw', style: { background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)` } }) : h('span', { class: 'cos-sw icon-sw', html: icon(tab === 'acc' ? 'star' : 'kart') }),
           h('span', { class: 'cos-name' }, c.name), open ? null : h('span', { class: 'cos-lv' }, 'Lv ' + c.level));
         sw.addEventListener('mouseenter', () => { if (open) preview({ [key]: tab === 'paint' ? (c.colors || def.colors) : c.id, ...(tab === 'paint' ? {} : {}) }); });
         sw.addEventListener('mouseleave', () => preview());
@@ -229,7 +227,7 @@ export function Garage(ui) {
     }
     list.querySelectorAll('.pick').forEach((b) => b.classList.toggle('on', b.dataset.id === kart));
   };
-  for (const [t, label] of [['kart', 'Kart'], ['paint', 'Paint'], ['wheels', 'Wheels'], ['acc', 'Extras']]) {
+  for (const [t, label] of [['kart', 'Kart'], ['skin', 'Skins'], ['paint', 'Paint'], ['wheels', 'Wheels'], ['acc', 'Extras']]) {
     const b = h('button', { class: 'seg-b', 'data-t': t }, label);
     b.addEventListener('click', () => { tab = t; render(); });
     tabs.append(b);
@@ -347,7 +345,7 @@ export function Settings(ui) {
     h('div', { class: 'panel' },
       h('h3', {}, 'Controls'),
       h('div', { class: 'controls' },
-        ...[['W / Up', 'Accelerate'], ['S / Down', 'Brake and reverse'], ['A D / Left Right', 'Steer'], ['Space', 'Use item'], ['Shift / Q', 'Look behind'], ['Esc', 'Pause']]
+        ...[['W / Up', 'Accelerate'], ['S / Down', 'Brake and reverse'], ['A D / Left Right', 'Steer'], ['Space', 'Use item'], ['Shift / Q', 'Look behind'], ['` (backtick)', 'Quick pause (online: asks everyone for a pause)'], ['Esc', 'Pause menu']]
           .map(([k, v]) => h('div', { class: 'ctl' }, h('kbd', {}, k), h('span', {}, v))),
         h('p', { class: 'muted' }, 'Drifting is automatic: keep turning at speed for a moment and the kart slides sideways and turns tighter. Let go of the turn to straighten up. Ramp tricks happen by themselves.'),
         h('p', { class: 'muted' }, 'Controllers work too: A or RT to drive, B or LT to brake, stick or d-pad to steer, X, LB or RB for items, Y to look behind, Start to pause. Menus: d-pad to move, A to press, B to go back.'))));
@@ -360,7 +358,9 @@ export function Credits(ui) {
   const el = h('div', { class: 'menu-full' }, header(ui, 'Credits'),
     h('div', { class: 'panel credits' },
       h('h2', {}, 'TURBO TOWN'),
-      h('p', {}, 'An original kart racer. Every kart, driver, map, item, model and sound was made for this game.'),
+      h('p', {}, 'A kart racer. The maps, items and sounds were made for this game.'),
+      h('h3', {}, 'Car models'),
+      h('p', {}, '"Lowpoly F1 car" by Cutieunicorn (lukas.dlabek) and "Mclaren MP4/25 Tooned" by Tyler_Dave, both from Sketchfab under the Creative Commons Attribution 4.0 licence (CC BY 4.0). Changed for this game: trimmed down, wheels split off and recoloured.'),
       h('h3', {}, 'Made with'),
       h('p', {}, 'three.js (MIT licence) for 3D graphics. Blender for all 3D models. Press Start 2P and Pixelify Sans fonts (SIL Open Font Licence) from Google Fonts.'),
       h('h3', {}, 'Built by'),

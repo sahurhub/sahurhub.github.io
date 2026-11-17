@@ -19,7 +19,7 @@ export class GhostRecorder {
     const bytes = new Uint8Array(f.buffer);
     let s = '';
     for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
-    return { v: 1, hz: HZ, kart: meta.kart, driver: meta.driver, paint: meta.paint, data: btoa(s) };
+    return { v: 1, hz: HZ, kart: meta.kart, paint: meta.paint, data: btoa(s) };
   }
 }
 
@@ -35,7 +35,7 @@ export class GhostPlayer {
   constructor(ghost, assets, scene) {
     this.g = decodeGhost(ghost);
     const def = KART_BY_ID[ghost.kart] || KART_BY_ID.starter;
-    this.vis = new KartVisual(def, { assets, driver: ghost.driver, paint: ghost.paint, blob: false });
+    this.vis = new KartVisual(def, { assets, paint: ghost.paint, blob: false });
     const mat = new THREE.MeshBasicMaterial({ color: '#cfe8ff', transparent: true, opacity: 0.38, depthWrite: false });
     this.vis.root.traverse((o) => { if (o.isMesh) { o.material = mat; o.castShadow = false; } });
     scene.add(this.vis.root);

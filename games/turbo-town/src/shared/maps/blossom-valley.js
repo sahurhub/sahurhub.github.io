@@ -50,9 +50,9 @@ export default {
     },
   ],
   // wooden bridge over the river (edges move in to the railings)
-  bridges: [{ from: 714, to: 760, style: 'wood' }],
-  // no road over the creek: jump it from the ramp, or splash through
-  gaps: [{ from: 880, to: 888 }],
+  // a wooden bridge over the river, and a little one over the creek (jump it from the ramp)
+  bridges: [{ from: 714, to: 760, style: 'wood' }, { from: 874, to: 896, style: 'wood' }],
+  gaps: [],
   ramps: [{ s: 866, lat: 0, width: 7, length: 7, height: 1.6 }],
   boostPads: [{ s: 470, lat: -3.5 }, { s: 856, lat: 0 }],
   tunnels: [{ from: 990, to: 1032, style: 'flowers' }],

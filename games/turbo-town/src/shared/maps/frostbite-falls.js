@@ -38,8 +38,9 @@ export default {
     // a narrow icy ledge that skips the top of the pass
     { id: 'icicle-ledge', from: XZ(157, -108), to: XZ(78, -176), points: [P(128, 20.5, -152, 6)], surface: 'road', margin: 0.4 },
   ],
-  bridges: [],
-  gaps: [{ from: XZ(-38, -70), to: XZ(-44, -60) }],
+  // an ice bridge over the icy creek (the snow ramp before it is still a jump)
+  bridges: [{ from: XZ(-33, -77), to: XZ(-47, -54), style: 'ice', margin: 0.5 }],
+  gaps: [],
   ramps: [{ at: XZ(-26, -92), lat: 0, width: 14, length: 7, height: 1.6 }],
   patches: [
     // the frozen lake

@@ -36,8 +36,8 @@ export class Online {
     on('box', (m) => this.onBox(m));
     on('fx', (m) => this.onFx(m));
     on('hit', (m) => this.onHit(m));
-    on('shieldPop', (m) => { const r = this.racerOf(m.u); if (r) { r.kart.shield = false; this.raceEvent('shieldPop', r, { kind: m.kind }); } });
-    on('frozen', (m) => { const r = this.racerOf(m.u); if (r) { if (r.isPlayer) { r.kart.slowT = TU.freezeTime; r.kart.slowMul = TU.freezeMul; r.kart.drift.on = false; } r.kart.frozenT = TU.freezeTime; this.raceEvent('frozen', r); } });
+    on('shieldPop', (m) => { const r = this.racerOf(m.u); if (r) { r.kart.shield = false; this.raceEvent('shieldPop', r, { kind: m.kind, by: this.racerOf(m.by) }); } });
+    on('frozen', (m) => { const r = this.racerOf(m.u); if (r) { if (r.isPlayer) { r.kart.slowT = TU.freezeTime; r.kart.slowMul = TU.freezeMul; r.kart.drift.on = false; } r.kart.frozenT = TU.freezeTime; this.raceEvent('frozen', r, { by: this.racerOf(m.by) }); } });
     on('hazard', (m) => this.onHazard(m));
     on('boom', (m) => this.raceEvent('rocketBoom', null, { x: m.x, y: m.y, z: m.z }));
     on('overtake', () => { const me = this.meRacer(); if (me) { me.ov = me.ov || { count: 0 }; me.ov.count++; this.raceEvent('overtake', me, {}); } });
@@ -61,7 +61,7 @@ export class Online {
   async join(code) { await this.net.request('partyJoin', { code }); }
   async queue() { await this.net.request('queue'); }
   async leave() { await this.net.request('partyLeave').catch(() => {}); this.party = null; this.exitToMenu(); }
-  async setKart(kart, driver) { await this.net.request('partyKart', { kart, driver }); }
+  async setKart(kart) { await this.net.request('partyKart', { kart }); }
   async ready(on) { await this.net.request('partyReady', { ready: on }); }
   async settings(s) { await this.net.request('partySettings', s); }
   async start() { await this.net.request('partyStart'); }
@@ -104,7 +104,7 @@ export class Online {
     this.clearRemote();
     await this.game.startRace({
       map: 'practice-arena', laps: 99, items: false, countdown: 0.01,
-      racers: [{ kart: p.kart, driver: p.driver, name: p.name, isPlayer: true, data: { paint: look.paint, cosmetics: { wheels: look.wheels, acc: look.acc } } }],
+      racers: [{ kart: p.kart, name: p.name, isPlayer: true, data: { paint: look.paint, cosmetics: this.app.cosmeticsFor(p.kart) } }],
     });
     this.game.race.practice = true;
     this.game.hud.show(false);
@@ -114,18 +114,19 @@ export class Online {
   onPractice(list) {
     if (this.mode !== 'lobby' || !this.game.race) return;
     const seen = new Set();
-    for (const [uid, x, y, z, yaw, sp, fl, kart, driver] of list) {
+    for (const [uid, x, y, z, yaw, sp, fl, kart] of list) {
       if (uid === this.me.uid) continue;
       seen.add(uid);
       let r = this.remote.get(uid);
-      if (!r || r.kartId !== kart || r.driver !== driver) {
+      const m = this.party && this.party.members.find((x) => x.uid === uid);
+      const skin = (m && m.look && m.look.skin) || null;
+      if (!r || r.kartId !== kart || r.skin !== skin) {
         if (r) r.vis.dispose();
-        const m = this.party && this.party.members.find((x) => x.uid === uid);
         const def = KART_BY_ID[kart] || KART_BY_ID.starter;
         const paint = paintColors(m && m.look && m.look.paint, def);
-        const vis = new KartVisual(def, { assets: this.app.assets, driver, paint, cosmetics: m && m.look ? { wheels: m.look.wheels, acc: m.look.acc } : {}, blob: true });
+        const vis = new KartVisual(def, { assets: this.app.assets, paint, cosmetics: lookCosmetics(m && m.look), blob: true });
         this.game.r.scene.add(vis.root);
-        r = { vis, kartId: kart, driver, kart: fakeKart(def), target: { x, y, z, yaw }, name: m ? m.name : '' };
+        r = { vis, kartId: kart, skin, kart: fakeKart(def), target: { x, y, z, yaw }, name: m ? m.name : '' };
         r.kart.x = x; r.kart.y = y; r.kart.z = z; r.kart.yaw = yaw;
         this.remote.set(uid, r);
       }
@@ -155,8 +156,8 @@ export class Online {
       const def = KART_BY_ID[pl.kart] || KART_BY_ID.starter;
       const paint = paintColors(pl.look && pl.look.paint, def);
       return {
-        kart: pl.kart, driver: pl.driver, name: pl.name, isPlayer: uid === meId, remote: uid !== meId,
-        data: { uid, paint, cosmetics: { wheels: pl.look && pl.look.wheels, acc: pl.look && pl.look.acc } },
+        kart: pl.kart, name: pl.name, isPlayer: uid === meId, remote: uid !== meId,
+        data: { uid, paint, cosmetics: lookCosmetics(pl.look) },
       };
     });
     const race = await this.game.startRace({ map: m.map, racers, laps: 3, items: false, countdown: 99, online: true });
@@ -239,7 +240,7 @@ export class Online {
     if (!r) return;
     if (r.isPlayer) { spinOut(r.kart, m.kind === 'rocket' ? TU.rocketSpin : TU.stickySpin, Math.random() < 0.5 ? 1 : -1); r.kart.invulnT = 1.2; }
     else r.kart.spinT = 1.0;
-    this.raceEvent('itemHit', r, { kind: m.kind });
+    this.raceEvent('itemHit', r, { kind: m.kind, by: this.racerOf(m.by) });
   }
 
   onHazard(m) {
@@ -296,9 +297,35 @@ export class Online {
     this.renderPause();
   }
   vote(on) { this.net.send(on ? 'pauseVote' : 'pauseCancel'); }
+  // the ` key: vote for a pause straight away (no menu); press it again to take it back
+  quickPause() {
+    const race = this.game.race;
+    if (!race || !race.online || race.state !== 'racing') return;
+    const s = this.pauseState;
+    if (s && (s.state === 'paused' || s.state === 'countdown')) { if (s.state === 'paused') this.readyUp(); return; }
+    const iVoted = !!(s && s.votes && s.votes.includes(this.me.uid));
+    this.vote(!iVoted);
+  }
   readyUp() { this.net.send('pauseReady'); }
 
   onPause(m) {
+    // a notice at the top for everyone when somebody asks for a pause (or takes it back)
+    const before = new Set((this.pauseState && this.pauseState.votes) || []);
+    const now = new Set(m.votes || []);
+    const race = this.game.race;
+    const nameOf = (u) => (race && race.racers.find((r) => r.data.uid === u) || {}).name || 'Someone';
+    if (this.mode === 'race' && m.state === 'voting') {
+      for (const u of now) {
+        if (before.has(u)) continue;
+        const count = `(${now.size}/${m.needed})`;
+        if (u === this.me.uid) this.game.hud.notice(`You asked for a pause ${count}. Press \` again to cancel`, 'pause', 4, 'pause');
+        else this.game.hud.notice(`${nameOf(u)} wants to pause ${count}. Press \` to agree`, 'pause', 5, 'pause');
+      }
+    }
+    if (this.mode === 'race' && (m.state === 'voting' || m.state === 'none')) {
+      for (const u of before) if (!now.has(u) && u !== this.me.uid) this.game.hud.notice(`${nameOf(u)} took back their pause request`, '', 3, 'pause');
+    }
+    if (m.state === 'paused' && (!this.pauseState || this.pauseState.state !== 'paused')) this.game.hud.notice('The race is paused', 'pause', 2.5, 'pause');
     this.pauseState = m;
     if (m.state === 'paused' || m.state === 'countdown') this.game.paused = true;
     if (m.state === 'none' || m.state === 'voting') { if (this.game.paused && !m.resumeAt) this.game.paused = false; }
@@ -460,6 +487,11 @@ function applyFlags(k, fl, d) {
   const dv = k.drift.on ? k.drift.dir * -0.42 : 0;
   k.driftVis += (dv - k.driftVis) * 0.2;
   k.snx = 0; k.sny = 1; k.snz = 0;
+}
+
+// another player's chosen looks (wheels, accessory, car skin) as KartVisual cosmetics
+function lookCosmetics(look) {
+  return look ? { wheels: look.wheels, acc: look.acc, skin: look.skin } : {};
 }
 
 function fakeKart(def) {

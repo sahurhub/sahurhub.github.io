@@ -16,7 +16,7 @@ export class Renderer {
     this.settings = settings;
     const q = QUALITY[settings.quality] || QUALITY.medium;
     // smoothing edges would blur the pixels, so it is only used with the smooth look
-    const aa = q.antialias && (settings.pixel || 'retro') === 'smooth';
+    const aa = q.antialias && (settings.pixel || 'smooth') === 'smooth';
     this.renderer = new THREE.WebGLRenderer({ antialias: aa, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
@@ -76,7 +76,7 @@ export class Renderer {
   pixelRatio() {
     const s = this.settings, q = this.quality;
     const dpr = devicePixelRatio || 1;
-    const target = PIXEL_LOOK[s.pixel || 'retro'] ?? PIXEL_LOOK.retro;
+    const target = PIXEL_LOOK[s.pixel || 'smooth'] ?? PIXEL_LOOK.smooth;
     let ratio;
     if (target) {
       const tall = innerHeight * dpr;

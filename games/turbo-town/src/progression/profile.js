@@ -21,7 +21,7 @@ class BaseProfile {
   lookFor(kartId) {
     const def = KART_BY_ID[kartId] || KART_BY_ID.starter;
     const l = this.get().look[kartId] || {};
-    return { paintId: l.paint || 'p_classic', paint: paintColors(l.paint || 'p_classic', def), wheels: l.wheels || 'wheel_std', acc: l.acc || null };
+    return { paintId: l.paint || 'p_classic', paint: paintColors(l.paint || 'p_classic', def), wheels: l.wheels || 'wheel_std', acc: l.acc || null, skin: l.skin || null };
   }
 }
 
@@ -49,7 +49,7 @@ export class ServerProfile extends BaseProfile {
   async adminKick(uid) { return this.net.request('adminKick', { uid }); }
   get() { return this.data; }
   async refresh() { this.data = await this.net.request('profile'); return this.data; }
-  async select(kart, driver) { this.data = await this.net.request('select', { kart, driver }); }
+  async select(kart) { this.data = await this.net.request('select', { kart }); }
   async buyKart(id) { this.data = await this.net.request('buy', { kart: id }); }
   async setLook(kartId, look) { this.data = await this.net.request('look', { kart: kartId, look }); }
   async setStyle(style) { this.data = await this.net.request('style', style); }
@@ -103,7 +103,7 @@ export class DevProfile extends BaseProfile {
     return { uid: 0, name: this.data.name, what, profile: this.data };
   }
   async adminKick() { throw new Error('Only on the real server.'); }
-  async select(kart, driver) { if (kart && this.hasKart(kart)) this.data.kart = kart; if (driver) this.data.driver = driver; this.save(); }
+  async select(kart) { if (kart && this.hasKart(kart)) this.data.kart = kart; this.save(); }
   async buyKart(id) {
     if (!this.canBuyKart(id)) throw new Error('Not enough coins or level too low.');
     this.data.coins -= KART_BY_ID[id].price; this.data.karts.push(id); this.save();

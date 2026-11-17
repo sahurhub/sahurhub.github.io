@@ -1,7 +1,7 @@
 // TURBO TOWN - sign in, multiplayer hub, party lobby, online results and the pause vote.
 import { h, btn, header, icon } from '../ui.js';
 import { KARTS, KART_BY_ID } from '../../shared/karts.js';
-import { DRIVERS, MAP_INFO, pauseVotesNeeded } from '../../shared/rules.js';
+import { MAP_INFO, pauseVotesNeeded } from '../../shared/rules.js';
 import { fmtTime, ordinal } from '../hud.js';
 import { chatLogin, chatSignup } from '../../net/net.js';
 
@@ -10,20 +10,31 @@ const mapName = (id) => (MAP_INFO.find((m) => m.id === id) || {}).name || id;
 // ------------------------------------------------------------------ sign in
 
 export function SignIn(ui, params) {
-  let mode = 'login';
-  const name = h('input', { type: 'text', maxlength: 20, autocomplete: 'username', placeholder: 'Name', class: 'field' });
-  const pass = h('input', { type: 'password', maxlength: 100, autocomplete: 'current-password', placeholder: 'Password', class: 'field' });
+  // new players first; people who already have a SahurHub Chat account pick the big
+  // "I already have an account" tab
+  let mode = 'signup';
+  const name = h('input', { type: 'text', maxlength: 20, autocomplete: 'username', placeholder: 'Pick a name', class: 'field' });
+  const pass = h('input', { type: 'password', maxlength: 100, autocomplete: 'new-password', placeholder: 'Pick a password', class: 'field' });
   const msg = h('p', { class: 'muted' }, params.message || '');
-  const title = h('h2', {}, 'Sign in to race');
-  const go = btn({ label: 'Sign in', icon: 'play', color: '#3ddc84', onClick: () => submit() });
-  const swap = h('button', { class: 'linkish', type: 'button' }, 'New here? Make an account');
-  swap.addEventListener('click', () => {
-    mode = mode === 'login' ? 'signup' : 'login';
-    title.textContent = mode === 'login' ? 'Sign in to race' : 'Make your account';
-    go.querySelector('.btn-label').textContent = mode === 'login' ? 'Sign in' : 'Make account';
-    swap.textContent = mode === 'login' ? 'New here? Make an account' : 'I already have an account';
-    pass.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
-  });
+  const title = h('h2', {}, 'Make your account');
+  const go = btn({ label: 'Make account', icon: 'play', color: '#3ddc84', onClick: () => submit() });
+  const tabNew = h('button', { type: 'button', class: 'signin-tab on' }, "I'm new");
+  const tabHave = h('button', { type: 'button', class: 'signin-tab have' }, 'I already have an account');
+  const setMode = (m) => {
+    mode = m;
+    tabNew.classList.toggle('on', m === 'signup');
+    tabHave.classList.toggle('on', m === 'login');
+    title.textContent = m === 'login' ? 'Welcome back! Sign in' : 'Make your account';
+    go.querySelector('.btn-label').textContent = m === 'login' ? 'Sign in' : 'Make account';
+    name.placeholder = m === 'login' ? 'Your name' : 'Pick a name';
+    pass.placeholder = m === 'login' ? 'Your password' : 'Pick a password';
+    pass.autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    msg.textContent = '';
+    name.focus();
+  };
+  tabNew.addEventListener('click', () => setMode('signup'));
+  tabHave.addEventListener('click', () => setMode('login'));
+  const swap = h('div', { class: 'signin-tabs' }, tabNew, tabHave);
   const submit = async () => {
     go.disabled = true;
     msg.textContent = 'One moment...';
@@ -38,9 +49,10 @@ export function SignIn(ui, params) {
   const el = h('div', { class: 'menu-center' },
     h('div', { class: 'logo' }, h('span', { class: 'logo-a' }, 'TURBO'), h('span', { class: 'logo-b' }, 'TOWN')),
     h('div', { class: 'panel signin' },
+      swap,
       title,
-      h('p', {}, 'Turbo Town uses your SahurHub Chat account. Your coins, karts and records are saved to it.'),
-      name, pass, go, msg, swap,
+      h('p', {}, 'Turbo Town uses your SahurHub Chat account (the same one as the chat). Your coins, karts and records are saved to it.'),
+      name, pass, go, msg,
       h('p', { class: 'muted small' }, 'Names are 3 to 20 letters, numbers or underscores. Passwords need at least 6 characters.')));
   return { el, noBack: true, enter() { name.focus(); } };
 }
@@ -108,9 +120,9 @@ export function PartyLobby(ui, params) {
     list.innerHTML = '';
     list.append(h('div', { class: 'pm-head' }, `Racers ${p.members.length}/8`));
     for (const m of p.members) {
-      const d = DRIVERS.find((x) => x.id === m.driver);
+      const kd = KART_BY_ID[m.kart];
       list.append(h('div', { class: 'pm' + (m.uid === online.me.uid ? ' me' : '') },
-        h('span', { class: 'pm-dot', style: { background: d ? d.color : '#ccc' } }),
+        h('span', { class: 'pm-dot', style: { background: kd ? kd.colors[0] : '#ccc' } }),
         h('span', { class: 'pm-name' }, m.name, m.uid === p.leader ? h('span', { class: 'crown', html: icon('crown') }) : null),
         h('span', { class: 'pm-kart muted' }, (KART_BY_ID[m.kart] || {}).name || m.kart),
         h('span', { class: 'pm-ready ' + (m.ready ? 'yes' : 'no') }, m.ready ? 'Ready' : 'Not ready')));
@@ -146,13 +158,7 @@ export function PartyLobby(ui, params) {
     kartPicker = h('div', { class: 'panel kart-picker' }, h('h3', {}, 'Kart'),
       h('div', { class: 'pick-row' }, ...KARTS.filter((k) => prof.karts.includes(k.id)).map((k) => {
         const b = h('button', { class: 'pick' + (prof.kart === k.id ? ' on' : ''), style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name);
-        b.addEventListener('click', async () => { await app.profile.select(k.id, null); await online.setKart(k.id, prof.driver); toggleKartPicker(); online.enterLobby(); });
-        return b;
-      })),
-      h('h3', {}, 'Driver'),
-      h('div', { class: 'pick-row' }, ...DRIVERS.map((d) => {
-        const b = h('button', { class: 'pick' + (prof.driver === d.id ? ' on' : ''), style: { '--c': d.color } }, h('span', { class: 'pick-dot' }), d.name);
-        b.addEventListener('click', async () => { await app.profile.select(null, d.id); await online.setKart(prof.kart, d.id); toggleKartPicker(); online.enterLobby(); });
+        b.addEventListener('click', async () => { await app.profile.select(k.id); await online.setKart(k.id); toggleKartPicker(); online.enterLobby(); });
         return b;
       })));
     el.appendChild(kartPicker);

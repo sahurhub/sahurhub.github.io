@@ -13,7 +13,8 @@ export function detectQuality() {
 
 export const DEFAULTS = {
   quality: null,        // low | medium | high (null = not chosen yet, use detected)
-  pixel: 'retro',       // pixel look: chunky | retro | smooth (see render/renderer.js)
+  pixel: 'smooth',      // pixel look: chunky | retro | smooth (see render/renderer.js)
+  pixelV: 2,            // 2 = smooth became the default (older saves are moved to smooth once)
   resolution: 100,      // % of native resolution (smooth look only)
   view: 'auto',         // render distance in metres or auto
   shadows: 'auto',      // auto | on | off
@@ -29,6 +30,9 @@ export function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { s = {}; }
   const out = { ...DEFAULTS, ...s };
+  // smooth is the default look since 2026-11-17: saves from before then switch to it once
+  // (anyone can still pick Chunky or Retro in Settings, and that choice is kept)
+  if (!s.pixelV) { out.pixel = 'smooth'; out.pixelV = DEFAULTS.pixelV; }
   out.detected = detectQuality();
   if (!out.quality) out.quality = out.detected;
   return out;

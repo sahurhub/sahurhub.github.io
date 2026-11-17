@@ -1,4 +1,4 @@
-// TURBO TOWN - kart visuals: model, wheels, driver, body lean / bounce, and the effect
+// TURBO TOWN - kart visuals: model (with its skin), wheels, body lean / bounce, and the effect
 // anchors (exhaust, rear wheels) used by sparks, flames and dust.
 import * as THREE from 'three';
 import { colorMaterial } from '../render/materials.js';
@@ -29,14 +29,7 @@ export class KartVisual {
     const built = assets ? assets.buildKart(kartDef, opts) : null;
     if (built) {
       Object.assign(this, built.parts);
-      this.body.add(built.object);
-      // the animal driver sits on the seat
-      const drv = assets.buildDriver(opts.driver || 'fox');
-      if (drv) {
-        drv.object.position.copy(built.parts.seat);
-        this.body.add(drv.object);
-        this.driver = drv;
-      }
+      this.body.add(built.object); // the car models have their own helmeted driver
     } else this.buildStandIn(kartDef, opts.paint || kartDef.colors);
     this.lookBack = 0;
     const bst = opts.boost && BOOSTS.find((b) => b.id === opts.boost);
@@ -113,19 +106,23 @@ export class KartVisual {
     this.tilt.rotation.z += (lean - this.tilt.rotation.z) * (1 - Math.exp(-dt * 10));
     const pitch = k.grounded ? 0 : Math.max(-0.25, Math.min(0.25, -k.vy * 0.025));
     this.tilt.rotation.x += (pitch - this.tilt.rotation.x) * (1 - Math.exp(-dt * 6));
-    // spring bounce
-    this.bounceV += (-this.bounce * 160 - this.bounceV * 14) * dt;
-    this.bounce += this.bounceV * dt;
+    // spring bounce, in small steps: one big step (a slow frame on a weak computer) made the
+    // spring swing wider every frame until the kart vanished
+    const steps = Math.max(1, Math.ceil(dt / 0.016)), h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      this.bounceV += (-this.bounce * 160 - this.bounceV * 14) * h;
+      this.bounce += this.bounceV * h;
+    }
+    if (!(Math.abs(this.bounce) < 0.3)) { this.bounce = 0; this.bounceV = 0; }
     const engine = k.frozen ? 0 : Math.sin(k.time * 40) * 0.006 * Math.min(1, Math.abs(k.input.throttle));
     this.body.position.y = this.bounce + engine + (k.rescue ? Math.sin(k.time * 6) * 0.08 : 0);
     this.body.scale.set(1 - this.bounce * 0.6, 1 + this.bounce * 1.2, 1 - this.bounce * 0.6);
     // wheels
     this.wheelSpin += (k.speed / this.wheelRadius) * dt;
-    for (const w of this.wheels) w.rotation.x = this.wheelSpin;
+    for (const w of this.wheels) w.rotation.x = w.userData.flip ? -this.wheelSpin : this.wheelSpin;
     const steerAngle = -k.steer * 0.42;
     for (const s of this.steerGroups) s.rotation.y = steerAngle;
     if (this.steerWheel) this.steerWheel.quaternion.copy(this.steerWheel.userData.base).multiply(_q3.setFromAxisAngle(_yAxis, -k.steer * 1.4));
-    if (this.driver) this.animateDriver(k, dt);
     // blob shadow stays on the ground under the kart
     const above = Math.max(0, y - (k.gy ?? y));
     this.blob.visible = this.useBlob && !k.rescue && above < 12;
@@ -133,21 +130,6 @@ export class KartVisual {
     this.blob.material.opacity = Math.max(0.06, 0.42 - above * 0.06);
     // flashing while invulnerable
     this.body.visible = k.invulnT > 0 ? Math.floor(k.time * 14) % 2 === 0 : true;
-  }
-
-  animateDriver(k, dt) {
-    const p = this.driver.parts;
-    const back = k.input.back && !k.frozen ? 1 : 0;
-    this.lookBack += (back - this.lookBack) * (1 - Math.exp(-dt * 10));
-    const set = (o, axis, angle) => { if (o) o.quaternion.copy(o.userData.base).multiply(_q3.setFromAxisAngle(axis, angle)); };
-    // arms follow the steering wheel: one hand up, the other down
-    set(p.arm_l, _xAxis, -k.steer * 0.35);
-    set(p.arm_r, _xAxis, k.steer * 0.35);
-    // head looks into the turn, or over the shoulder when looking back; cheers after a trick
-    const turn = -k.steer * 0.32 + this.lookBack * 2.2 + (k.drift.on ? k.drift.dir * -0.15 : 0);
-    set(p.head, _yAxis, turn);
-    if (p.head && k.spinT > 0) p.head.rotateZ(Math.sin(k.time * 20) * 0.25);
-    if (p.tail) set(p.tail, _yAxis, Math.sin(k.time * (Math.abs(k.speed) > 5 ? 9 : 4)) * 0.35);
   }
 
   land(impact) { this.bounceV -= Math.min(3.2, impact * 0.35); }

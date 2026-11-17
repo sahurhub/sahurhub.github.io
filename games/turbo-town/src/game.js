@@ -22,6 +22,14 @@ import { Sfx } from './audio/audio.js';
 import { ITEMS } from './shared/items.js';
 import { PHYSICS_DT, FLAGS } from './config.js';
 
+// words for the hit messages: [what you hit them with, what happened to you]
+const HIT_WORDS = {
+  rocket: ['a Target Rocket', 'rocketed'],
+  sticky: ['Sticky Splash', 'splashed'],
+  freeze: ['a Freeze Pop', 'frozen'],
+  rainbow: ['Rainbow Rush', 'bowled over'],
+};
+
 export class Game {
   constructor({ container, hudRoot, settings, assets }) {
     this.settings = settings;
@@ -108,7 +116,7 @@ export class Game {
     this.itemVis = race.items ? new ItemVisuals(this, race) : null;
     this.visuals = race.racers.map((r) => {
       // the contact shadow stays on even with real shadows, so karts sit on the road
-      const v = new KartVisual(r.def, { assets: this.assets, paint: r.data.paint, driver: r.driver, blob: true, cosmetics: r.data.cosmetics, boost: r.data.boost });
+      const v = new KartVisual(r.def, { assets: this.assets, paint: r.data.paint, blob: true, cosmetics: r.data.cosmetics, boost: r.data.boost });
       this.r.scene.add(v.root);
       v.update(r.kart, 1, 0);
       return v;
@@ -290,10 +298,29 @@ export class Game {
       case 'finalLap': if (e.racer === me) this.hud.banner('FINAL LAP!', 'final', 2); break;
       case 'lap': if (e.racer === me) this.hud.lapList(me); break;
       case 'overtake': if (e.racer === me) this.hud.toast('Overtake! +5 coins', 'coin'); break;
-      case 'itemHit': if (e.racer === me) this.cam.bump(0.6); break;
-      case 'shieldPop': if (e.racer === me) this.hud.toast('Shield saved you!', 'good'); break;
-      case 'frozen': if (e.racer === me) this.hud.toast('Brrr! Frozen!', 'bad'); break;
-      case 'mystery': if (e.racer === me) this.hud.toast({ rainbow: 'Rainbow Rush!', bubbleBoost: 'Bubble Boost!', tripleBurst: 'Triple Burst!', snowGlobe: 'Snow Globe! Everyone else slows down' }[e.effect] || ITEMS.mystery.name, 'good'); break;
+      case 'itemHit': case 'frozen': {
+        // "You hit X with Y" / "You were Y by X" at the top of the screen
+        const kind = e.type === 'frozen' ? 'freeze' : e.kind;
+        const by = e.by && e.by !== e.racer ? e.by : null;
+        if (e.racer === me) {
+          if (e.type === 'itemHit') this.cam.bump(0.6);
+          this.hud.notice(by ? `You were ${HIT_WORDS[kind]?.[1] || 'hit'} by ${by.name}` : e.type === 'frozen' ? 'Brrr! You were frozen' : 'You were hit!', 'bad');
+        } else if (by && by === me) {
+          this.hud.notice(`You hit ${e.racer.name} with ${HIT_WORDS[kind]?.[0] || 'an item'}`, 'good');
+        }
+        break;
+      }
+      case 'shieldPop':
+        if (e.racer === me) this.hud.notice(e.by && e.by !== me ? `Your shield blocked ${e.by.name}'s ${HIT_WORDS[e.kind]?.[0] || 'item'}` : 'Your shield saved you!', 'good');
+        else if (e.by && e.by === me) this.hud.notice(`${e.racer.name}'s shield blocked your ${HIT_WORDS[e.kind]?.[0] || 'item'}`, '');
+        break;
+      case 'hitBlocked':
+        if (e.by && e.by === me && e.racer !== me) this.hud.notice(`${e.racer.name} dodged your ${HIT_WORDS[e.kind]?.[0] || 'item'} with Rainbow Rush`, '');
+        break;
+      case 'mystery':
+        if (e.racer === me) this.hud.toast({ rainbow: 'Rainbow Rush!', bubbleBoost: 'Bubble Boost!', tripleBurst: 'Triple Burst!', snowGlobe: 'Snow Globe! Everyone else slows down' }[e.effect] || ITEMS.mystery.name, 'good');
+        else if (e.effect === 'snowGlobe' && me && !me.finished) this.hud.notice(`You were slowed by ${e.racer.name}'s Snow Globe`, 'bad');
+        break;
       case 'itemFizzle': if (e.racer === me) this.hud.toast('Nobody close enough to freeze', ''); break;
       case 'finish':
         if (e.racer === me) this.hud.banner(ordinal(e.place) + '!', 'finish', 3.5);

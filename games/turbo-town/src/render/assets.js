@@ -55,7 +55,7 @@ export class Assets {
   bake(root, colors = {}, skip = null) {
     root.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
-    const normal = [], glow = new Map();
+    const normal = [], glow = new Map(), textured = new Map();
     const visit = (o) => {
       if (o !== root && skip && skip(o)) return;
       if (o.isMesh) {
@@ -66,11 +66,20 @@ export class Assets {
         for (const gr of groups) {
           const mat = mats[gr.materialIndex] || mats[0];
           const name = (mat.name || '').replace(/\.\d+$/, '');
-          const part = subGeometry(geo, gr.start, gr.count).applyMatrix4(_m);
+          const map = mat.map || null; // a textured part (a skin that keeps its original livery)
+          const part = subGeometry(geo, gr.start, gr.count, !!map).applyMatrix4(_m);
           const isGlow = name.startsWith('glow');
-          if (colors[name]) _c.set(colors[name]); else _c.copy(mat.color || _c.set('#ffffff'));
+          // 'paint_70' = the main colour at 70 % brightness (shading painted into the model)
+          const shade = /^(paint2?)_(\d+)$/.exec(name);
+          if (map) _c.set('#ffffff');
+          else if (colors[name]) _c.set(colors[name]);
+          else if (shade && colors[shade[1]]) _c.set(colors[shade[1]]).convertLinearToSRGB().multiplyScalar(+shade[2] / 100).convertSRGBToLinear();
+          else _c.copy(mat.color || _c.set('#ffffff'));
           paint(part, _c);
-          if (isGlow) {
+          if (map) {
+            if (!textured.has(map.uuid)) textured.set(map.uuid, { map, parts: [] });
+            textured.get(map.uuid).parts.push(part);
+          } else if (isGlow) {
             const key = '#' + (mat.emissive ? mat.emissive.getHexString() : _c.getHexString());
             if (!glow.has(key)) glow.set(key, []);
             glow.get(key).push(part);
@@ -83,6 +92,7 @@ export class Assets {
     const out = [];
     if (normal.length) out.push({ geometry: finishGeo(mergeGeometries(normal, false)), glow: null });
     for (const [key, parts] of glow) out.push({ geometry: finishGeo(mergeGeometries(parts, false)), glow: key });
+    for (const t of textured.values()) out.push({ geometry: finishGeo(mergeGeometries(t.parts, false)), glow: null, map: t.map });
     return out;
   }
 
@@ -100,7 +110,7 @@ export class Assets {
   meshes(parts, { toon = true, shadow = true } = {}) {
     const g = new THREE.Group();
     for (const p of parts) {
-      const m = new THREE.Mesh(p.geometry, p.glow ? vcMaterial({ toon: false, emissive: p.glow }) : vcMaterial({ toon }));
+      const m = new THREE.Mesh(p.geometry, p.glow ? vcMaterial({ toon: false, emissive: p.glow }) : vcMaterial({ toon, map: p.map || null }));
       m.castShadow = shadow && !p.glow;
       g.add(m);
     }
@@ -129,13 +139,14 @@ export class Assets {
 
   // ------------------------------------------------------------ karts
 
-  // Kart model with paint and cosmetic wheels / accessory. Returns null if not loaded.
+  // Kart model with paint, car skin and cosmetic wheels / accessory. Returns null if not loaded.
   buildKart(def, opts = {}) {
-    const t = this.node('kart_' + def.id);
+    const cos = opts.cosmetics || {};
+    const skin = cos.skin && this.has(cos.skin) ? cos.skin : null; // another car body (looks only)
+    const t = this.node(skin || 'kart_' + def.id);
     if (!t) return null;
     const paint = opts.paint || def.colors;
     const colors = { paint: paint[0], paint2: paint[1] };
-    const cos = opts.cosmetics || {};
     const object = new THREE.Group();
     object.name = 'kartModel';
     const find = (prefix) => t.children.find((c) => c.name.startsWith(prefix));
@@ -153,8 +164,10 @@ export class Assets {
       steer.add(this.meshes(this.bake(tmp, colors)));
       object.add(steer);
     }
-    // wheels
-    const wheelName = this.has(cos.wheels) ? cos.wheels : 'wheel_std';
+    // wheels: the wheel style the player picked, else the skin's own wheels, else the standard ones
+    const skinWheel = skin ? 'wheel_' + skin.replace(/^skin_/, '') : null;
+    const wheelName = cos.wheels && cos.wheels !== 'wheel_std' && this.has(cos.wheels) ? cos.wheels
+      : skinWheel && this.has(skinWheel) ? skinWheel : 'wheel_std';
     const wheelParts = this.cacheTinted(wheelName, colors);
     const wheels = [], steerGroups = [], rearWheels = [];
     let wheelRadius = 0.32;
@@ -165,7 +178,15 @@ export class Assets {
       holder.position.copy(e.position);
       const w = this.meshes(wheelParts.parts);
       w.scale.copy(e.scale);
-      holder.add(w);
+      // wheel models show their outside at +X: turn the right-hand wheels round so their
+      // rims and tyre writing face outwards too (and spin them the other way)
+      if (e.position.x < 0) {
+        const turn = new THREE.Group();
+        turn.rotation.y = Math.PI;
+        turn.add(w);
+        holder.add(turn);
+        w.userData.flip = true;
+      } else holder.add(w);
       object.add(holder);
       wheels.push(w);
       if (key[0] === 'f') steerGroups.push(holder);
@@ -201,36 +222,24 @@ export class Assets {
     return res;
   }
 
-  // ------------------------------------------------------------ drivers
-
-  buildDriver(id, opts = {}) {
-    const obj = this.clone('drv_' + id, opts.colors || {});
-    if (!obj) return null;
-    const parts = {};
-    obj.traverse((o) => {
-      for (const k of ['head', 'arm_l', 'arm_r', 'tail', 'body', 'ears']) if (o.name.startsWith(k) && !parts[k]) parts[k] = o;
-    });
-    for (const p of Object.values(parts)) p.userData.base = p.quaternion.clone();
-    obj.position.set(0, 0, 0);
-    obj.quaternion.identity();
-    return { object: obj, parts };
-  }
 }
 
 // ------------------------------------------------------------------ geometry helpers
 
-function subGeometry(geo, start, count) {
+function subGeometry(geo, start, count, withUV = false) {
   const g = new THREE.BufferGeometry();
-  const pos = geo.attributes.position, nor = geo.attributes.normal;
+  const pos = geo.attributes.position, nor = geo.attributes.normal, uv = withUV ? geo.attributes.uv : null;
   const idx = geo.index;
-  const P = new Float32Array(count * 3), N = new Float32Array(count * 3);
+  const P = new Float32Array(count * 3), N = new Float32Array(count * 3), U = new Float32Array(count * 2);
   for (let i = 0; i < count; i++) {
     const v = idx ? idx.getX(start + i) : start + i;
     P[i * 3] = pos.getX(v); P[i * 3 + 1] = pos.getY(v); P[i * 3 + 2] = pos.getZ(v);
     if (nor) { N[i * 3] = nor.getX(v); N[i * 3 + 1] = nor.getY(v); N[i * 3 + 2] = nor.getZ(v); }
+    if (uv) { U[i * 2] = uv.getX(v); U[i * 2 + 1] = uv.getY(v); }
   }
   g.setAttribute('position', new THREE.BufferAttribute(P, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  if (withUV) g.setAttribute('uv', new THREE.BufferAttribute(U, 2));
   if (!nor) g.computeVertexNormals();
   return g;
 }

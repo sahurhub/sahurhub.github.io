@@ -149,16 +149,18 @@ export class ItemSystem {
 
   // ---------------------------------------------------------------- hits
 
-  // returns true if the hit landed
-  hit(target, kind, spinSeconds) {
+  // returns true if the hit landed. byIndex = racer index of whoever used the item (for
+  // the "You hit X with Y" / "You were Y by X" messages)
+  hit(target, kind, spinSeconds, byIndex = -1) {
     const k = target.kart;
+    const by = byIndex >= 0 ? this.race.racers[byIndex] : null;
     if (k.respawnT > 0 || target.finished) return false;
-    if (k.rainbowT > 0) { this.emit('hitBlocked', target, { kind }); return false; }
-    if (k.shield) { k.shield = false; k.shieldT = 0; this.emit('shieldPop', target, { kind }); return false; }
+    if (k.rainbowT > 0) { this.emit('hitBlocked', target, { kind, by }); return false; }
+    if (k.shield) { k.shield = false; k.shieldT = 0; this.emit('shieldPop', target, { kind, by }); return false; }
     if (k.invulnT > 0) return false;
     spinOut(k, spinSeconds, this.rnd() < 0.5 ? 1 : -1);
     k.invulnT = 1.2;
-    this.emit('itemHit', target, { kind });
+    this.emit('itemHit', target, { kind, by });
     return true;
   }
 
@@ -178,7 +180,7 @@ export class ItemSystem {
         const sp = TU.rocketSpeed * 1.1;
         rk.x += dx / d * sp * dt; rk.z += dz / d * sp * dt; rk.y += dy * Math.min(1, dt * 6);
         rk.yaw = Math.atan2(dx, dz);
-        if (d < TU.rocketHitRadius && Math.abs(dy) < 2.2) { this.hit(tg, 'rocket', TU.rocketSpin); rk.life = 0; this.emit('rocketBoom', null, { x: rk.x, y: rk.y, z: rk.z }); }
+        if (d < TU.rocketHitRadius && Math.abs(dy) < 2.2) { this.hit(tg, 'rocket', TU.rocketSpin, rk.owner); rk.life = 0; this.emit('rocketBoom', null, { x: rk.x, y: rk.y, z: rk.z }); }
       } else {
         // follow the track, drifting towards the target's lane
         rk.s = wrapS(rk.s + TU.rocketSpeed * dt, this.track.length);
@@ -204,9 +206,10 @@ export class ItemSystem {
       if (d < 1.5 || f.t > 3) {
         f.done = true;
         if (d < 1.5) {
-          if (tk.rainbowT > 0) this.emit('hitBlocked', tg, { kind: 'freeze' });
-          else if (tk.shield) { tk.shield = false; tk.shieldT = 0; this.emit('shieldPop', tg, { kind: 'freeze' }); }
-          else { tk.slowT = TU.freezeTime; tk.slowMul = TU.freezeMul; tk.frozenT = TU.freezeTime; tk.drift.on = false; this.emit('frozen', tg); }
+          const by = racers[f.owner] || null;
+          if (tk.rainbowT > 0) this.emit('hitBlocked', tg, { kind: 'freeze', by });
+          else if (tk.shield) { tk.shield = false; tk.shieldT = 0; this.emit('shieldPop', tg, { kind: 'freeze', by }); }
+          else { tk.slowT = TU.freezeTime; tk.slowMul = TU.freezeMul; tk.frozenT = TU.freezeTime; tk.drift.on = false; this.emit('frozen', tg, { by }); }
         }
       }
     }
@@ -226,7 +229,7 @@ export class ItemSystem {
         if (dx * dx + dz * dz < (h.r + 0.5) ** 2 && Math.abs(k.y - h.y) < 1.2) {
           h.active = false;
           this.emit('splashed', r, { x: h.x, z: h.z });
-          if (this.hit(r, 'sticky', TU.stickySpin)) k.slickT = 1.0;
+          if (this.hit(r, 'sticky', TU.stickySpin, h.owner)) k.slickT = 1.0;
           break;
         }
       }
@@ -262,7 +265,7 @@ export class ItemSystem {
       for (const o of racers) {
         if (o === r) continue;
         const dx = o.kart.x - r.kart.x, dz = o.kart.z - r.kart.z;
-        if (dx * dx + dz * dz < 4.4 && Math.abs(o.kart.y - r.kart.y) < 1.5) this.hit(o, 'rainbow', 1.0);
+        if (dx * dx + dz * dz < 4.4 && Math.abs(o.kart.y - r.kart.y) < 1.5) this.hit(o, 'rainbow', 1.0, r.index);
       }
     }
   }

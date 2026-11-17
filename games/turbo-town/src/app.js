@@ -12,7 +12,7 @@ import { saveSettings } from './save/settings.js';
 
 const TIPS = [
   'Keep turning for a moment at speed and your kart slides into a drift. Drifting turns tighter, so it gets you round sharp corners.',
-  'Fly off a ramp and your driver does a trick. Land it for a little boost.',
+  'Fly off a ramp and your kart does a trick. Land it for a little boost.',
   'Press <b>Space</b> to use your item.',
   'Press accelerate when the <b>1</b> appears in the countdown for a rocket start. Too early and you stall!',
   'Racers further back get better items from item boxes.',
@@ -52,9 +52,11 @@ export class App {
     if (this.online) this.online.tick(dt);
     if (g.view === 'race' && g.race && g.race.online) {
       if (g.input.consume('pause')) { if (g.intro) g.skipIntro(); else this.online.requestPause(); }
+      if (g.input.consume('quickpause')) this.online.quickPause();
       return;
     }
     if (g.view === 'race' && g.race && this.active) {
+      if (g.input.consume('quickpause') && !g.intro && !this.resultsShown) this.togglePause();
       if (g.input.consume('pause')) {
         if (g.intro) g.skipIntro();
         else if (!this.resultsShown) this.togglePause();
@@ -73,7 +75,7 @@ export class App {
     this.game.paused = false;
     this.game.setView('showroom');
     const p = this.profile.get();
-    this.game.showroom.showKart(p.kart, p.driver, { paint: this.profile.lookFor(p.kart).paint, cosmetics: this.cosmeticsFor(p.kart) });
+    this.game.showroom.showKart(p.kart, { paint: this.profile.lookFor(p.kart).paint, cosmetics: this.cosmeticsFor(p.kart) });
     this.ui.show(screens.MainMenu, {}, { replace: true });
     if (this.game.slowSeen) this.offerLowGraphics(this.game.slowSeen);
   }
@@ -96,7 +98,7 @@ export class App {
 
   cosmeticsFor(kartId) {
     const l = this.profile.lookFor(kartId);
-    return { wheels: l.wheels, acc: l.acc };
+    return { wheels: l.wheels, acc: l.acc, skin: l.skin };
   }
 
   showLoading(text) {
@@ -114,7 +116,6 @@ export class App {
   async startRace(cfg) {
     const p = this.profile.get();
     cfg.kart = cfg.kart || p.kart;
-    cfg.driver = cfg.driver || p.driver;
     this.ui.hide();
     this.showLoading('Getting ' + (MAP_BY_ID[cfg.map]?.name || 'the track') + ' ready');
     await new Promise((r) => setTimeout(r, 30));
@@ -163,13 +164,13 @@ export class App {
   buildRacers(cfg) {
     const p = this.profile.get();
     const look = this.profile.lookFor(cfg.kart);
-    const me = { kart: cfg.kart, driver: cfg.driver, name: p.name || 'You', isPlayer: true, data: { paint: look.paint, cosmetics: { wheels: look.wheels, acc: look.acc }, boost: p.boost, id: 'me' } };
+    const me = { kart: cfg.kart, name: p.name || 'You', isPlayer: true, data: { paint: look.paint, cosmetics: this.cosmeticsFor(cfg.kart), boost: p.boost, id: 'me' } };
     if (cfg.mode === 'tt') return [me];
     let others;
     if (cfg.mode === 'gp') others = this.gp.entrants.filter((e) => !e.isPlayer);
-    else others = this.makeEntrants(cfg.aiCount ?? 7, cfg.driver).filter((e) => !e.isPlayer);
+    else others = this.makeEntrants(cfg.aiCount ?? 7).filter((e) => !e.isPlayer);
     const ai = others.map((e) => ({
-      kart: e.kart, driver: e.driver, name: e.name, data: { id: e.id, diff: cfg.difficulty },
+      kart: e.kart, name: e.name, data: { id: e.id, diff: cfg.difficulty },
       controller: createAI(cfg.difficulty || 'normal', makeRng(Math.floor(Math.random() * 1e9))),
     }));
     // grid order
@@ -186,14 +187,14 @@ export class App {
     return order;
   }
 
-  // 7 computer racers with the other 7 drivers and random karts
-  makeEntrants(count, playerDriver) {
+  // up to 7 computer racers (names from the racer list) in random karts
+  makeEntrants(count) {
     const rng = makeRng(Math.floor(Math.random() * 1e9));
-    const drivers = DRIVERS.filter((d) => d.id !== playerDriver);
+    const drivers = DRIVERS.slice(0, 7);
     const out = [{ id: 'me', isPlayer: true }];
     for (let i = 0; i < Math.min(count, drivers.length); i++) {
       const d = drivers[i];
-      out.push({ id: 'ai_' + d.id, driver: d.id, name: d.name, kart: KARTS[Math.floor(rng() * KARTS.length)].id });
+      out.push({ id: 'ai_' + d.id, name: d.name, kart: KARTS[Math.floor(rng() * KARTS.length)].id });
     }
     return out;
   }
@@ -207,7 +208,7 @@ export class App {
   startGP(cupId, difficulty) {
     const cup = CUPS.find((c) => c.id === cupId);
     const p = this.profile.get();
-    const entrants = this.makeEntrants(7, p.driver);
+    const entrants = this.makeEntrants(7);
     this.gp = { cup: cupId, cupName: cup.name, maps: cup.maps, difficulty, race: 0, entrants, points: {}, history: [] };
     return this.startRace({ mode: 'gp', map: cup.maps[0], difficulty });
   }
@@ -300,7 +301,7 @@ export class App {
       try {
         const res = await this.profile.submitTT({
           ticket: cfg.ticket, map: cfg.map, kart: cfg.kart, total: me.time, lap: me.r.bestLap, laps: me.r.lapTimes,
-          ghost: this.recorder.encode({ kart: cfg.kart, driver: cfg.driver, paint: this.profile.lookFor(cfg.kart).paint }),
+          ghost: this.recorder.encode({ kart: cfg.kart, paint: this.profile.lookFor(cfg.kart).paint }),
         });
         Object.assign(out, res);
       } catch (e) { out.error = e.message; }
@@ -347,8 +348,8 @@ export class App {
     this.game.endRace();
     this.game.setView('showroom');
     this.game.showroom.showPodium(st.slice(0, 3).map((e) => e.isPlayer
-      ? { kart: p.kart, driver: p.driver, paint: this.profile.lookFor(p.kart).paint, cosmetics: this.cosmeticsFor(p.kart) }
-      : { kart: e.kart, driver: e.driver }));
+      ? { kart: p.kart, paint: this.profile.lookFor(p.kart).paint, cosmetics: this.cosmeticsFor(p.kart) }
+      : { kart: e.kart }));
   }
 }
 

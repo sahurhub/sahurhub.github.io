@@ -37,6 +37,7 @@ export class Hud {
       <div class="hud-lapbox"><div class="hud-laps"></div><div class="hud-time">0:00.000</div><div class="hud-lap"><b>1</b><span>/3</span></div></div>
       <div class="hud-pos"><span class="hud-pos-n">1</span><span class="hud-pos-s">ST</span></div>
       <div class="hud-banner"></div>
+      <div class="hud-notices"></div>
       <div class="hud-toasts"></div>
       <div class="hud-wrong hidden">WRONG WAY!</div>
       <div class="hud-fps hidden"></div>`;
@@ -46,6 +47,7 @@ export class Hud {
       lap: $('.hud-lap b'), lapOf: $('.hud-lap span'), time: $('.hud-time'), laps: $('.hud-laps'),
       banner: $('.hud-banner'), toasts: $('.hud-toasts'), wrong: $('.hud-wrong'), map: $('.hud-map'), fps: $('.hud-fps'),
       item: $('.hud-item'), itemIcon: $('.hud-item-icon'), itemKey: $('.hud-item-key'), tags: $('.hud-tags'), buttons: $('.hud-buttons'),
+      notices: $('.hud-notices'),
     };
     this.mapCtx = this.el.map.getContext('2d');
     this.lastPlace = 0;
@@ -180,6 +182,21 @@ export class Hud {
     void b.offsetWidth;
     b.className = 'hud-banner show ' + kind;
     this.bannerT = seconds;
+  }
+
+  // messages at the top of the screen (hits, pause requests). key replaces an older
+  // notice with the same key instead of stacking a new one.
+  notice(text, kind = '', seconds = 3.2, key = null) {
+    const box = this.el.notices;
+    if (key) { const old = box.querySelector(`[data-key="${key}"]`); if (old) old.remove(); }
+    const d = document.createElement('div');
+    d.className = 'hud-notice ' + kind;
+    if (key) d.dataset.key = key;
+    d.textContent = text;
+    d.style.animationDuration = seconds + 's';
+    box.appendChild(d);
+    while (box.children.length > 3) box.firstChild.remove();
+    setTimeout(() => d.remove(), seconds * 1000);
   }
 
   toast(text, kind = '') {

@@ -44,9 +44,10 @@ export default {
   shortcuts: [
     { id: 'toadstool-trail', from: XZ(140, -62), to: XZ(150, 93), points: [P(158, 3.5, -22, 7), P(158, 3.5, 40, 7)], surface: 'dirt', margin: 1.2 },
   ],
-  bridges: [{ from: XZ(-14, 14), to: XZ(16, -16), style: 'stone', margin: 0.5 }],
+  // the overpass, and a stone bridge over the stream (the bouncy pads before it launch you over)
+  bridges: [{ from: XZ(-14, 14), to: XZ(16, -16), style: 'stone', margin: 0.5 }, { from: XZ(191, 8), to: XZ(190, 30), style: 'stone', margin: 0.5 }],
   narrow: [],
-  gaps: [{ at: XZ(190, 20), from: XZ(191, 14), to: XZ(190, 24) }],
+  gaps: [],
   patches: [
     // giant bouncy mushroom pads before the stream (bounce over it, or splash through)
     { from: XZ(192, -2), to: XZ(192, 3), lat0: -4.5, lat1: 4.5, surface: 'bounce', visual: false },

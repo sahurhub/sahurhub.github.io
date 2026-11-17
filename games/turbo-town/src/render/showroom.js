@@ -87,23 +87,23 @@ export class Showroom {
   }
 
   // one kart on the turntable
-  showKart(kartId, driver, opts = {}) {
+  showKart(kartId, opts = {}) {
     this.clear();
     this.mode = 'single';
     this.steps.visible = false;
     this.podium.visible = true;
-    this.add(kartId, driver, 0, 0.5, 0, opts);
+    this.add(kartId, 0, 0.5, 0, opts);
     this.confetti.on = !!opts.confetti;
   }
 
-  // top three on podium steps: list = [{ kart, driver, paint }]
+  // top three on podium steps: list = [{ kart, paint, cosmetics }]
   showPodium(list) {
     this.clear();
     this.mode = 'podium';
     this.podium.visible = false;
     this.steps.visible = true;
     const xs = [0, -2.5, 2.5], ys = [1.4, 1.0, 0.7];
-    list.slice(0, 3).forEach((e, i) => this.add(e.kart, e.driver, xs[i], ys[i], 0, { paint: e.paint, cosmetics: e.cosmetics, yaw: 0 }));
+    list.slice(0, 3).forEach((e, i) => this.add(e.kart, xs[i], ys[i], 0, { paint: e.paint, cosmetics: e.cosmetics, yaw: 0 }));
     this.confetti.on = true;
   }
 
@@ -115,14 +115,14 @@ export class Showroom {
     this.podium.visible = true;
     list.forEach((e, i) => {
       const a = (i / list.length) * Math.PI * 2;
-      this.add(e.kart, e.driver, Math.cos(a) * 1.15, 0.5, Math.sin(a) * 1.15, { paint: e.paint, yaw: a + Math.PI / 2, scale: 0.72 });
+      this.add(e.kart, Math.cos(a) * 1.15, 0.5, Math.sin(a) * 1.15, { paint: e.paint, cosmetics: e.cosmetics, yaw: a + Math.PI / 2, scale: 0.72 });
     });
     this.confetti.on = false;
   }
 
-  add(kartId, driver, x, y, z, opts = {}) {
+  add(kartId, x, y, z, opts = {}) {
     const def = KART_BY_ID[kartId] || KART_BY_ID.starter;
-    const vis = new KartVisual(def, { assets: this.assets, driver, paint: opts.paint, cosmetics: opts.cosmetics, blob: false });
+    const vis = new KartVisual(def, { assets: this.assets, paint: opts.paint, cosmetics: opts.cosmetics, blob: false });
     const kart = createKart(def);
     kart.frozen = true; kart.grounded = true;
     vis.root.scale.setScalar(opts.scale || 1);

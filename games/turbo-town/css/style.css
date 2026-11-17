@@ -435,6 +435,15 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .hud-banner.final { color: var(--yellow); }
 .hud-banner.wait { font-size: clamp(16px, 3.5vh, 30px); color: #fff; animation: none; opacity: 1; transform: translate(-50%, -50%); }
 .hud-fps { top: auto; bottom: 6px; }
+/* notifications (overtakes, items, rocket start...) sit on the left under the item box,
+   out of the way of the road; the big countdown / GO / FINAL LAP stay in the middle */
+.hud-toasts { left: 22px; top: 158px; transform: none; align-items: flex-start; gap: 6px; }
+.hud-toast { font-size: 11px; padding: 7px 10px 6px; animation-name: toast-side; }
+@keyframes toast-side { 0% { opacity: 0; transform: translateX(-20px); } 10% { opacity: 1; transform: translateX(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-12px); } }
+@media (max-width: 640px) {
+  .hud-toasts { left: 10px; top: 112px; }
+  .hud-toast { font-size: 9px; padding: 5px 8px 4px; }
+}
 /* admin panel */
 .admin .row.wrap { margin: 8px 0; }
 .admin-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 10px; background: #f3f1fa; border: 2px solid var(--ink); margin-bottom: 6px; font-weight: 600; }

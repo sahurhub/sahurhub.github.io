@@ -827,10 +827,10 @@ function edgePoints(ctx, spacing, offset) {
   return out;
 }
 
-// 8 starting slots behind the line, two staggered columns.
+// 12 starting slots behind the line (online parties have up to 12), two staggered columns.
 function gridSlots(track, world) {
   const out = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 12; i++) {
     const p = pointAt(track.main, track.length - 7 - i * 5.2);
     const lat = (i % 2 ? 1 : -1) * p.w * 0.2;
     const x = p.x + p.rx * lat, z = p.z + p.rz * lat;

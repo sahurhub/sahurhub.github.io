@@ -12,6 +12,8 @@ export function ordinal(n) {
 
 // the minimap is drawn small and shown big, so it looks pixelated like the game
 const MAP_W = 120, MS = MAP_W / 180;
+// game speed (m/s, flat out about 30) to the km/h shown: about 300 km/h like a real F1 car
+const SPEED_TO_KMH = 10;
 const _v = new THREE.Vector3();
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -40,6 +42,7 @@ export class Hud {
       <div class="hud-notices"></div>
       <div class="hud-toasts"></div>
       <div class="hud-wrong hidden">WRONG WAY!</div>
+      <div class="hud-speed"><b>0</b><span>KM/H</span></div>
       <div class="hud-fps hidden"></div>`;
     const $ = (s) => root.querySelector(s);
     this.el = {
@@ -47,8 +50,9 @@ export class Hud {
       lap: $('.hud-lap b'), lapOf: $('.hud-lap span'), time: $('.hud-time'), laps: $('.hud-laps'),
       banner: $('.hud-banner'), toasts: $('.hud-toasts'), wrong: $('.hud-wrong'), map: $('.hud-map'), fps: $('.hud-fps'),
       item: $('.hud-item'), itemIcon: $('.hud-item-icon'), itemKey: $('.hud-item-key'), tags: $('.hud-tags'), buttons: $('.hud-buttons'),
-      notices: $('.hud-notices'),
+      notices: $('.hud-notices'), speed: $('.hud-speed b'),
     };
+    this.shownSpeed = -1;
     this.mapCtx = this.el.map.getContext('2d');
     this.lastPlace = 0;
     this.bannerT = 0;
@@ -96,6 +100,10 @@ export class Hud {
   update(race, r, dt, colors) {
     const e = this.el;
     if (!r) return;
+    // speedometer: the cars are small arcade versions of F1 cars, so speed is shown on an
+    // F1-like scale (about 300 km/h flat out) rather than the tiny cars' true speed
+    const kmh = Math.round(Math.abs(r.kart.speed) * SPEED_TO_KMH);
+    if (kmh !== this.shownSpeed) { this.shownSpeed = kmh; e.speed.textContent = kmh; }
     if (r.place !== this.lastPlace) {
       e.posN.textContent = r.place;
       e.posS.textContent = ordinal(r.place).replace(/^\d+/, '').toUpperCase();

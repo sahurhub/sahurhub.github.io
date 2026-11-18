@@ -1,19 +1,20 @@
 // TURBO TOWN - game rules shared by the game and the server (pure data + small helpers).
 
 export const LAPS = 3;
-export const MAX_RACERS = 8;
+// most racers in an online party (single-player races have 8: you + 7 computer racers)
+export const MAX_RACERS = 12;
 
 // Grand Prix points for 1st..8th
 export const GP_POINTS = [15, 12, 10, 8, 6, 5, 4, 3];
-// coins for finishing 1st..8th
-export const FINISH_COINS = [100, 85, 75, 65, 55, 45, 35, 25];
+// coins for finishing 1st..12th
+export const FINISH_COINS = [100, 85, 75, 65, 55, 45, 35, 25, 20, 16, 13, 10];
 export const OVERTAKE_COINS = 5;
 export const OVERTAKE_COOLDOWN = 12;   // seconds before passing the same rival pays again
 export const OVERTAKE_MAX = 20;        // most overtake coins in one race (x5 = 100)
 // extra coins
 export const BONUS = { win: 25, personalBest: 20, gpWin: 150, gpPodium: 60, shortcut: 10, cleanRace: 15 };
 // XP per race: base by place plus a little per overtake
-export const FINISH_XP = [60, 52, 46, 40, 35, 30, 26, 22];
+export const FINISH_XP = [60, 52, 46, 40, 35, 30, 26, 22, 20, 18, 16, 14];
 export const XP_PER_OVERTAKE = 2;
 
 // XP needed to go from level n to n+1 (quick at first, slower later)

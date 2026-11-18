@@ -11,6 +11,7 @@ import { DevProfile, ServerProfile } from './progression/profile.js';
 import { Net, chatSession } from './net/net.js';
 import { Online } from './net/online.js';
 import { SignIn } from './ui/screens/online.js';
+import { GlobalChat } from './ui/global-chat.js';
 import { setResultSfx } from './ui/screens/race.js';
 import { FLAGS } from './config.js';
 
@@ -51,10 +52,12 @@ async function onlineBoot(app, game, ui) {
     const session = chatSession();
     if (!session) { ui.show(SignIn, { onSignedIn: go }, { replace: true }); return; }
     try {
-      what.textContent = 'Connecting to Turbo Town';
+      what.textContent = 'Connecting to Racing Bros';
       const welcome = await net.connect(session);
       app.profile = new ServerProfile(net, welcome.profile, welcome.admin);
       if (!app.online) app.online = new Online(app, net);
+      if (!app.gchat) app.gchat = new GlobalChat(net, welcome.me); // the public chat
+      else app.gchat.me = welcome.me;
       app.menu();
     } catch (e) {
       ui.show(SignIn, { onSignedIn: go, message: e.message }, { replace: true });

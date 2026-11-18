@@ -50,6 +50,12 @@ export class App {
   tick(dt) {
     const g = this.game;
     if (this.online) this.online.tick(dt);
+    // public chat: bottom left while racing, bottom right everywhere else (when signed in)
+    if (this.gchat) {
+      const racing = g.view === 'race' && g.race && !g.race.practice && !this.ui.current && !g.intro;
+      this.gchat.setMode(!this.profile ? 'hidden' : racing ? 'race' : 'menu');
+      this.gchat.tick();
+    }
     if (g.view === 'race' && g.race && g.race.online) {
       if (g.input.consume('pause')) { if (g.intro) g.skipIntro(); else this.online.requestPause(); }
       if (g.input.consume('quickpause')) this.online.quickPause();

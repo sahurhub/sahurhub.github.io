@@ -1,7 +1,7 @@
 // TURBO TOWN - sign in, multiplayer hub, party lobby, online results and the pause vote.
 import { h, btn, header, icon } from '../ui.js';
 import { KARTS, KART_BY_ID } from '../../shared/karts.js';
-import { MAP_INFO, pauseVotesNeeded } from '../../shared/rules.js';
+import { MAP_INFO, MAX_RACERS, pauseVotesNeeded } from '../../shared/rules.js';
 import { fmtTime, ordinal } from '../hud.js';
 import { chatLogin, chatSignup } from '../../net/net.js';
 
@@ -47,11 +47,11 @@ export function SignIn(ui, params) {
   };
   pass.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   const el = h('div', { class: 'menu-center' },
-    h('div', { class: 'logo' }, h('span', { class: 'logo-a' }, 'TURBO'), h('span', { class: 'logo-b' }, 'TOWN')),
+    h('div', { class: 'logo' }, h('span', { class: 'logo-a' }, 'RACING'), h('span', { class: 'logo-b' }, 'BROS')),
     h('div', { class: 'panel signin' },
       swap,
       title,
-      h('p', {}, 'Turbo Town uses your SahurHub Chat account (the same one as the chat). Your coins, karts and records are saved to it.'),
+      h('p', {}, 'Racing Bros uses your SahurHub Chat account (the same one as the chat). Your coins, karts and records are saved to it.'),
       name, pass, go, msg,
       h('p', { class: 'muted small' }, 'Names are 3 to 20 letters, numbers or underscores. Passwords need at least 6 characters.')));
   return { el, noBack: true, enter() { name.focus(); } };
@@ -63,7 +63,7 @@ export function Multiplayer(ui) {
   const app = ui.app;
   const online = app.online;
   if (!online) {
-    return { el: h('div', { class: 'menu-full' }, header(ui, 'Multiplayer'), h('div', { class: 'panel' }, h('h2', {}, 'Online racing'), h('p', {}, 'Multiplayer needs the Turbo Town server. Start the game signed in (it is online-only) to race with friends.'))) };
+    return { el: h('div', { class: 'menu-full' }, header(ui, 'Multiplayer'), h('div', { class: 'panel' }, h('h2', {}, 'Online racing'), h('p', {}, 'Multiplayer needs the Racing Bros server. Start the game signed in (it is online-only) to race with friends.'))) };
   }
   const code = h('input', { type: 'text', maxlength: 6, placeholder: 'ABC123', class: 'field code', autocapitalize: 'characters' });
   const msg = h('p', { class: 'muted' });
@@ -71,7 +71,7 @@ export function Multiplayer(ui) {
   const el = h('div', { class: 'menu-full' }, header(ui, 'Multiplayer'),
     h('div', { class: 'grid2 mp' },
       h('div', { class: 'panel' }, h('h2', { html: icon('users') + ' Race with friends' }),
-        h('p', {}, 'Make a party and share its code. Up to 8 racers.'),
+        h('p', {}, `Make a party and share its code. Up to ${MAX_RACERS} racers.`),
         btn({ label: 'Create party', icon: 'crown', color: '#a55eea', onClick: () => act(() => online.create()) }),
         h('h3', {}, 'Got a code?'),
         h('div', { class: 'row' }, code, btn({ label: 'Join', icon: 'next', color: '#3ddc84', onClick: () => act(() => online.join(code.value)) }))),
@@ -92,7 +92,7 @@ export function PartyLobby(ui, params) {
   const settings = h('div', { class: 'party-settings' });
   const actions = h('div', { class: 'party-actions' });
   const chatLog = h('div', { class: 'chat-log' });
-  const chatIn = h('input', { type: 'text', maxlength: 140, placeholder: 'Say something nice...', class: 'field chat-in' });
+  const chatIn = h('input', { type: 'text', maxlength: 140, placeholder: 'Party chat (only your party sees it)', class: 'field chat-in' });
   chatIn.addEventListener('keydown', (e) => {
     e.stopPropagation();
     if (e.key === 'Enter' && chatIn.value.trim()) { online.chat(chatIn.value); chatIn.value = ''; }
@@ -118,7 +118,7 @@ export function PartyLobby(ui, params) {
       codeChip.append(h('span', {}, 'PUBLIC RACE'), h('b', {}, p.startsAt ? ` starts in ${secs}s` : ' waiting for players...'));
     }
     list.innerHTML = '';
-    list.append(h('div', { class: 'pm-head' }, `Racers ${p.members.length}/8`));
+    list.append(h('div', { class: 'pm-head' }, `Racers ${p.members.length}/${MAX_RACERS}`));
     for (const m of p.members) {
       const kd = KART_BY_ID[m.kart];
       list.append(h('div', { class: 'pm' + (m.uid === online.me.uid ? ' me' : '') },

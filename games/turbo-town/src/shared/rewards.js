@@ -11,7 +11,7 @@ export function raceRewards(o) {
   let xp = 0;
   const field = Math.max(1, o.racers || 1);
   const overtakes = Math.min(OVERTAKE_MAX, Math.max(0, Math.floor(o.overtakes || 0)));
-  const place = Math.min(8, Math.max(1, Math.floor(o.place || 8)));
+  const place = Math.min(FINISH_COINS.length, Math.max(1, Math.floor(o.place || 8)));
   const scale = o.mode === 'online' ? Math.min(1, 0.4 + 0.6 * ((field - 1) / 7)) : Math.min(1, 0.25 + 0.75 * ((field - 1) / 7)) * (DIFF_MUL[o.difficulty] || 1);
   if (o.mode !== 'tt') {
     const fc = Math.round(FINISH_COINS[place - 1] * scale);

@@ -15,11 +15,12 @@ function gradient() {
 const cache = new Map();
 
 // Material for vertex-coloured models. toon = cartoon bands (karts, characters, props).
-export function vcMaterial({ toon = true, map = null, emissive = null, side = THREE.FrontSide, transparent = false, opacity = 1 } = {}) {
-  const key = [toon, map && map.uuid, emissive, side, transparent, opacity].join('|');
+export function vcMaterial({ toon = true, map = null, emissive = null, side = THREE.FrontSide, transparent = false, opacity = 1, alphaTest = 0 } = {}) {
+  const key = [toon, map && map.uuid, emissive, side, transparent, opacity, alphaTest].join('|');
   if (cache.has(key)) return cache.get(key);
   const o = { vertexColors: true, side, transparent, opacity };
   if (map) o.map = map;
+  if (alphaTest) o.alphaTest = alphaTest; // cut-out decals (see-through parts of a texture)
   if (emissive) { o.emissive = new THREE.Color(emissive); }
   const m = toon ? new THREE.MeshToonMaterial({ ...o, gradientMap: gradient() }) : new THREE.MeshLambertMaterial(o);
   cache.set(key, m);

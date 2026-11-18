@@ -8,7 +8,7 @@ import { saveSettings } from '../../save/settings.js';
 import { QUALITY } from '../../render/renderer.js';
 import { Multiplayer } from './online.js';
 import { Admin } from './admin.js';
-import { PAINTS, WHEELS, ACCS, SKINS, TITLES, FRAMES, BOOSTS } from '../../shared/cosmetics.js';
+import { ACCS, TITLES, FRAMES, BOOSTS } from '../../shared/cosmetics.js';
 import { ACHIEVEMENTS } from '../../shared/achievements.js';
 
 const SEASON_COLORS = { spring: '#ff7ab8', summer: '#ffb02e', autumn: '#ff6b2c', winter: '#4fc3ff' };
@@ -175,7 +175,7 @@ export function Garage(ui) {
   const tabs = h('div', { class: 'seg' });
   const preview = (over = {}) => {
     const look = { ...prof.lookFor(kart), ...over };
-    app.game.showroom.showKart(kart, { paint: look.paint, cosmetics: { wheels: look.wheels, acc: look.acc, skin: look.skin }, locked: !prof.hasKart(kart) });
+    app.game.showroom.showKart(kart, { cosmetics: { acc: look.acc }, locked: !prof.hasKart(kart) });
   };
   const render = () => {
     const def = KART_BY_ID[kart];
@@ -185,7 +185,7 @@ export function Garage(ui) {
     panel.innerHTML = '';
     if (tab === 'kart' || !owned) {
       panel.append(h('h2', {}, def.name), h('p', { class: 'muted' }, def.blurb), ...STAT_NAMES.map(([k, n]) => statBar(n, def.stats[k], 10)));
-      if (owned) panel.append(h('p', { class: 'okline', html: icon('check') + ' You own this kart. Drag the kart to spin it.' }));
+      if (owned) panel.append(h('p', { class: 'okline', html: icon('check') + ' You own this car. Drag the car to spin it.' }));
       else {
         const can = prof.canBuyKart(kart);
         const lv = prof.level;
@@ -195,27 +195,18 @@ export function Garage(ui) {
           } }));
       }
     } else {
-      // cosmetics never change how the kart drives
+      // extras never change how the car drives (the cars keep their own liveries and wheels)
       const un = prof.unlocked();
       const cur = prof.lookFor(kart);
-      const T = {
-        paint: { items: PAINTS, key: 'paint', cur: cur.paintId, unl: un.paints, title: 'Paint' },
-        wheels: { items: WHEELS, key: 'wheels', cur: cur.wheels, unl: un.wheels, title: 'Wheels' },
-        acc: { items: ACCS, key: 'acc', cur: cur.acc, unl: un.accs, title: 'Accessory' },
-        skin: { items: SKINS, key: 'skin', cur: cur.skin, unl: un.skins || [null], title: 'Skin' },
-      }[tab];
-      const { items, key, unl } = T, curId = T.cur;
-      panel.append(h('h2', {}, def.name + ': ' + T.title), h('p', { class: 'muted' }, tab === 'skin'
-        ? 'A different car body. Just for looks: it never changes how the kart drives. The Sponsors skin keeps its own colours, so paint does not change it.'
-        : 'Just for looks: these never change how a kart drives.'));
+      const items = ACCS, key = 'acc', unl = un.accs || [null], curId = cur.acc;
+      panel.append(h('h2', {}, def.name + ': Extras'), h('p', { class: 'muted' }, 'Just for looks: extras never change how a car drives. The cars keep their real liveries.'));
       const grid = h('div', { class: 'cos-grid' });
       for (const c of items) {
         const open = c.id === null || unl.includes(c.id);
-        const colors = c.colors || (tab === 'paint' ? def.colors : null);
         const sw = h('button', { class: 'cos' + (c.id === curId ? ' on' : '') + (open ? '' : ' locked'), type: 'button' },
-          colors ? h('span', { class: 'cos-sw', style: { background: `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)` } }) : h('span', { class: 'cos-sw icon-sw', html: icon(tab === 'acc' ? 'star' : 'kart') }),
+          h('span', { class: 'cos-sw icon-sw', html: icon('star') }),
           h('span', { class: 'cos-name' }, c.name), open ? null : h('span', { class: 'cos-lv' }, 'Lv ' + c.level));
-        sw.addEventListener('mouseenter', () => { if (open) preview({ [key]: tab === 'paint' ? (c.colors || def.colors) : c.id, ...(tab === 'paint' ? {} : {}) }); });
+        sw.addEventListener('mouseenter', () => { if (open) preview({ [key]: c.id }); });
         sw.addEventListener('mouseleave', () => preview());
         sw.addEventListener('click', async () => {
           if (!open) { ui.toast(`Unlocks at level ${c.level}`); return; }
@@ -227,7 +218,7 @@ export function Garage(ui) {
     }
     list.querySelectorAll('.pick').forEach((b) => b.classList.toggle('on', b.dataset.id === kart));
   };
-  for (const [t, label] of [['kart', 'Kart'], ['skin', 'Skins'], ['paint', 'Paint'], ['wheels', 'Wheels'], ['acc', 'Extras']]) {
+  for (const [t, label] of [['kart', 'Car'], ['acc', 'Extras']]) {
     const b = h('button', { class: 'seg-b', 'data-t': t }, label);
     b.addEventListener('click', () => { tab = t; render(); });
     tabs.append(b);
@@ -360,7 +351,7 @@ export function Credits(ui) {
       h('h2', {}, 'TURBO TOWN'),
       h('p', {}, 'A kart racer. The maps, items and sounds were made for this game.'),
       h('h3', {}, 'Car models'),
-      h('p', {}, '"Lowpoly F1 car" by Cutieunicorn (lukas.dlabek) and "Mclaren MP4/25 Tooned" by Tyler_Dave, both from Sketchfab under the Creative Commons Attribution 4.0 licence (CC BY 4.0). Changed for this game: trimmed down, wheels split off and recoloured.'),
+      h('p', {}, 'All from Sketchfab under the Creative Commons Attribution 4.0 licence (CC BY 4.0): "Lowpoly F1 car" by Cutieunicorn (lukas.dlabek); "1991 McLaren MP4/6", "2011 Mercedes MGP W02", "2008 Mclaren MP4/23", "2021 Redbull RB16B" and "Mclaren MP4/25 Tooned" by Tyler_Dave; "Red Bull RB9" by JUSTGAME; "2024 | Peugeot 9X8 EVO" by sohyalebret. Changed for this game: squashed into a chunky arcade shape, trimmed down, wheels split off and a helmet added. Team names, logos and liveries belong to their owners.'),
       h('h3', {}, 'Made with'),
       h('p', {}, 'three.js (MIT licence) for 3D graphics. Blender for all 3D models. Press Start 2P and Pixelify Sans fonts (SIL Open Font Licence) from Google Fonts.'),
       h('h3', {}, 'Built by'),

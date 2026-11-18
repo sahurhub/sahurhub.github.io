@@ -489,9 +489,9 @@ function applyFlags(k, fl, d) {
   k.snx = 0; k.sny = 1; k.snz = 0;
 }
 
-// another player's chosen looks (wheels, accessory, car skin) as KartVisual cosmetics
+// another player's chosen accessory as KartVisual cosmetics (cars keep their own livery)
 function lookCosmetics(look) {
-  return look ? { wheels: look.wheels, acc: look.acc, skin: look.skin } : {};
+  return look ? { acc: look.acc } : {};
 }
 
 function fakeKart(def) {

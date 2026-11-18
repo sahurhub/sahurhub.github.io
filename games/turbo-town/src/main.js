@@ -22,7 +22,7 @@ const testMode = FLAGS.dev && !params.has('online');
 
 async function boot() {
   what.textContent = 'Polishing the karts';
-  await assets.loadAll(['karts.glb', 'skins.glb', 'common.glb', 'items.glb'], (f) => { fill.style.width = (f * 80).toFixed(0) + '%'; });
+  await assets.loadAll(['karts.glb', 'common.glb', 'items.glb'], (f) => { fill.style.width = (f * 80).toFixed(0) + '%'; });
   const game = new Game({ container: document.getElementById('game'), hudRoot: document.getElementById('hud'), settings, assets });
   const ui = new UI(document.getElementById('ui'));
   const app = new App({ game, ui, profile: null, assets });
@@ -46,7 +46,7 @@ async function onlineBoot(app, game, ui) {
   const net = new Net();
   app.net = net;
   game.setView('showroom');
-  game.showroom.showParade([{ kart: 'starter' }, { kart: 'drifter', cosmetics: { skin: 'skin_mp425' } }, { kart: 'rocket' }, { kart: 'breeze', cosmetics: { skin: 'skin_mp425_sponsor' } }]);
+  game.showroom.showParade([{ kart: 'speedster' }, { kart: 'breeze' }, { kart: 'hauler' }, { kart: 'frost' }]);
   const go = async () => {
     const session = chatSession();
     if (!session) { ui.show(SignIn, { onSignedIn: go }, { replace: true }); return; }

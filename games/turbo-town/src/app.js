@@ -98,7 +98,7 @@ export class App {
 
   cosmeticsFor(kartId) {
     const l = this.profile.lookFor(kartId);
-    return { wheels: l.wheels, acc: l.acc, skin: l.skin };
+    return { acc: l.acc };
   }
 
   showLoading(text) {

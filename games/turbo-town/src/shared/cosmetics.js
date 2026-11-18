@@ -38,13 +38,6 @@ export const ACCS = [
   { id: 'acc_star', name: 'Spring Star', level: 12 },
 ];
 
-// Car bodies (looks only). null = the standard F1 body. Models are in assets/models/skins.glb.
-export const SKINS = [
-  { id: null, name: 'Standard F1', level: 1 },
-  { id: 'skin_mp425', name: 'MP4/25', level: 1 },
-  { id: 'skin_mp425_sponsor', name: 'MP4/25 Sponsors', level: 1, fixed: true },
-];
-
 export const TITLES = [
   { id: 'Rookie', level: 1 }, { id: 'Speedy', level: 3 }, { id: 'Drift Star', level: 5 }, { id: 'Item Wizard', level: 7 },
   { id: 'Shortcut Sleuth', level: 10 }, { id: 'Turbo Champ', level: 14 }, { id: 'Cup Collector', level: 18 }, { id: 'Legend', level: 25 },
@@ -67,7 +60,9 @@ export const BOOSTS = [
   { id: 'fx_rainbow', name: 'Rainbow', level: 20, colors: ['rainbow', '#ffffff'] },
 ];
 
-export const CATALOG = { paints: PAINTS, wheels: WHEELS, accs: ACCS, skins: SKINS, titles: TITLES, frames: FRAMES, boosts: BOOSTS };
+// Since 2026-11-18 the cars keep their real liveries and wheels, so paints, wheel styles and
+// skins are no longer unlocked or chosen (the lists above stay only for old saves).
+export const CATALOG = { accs: ACCS, titles: TITLES, frames: FRAMES, boosts: BOOSTS };
 
 // everything unlocked at a level
 export function unlockedAt(level) {
@@ -83,7 +78,7 @@ export function newUnlocks(a, b) {
   return out;
 }
 
+// the cars' colours are fixed now (their liveries); kept as a function for old callers
 export function paintColors(id, kartDef) {
-  const p = PAINTS.find((x) => x.id === id);
-  return (p && p.colors) || kartDef.colors;
+  return kartDef.colors;
 }

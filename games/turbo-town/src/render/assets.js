@@ -6,6 +6,7 @@
 // That keeps each kart, prop or tree to one or two draw calls.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { vcMaterial } from './materials.js';
 
@@ -16,6 +17,7 @@ const _c = new THREE.Color();
 export class Assets {
   constructor() {
     this.loader = new GLTFLoader();
+    this.loader.setMeshoptDecoder(MeshoptDecoder); // karts.glb is meshopt-compressed
     this.models = new Map();   // name -> template Object3D
     this.files = new Map();    // file -> Promise
     this.failed = [];
@@ -66,19 +68,25 @@ export class Assets {
         for (const gr of groups) {
           const mat = mats[gr.materialIndex] || mats[0];
           const name = (mat.name || '').replace(/\.\d+$/, '');
-          const map = mat.map || null; // a textured part (a skin that keeps its original livery)
+          const map = mat.map || null; // a textured part (a car's real livery)
+          const seeThrough = mat.transparent || mat.alphaTest > 0;
+          // see-through parts without a texture are glass: light covers vanish, windows go dark
+          if (!map && seeThrough && /light/i.test(name)) continue;
           const part = subGeometry(geo, gr.start, gr.count, !!map).applyMatrix4(_m);
           const isGlow = name.startsWith('glow');
           // 'paint_70' = the main colour at 70 % brightness (shading painted into the model)
           const shade = /^(paint2?)_(\d+)$/.exec(name);
           if (map) _c.set('#ffffff');
+          else if (seeThrough) _c.set('#1d2433');
           else if (colors[name]) _c.set(colors[name]);
           else if (shade && colors[shade[1]]) _c.set(colors[shade[1]]).convertLinearToSRGB().multiplyScalar(+shade[2] / 100).convertSRGBToLinear();
           else _c.copy(mat.color || _c.set('#ffffff'));
           paint(part, _c);
           if (map) {
-            if (!textured.has(map.uuid)) textured.set(map.uuid, { map, parts: [] });
-            textured.get(map.uuid).parts.push(part);
+            // decals and numbers keep their see-through parts (cut out, so they stay cheap)
+            const key = map.uuid + (seeThrough ? '|cut' : '');
+            if (!textured.has(key)) textured.set(key, { map, cut: seeThrough, parts: [] });
+            textured.get(key).parts.push(part);
           } else if (isGlow) {
             const key = '#' + (mat.emissive ? mat.emissive.getHexString() : _c.getHexString());
             if (!glow.has(key)) glow.set(key, []);
@@ -92,7 +100,7 @@ export class Assets {
     const out = [];
     if (normal.length) out.push({ geometry: finishGeo(mergeGeometries(normal, false)), glow: null });
     for (const [key, parts] of glow) out.push({ geometry: finishGeo(mergeGeometries(parts, false)), glow: key });
-    for (const t of textured.values()) out.push({ geometry: finishGeo(mergeGeometries(t.parts, false)), glow: null, map: t.map });
+    for (const t of textured.values()) out.push({ geometry: finishGeo(mergeGeometries(t.parts, false)), glow: null, map: t.map, cut: t.cut });
     return out;
   }
 
@@ -110,7 +118,7 @@ export class Assets {
   meshes(parts, { toon = true, shadow = true } = {}) {
     const g = new THREE.Group();
     for (const p of parts) {
-      const m = new THREE.Mesh(p.geometry, p.glow ? vcMaterial({ toon: false, emissive: p.glow }) : vcMaterial({ toon, map: p.map || null }));
+      const m = new THREE.Mesh(p.geometry, p.glow ? vcMaterial({ toon: false, emissive: p.glow }) : vcMaterial({ toon, map: p.map || null, alphaTest: p.cut ? 0.5 : 0 }));
       m.castShadow = shadow && !p.glow;
       g.add(m);
     }
@@ -139,14 +147,13 @@ export class Assets {
 
   // ------------------------------------------------------------ karts
 
-  // Kart model with paint, car skin and cosmetic wheels / accessory. Returns null if not loaded.
+  // Car model with its own livery and wheels, plus the chosen accessory. Returns null if not
+  // loaded. The cars keep their real liveries: paint can not be changed any more.
   buildKart(def, opts = {}) {
     const cos = opts.cosmetics || {};
-    const skin = cos.skin && this.has(cos.skin) ? cos.skin : null; // another car body (looks only)
-    const t = this.node(skin || 'kart_' + def.id);
+    const t = this.node('kart_' + def.id);
     if (!t) return null;
-    const paint = opts.paint || def.colors;
-    const colors = { paint: paint[0], paint2: paint[1] };
+    const colors = { paint: def.colors[0], paint2: def.colors[1] };
     const object = new THREE.Group();
     object.name = 'kartModel';
     const find = (prefix) => t.children.find((c) => c.name.startsWith(prefix));
@@ -164,10 +171,8 @@ export class Assets {
       steer.add(this.meshes(this.bake(tmp, colors)));
       object.add(steer);
     }
-    // wheels: the wheel style the player picked, else the skin's own wheels, else the standard ones
-    const skinWheel = skin ? 'wheel_' + skin.replace(/^skin_/, '') : null;
-    const wheelName = cos.wheels && cos.wheels !== 'wheel_std' && this.has(cos.wheels) ? cos.wheels
-      : skinWheel && this.has(skinWheel) ? skinWheel : 'wheel_std';
+    // wheels: the car's own wheel model
+    const wheelName = this.has('wheel_' + def.id) ? 'wheel_' + def.id : 'wheel_std';
     const wheelParts = this.cacheTinted(wheelName, colors);
     const wheels = [], steerGroups = [], rearWheels = [];
     let wheelRadius = 0.32;

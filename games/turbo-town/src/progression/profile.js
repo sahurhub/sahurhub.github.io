@@ -21,7 +21,8 @@ class BaseProfile {
   lookFor(kartId) {
     const def = KART_BY_ID[kartId] || KART_BY_ID.starter;
     const l = this.get().look[kartId] || {};
-    return { paintId: l.paint || 'p_classic', paint: paintColors(l.paint || 'p_classic', def), wheels: l.wheels || 'wheel_std', acc: l.acc || null, skin: l.skin || null };
+    // the cars keep their own livery and wheels; only the accessory is a choice
+    return { paint: def.colors, acc: l.acc || null };
   }
 }
 

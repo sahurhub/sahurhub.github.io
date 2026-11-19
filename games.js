@@ -113,17 +113,17 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
-    // "Driver Online Cars" by VayGame. games/drive-online/ loads a web version
-    // that someone else published on GitHub (see the notes in that page).
-    id: "drive-online",
+    // A Unity driving game by VayGame. games/test/ loads a web version that
+    // someone else published on GitHub (see the notes in that page).
+    id: "test",
     title: "Test",
     category: "Racing",
-    tags: ["driving", "cars", "online", "multiplayer", "open world", "city", "3d", "drive online", "driver online cars", "rev nation"],
-    description: "Pick a car and cruise an open world with other players online. Choose a server, join a room and drive.",
+    tags: ["driving", "cars", "multiplayer", "open world", "city", "3d"],
+    description: "Pick a car and cruise an open world with other players. Choose a server, join a room and hit the road.",
     icon: "car",
     colors: ["#ff8a3d", "#2b6cff"],
-    url: "games/drive-online/",
-    cover: "covers/drive-online.jpg",
+    url: "games/test/",
+    cover: "covers/test.jpg",
     isNew: true
   },
   {

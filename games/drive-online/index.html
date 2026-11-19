@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Drive Online</title>
+  <title>Test</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <style>
     html, body { margin: 0; height: 100%; background: #0b0b10; color: #fff;
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <div class="msg" id="msg">Loading Drive Online...</div>
+  <div class="msg" id="msg">Loading...</div>
   <script>
     /*
       Drive Online (the game is "Driver Online Cars" by VayGame) is not stored in this
@@ -47,13 +47,13 @@
           var html = xml.slice(start + 9, end)
             .split(BASE + 'main/background.png').join(cover)
             .split(BASE + 'main').join(BASE + VERSION)
-            .replace('</head>', '<title>Drive Online</title><style>#unity-logo { display: none; }</style></head>');
+            .replace('</head>', '<title>Test</title><style>#unity-logo { display: none; }</style></head>');
           document.open();
           document.write(html);
           document.close();
         })
         .catch(function () {
-          msg.textContent = 'Drive Online could not load. Check your connection and try again.';
+          msg.textContent = 'The game could not load. Check your connection and try again.';
         });
     })();
   </script>

@@ -1,0 +1,17 @@
+{
+  "_help": "Put each vehicle's .glb file in this folder and fill in its entry. See docs/MODELS.md. While 'file' is null the game uses a simple placeholder shape.",
+  "vehicles": {
+    "pushbike":        { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "ebike":           { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "kukirinG2":       { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "kukirinG2Master": { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "kukirinG4":       { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "scooter":         { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "dirtbike":        { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "quad":            { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "hatch":           { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "sports":          { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} },
+    "truck":           { "file": null, "scale": 1, "rotateY": 0, "offset": [0, 0, 0], "wheelNodes": null, "physics": {} }
+  },
+  "credits": []
+}

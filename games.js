@@ -113,6 +113,21 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // LB Simulator. The files are in games/uk-simulator/ in this repository: the real Leighton
+    // Buzzard from OpenStreetMap and Environment Agency LiDAR. Online play, saves and chat use
+    // SahurHub Chat accounts through uksim-79-72-86-205.nip.io; guests can play without one.
+    id: "lb-simulator",
+    title: "LB Simulator",
+    category: "Simulator",
+    tags: ["leighton buzzard", "linslade", "driving", "car", "scooter", "e-scooter", "kukirin", "bike", "dirt bike", "quad", "open world", "simulator", "physics", "multiplayer", "online", "chat", "3d"],
+    description: "Drive, ride and scoot around the real Leighton Buzzard and Linslade, built from real map and height data. Cars, bikes, Kukirin e-scooters, a dirt bike and a quad with realistic physics, deliveries, races, stunt jumps and online play with your SahurHub Chat account.",
+    icon: "car",
+    colors: ["#3fb950", "#2f6fdf"],
+    url: "games/uk-simulator/",
+    cover: "covers/lb-simulator.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>LB Simulator - Leighton Buzzard</title>
+<meta name="description" content="Drive, ride and scoot around a real Leighton Buzzard built from OpenStreetMap and Environment Agency LiDAR.">
+<link rel="stylesheet" href="style.css?v=1">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="view"></div>
+
+<!-- loading screen -->
+<div id="loading">
+  <div class="load-box">
+    <div class="load-title">LB SIMULATOR</div>
+    <div class="load-sub">Leighton Buzzard and Linslade, Bedfordshire</div>
+    <div class="load-bar"><div id="load-fill"></div></div>
+    <div id="load-text">Starting...</div>
+    <div class="load-credit">Map data &copy; OpenStreetMap contributors. Ground heights &copy; Environment Agency copyright and/or database right 2022. All rights reserved.</div>
+  </div>
+</div>
+
+<!-- heads-up display -->
+<div id="hud" hidden>
+  <div id="hud-top">
+    <div id="hud-money" class="pill">£0</div>
+    <div id="hud-level" class="pill">Lv 1</div>
+    <div id="hud-clock" class="pill">12:00</div>
+  </div>
+  <div id="hud-road" class="pill"></div>
+  <div id="hud-event" hidden></div>
+  <div id="hud-toasts"></div>
+  <div id="hud-prompt" class="pill" hidden></div>
+  <div id="hud-centre" hidden></div>
+  <canvas id="minimap" width="220" height="220"></canvas>
+  <div id="hud-speedo">
+    <div id="hud-speed">0</div><div id="hud-unit">mph</div>
+    <div id="hud-gear">N</div>
+    <div class="bar"><div id="hud-rpm"></div></div>
+    <div id="hud-extra"></div>
+  </div>
+  <div id="hud-debug" hidden></div>
+  <div id="hud-chat"><div id="chat-log"></div><input id="chat-input" maxlength="200" placeholder="Say something (Enter to send, Esc to close)" hidden></div>
+</div>
+
+<!-- menus (built by ui/menu.js) -->
+<div id="menu" hidden></div>
+<div id="bigmap" hidden><canvas id="bigmap-canvas"></canvas><div id="bigmap-info"></div></div>
+<div id="tuning" hidden></div>
+<div id="fps" hidden></div>
+<noscript>LB Simulator needs JavaScript.</noscript>
+<script type="module" src="src/main.js?v=1"></script>
+</body>
+</html>

@@ -1440,6 +1440,53 @@ html.lg-ready #sheet::after {
   .stat-value { font-size: 18px; }
 }
 
+/* ---------- Auto about:blank ----------
+   In a normal tab (not inside the about:blank tab) the site does not start;
+   a small screen offers to open it in about:blank instead. */
+html.cloak #app,
+html.cloak #desktop { display: none !important; }
+#cloak-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  cursor: pointer;
+  background:
+    radial-gradient(60% 50% at 20% 15%, color-mix(in srgb, var(--accent) 22%, transparent), transparent),
+    radial-gradient(60% 50% at 85% 90%, rgba(255, 45, 120, 0.16), transparent),
+    var(--bg);
+}
+.cloak-card {
+  width: min(380px, 100%);
+  padding: 28px 24px 18px;
+  border-radius: 28px;
+  text-align: center;
+  cursor: default;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+}
+.cloak-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #5ac8fa, #5856d6);
+}
+.cloak-logo .glyph { width: 62%; height: 62%; }
+.cloak-title { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+.cloak-text { margin-top: 8px; font-size: 15.5px; line-height: 1.45; color: var(--label-2); }
+.cloak-open { width: 100%; height: 50px; margin-top: 18px; border-radius: 25px; font-size: 17px; }
+.cloak-msg { min-height: 1.4em; margin-top: 10px; font-size: 13.5px; line-height: 1.4; color: var(--heart); }
+.cloak-msg:empty { min-height: 0; margin-top: 4px; }
+.cloak-stay { margin-top: 6px; font-size: 14px; }
+.set-note { margin: 8px 4px 0; font-size: 12.5px; line-height: 1.4; color: var(--label-2); }
+
 /* ---------- Toast ---------- */
 
 #toast {

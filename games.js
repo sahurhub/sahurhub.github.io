@@ -113,20 +113,6 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
-    // A Unity driving game by VayGame. games/test/ loads a web version that
-    // someone else published on GitHub (see the notes in that page).
-    id: "test",
-    title: "Test",
-    category: "Racing",
-    tags: ["driving", "cars", "multiplayer", "open world", "city", "3d"],
-    description: "Pick a car and cruise an open world with other players. Choose a server, join a room and hit the road.",
-    icon: "car",
-    colors: ["#ff8a3d", "#2b6cff"],
-    url: "games/test/",
-    cover: "covers/test.jpg",
-    isNew: true
-  },
-  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

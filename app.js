@@ -12,8 +12,7 @@
   var DESKTOP_VERSION = '?v=20261114c';
   var KEYS = {
     theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent',
-    openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow',
-    autoBlank: 'sahurhub.autoblank' // read early by the first script in index.html
+    openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow'
   };
   // Settings (the gear button). "auto" follows the device's light/dark setting.
   var THEMES = [
@@ -952,28 +951,7 @@
             return '<button class="seg-btn" type="button" data-open-mode="' + m.id + '" aria-pressed="' + (m.id === state.openMode) + '">' + escapeHtml(m.label) + '</button>';
           }).join('') +
         '</div>' +
-      '</section>' +
-      '<section class="set-group">' +
-        '<h3 class="set-title" id="set-autoblank">Open SahurHub in about:blank</h3>' +
-        '<div class="seg seg-full" role="group" aria-labelledby="set-autoblank">' +
-          ['on', 'off'].map(function (v) {
-            return '<button class="seg-btn" type="button" data-autoblank="' + v + '" aria-pressed="' + (v === autoBlankSetting()) + '">' + (v === 'on' ? 'On' : 'Off') + '</button>';
-          }).join('') +
-        '</div>' +
-        '<p class="set-note">When this is on, going to SahurHub opens it in an about:blank tab. Changes take effect the next time you open the site.</p>' +
       '</section>';
-  }
-
-  function autoBlankSetting() { return storage.getRaw(KEYS.autoBlank) === 'off' ? 'off' : 'on'; }
-
-  function setAutoBlank(v) {
-    v = v === 'off' ? 'off' : 'on';
-    if (v === autoBlankSetting()) return;
-    storage.setRaw(KEYS.autoBlank, v);
-    sheetBody.querySelectorAll('[data-autoblank]').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.getAttribute('data-autoblank') === v));
-    });
-    showToast(v === 'on' ? 'SahurHub will open in about:blank' : 'SahurHub will open normally');
   }
 
   function syncSettings() {
@@ -2370,9 +2348,6 @@
     var snowOpt = target.closest('[data-snow-level]');
     if (snowOpt) { setSnowLevel(snowOpt.getAttribute('data-snow-level')); return; }
 
-    var blankOpt = target.closest('[data-autoblank]');
-    if (blankOpt) { setAutoBlank(blankOpt.getAttribute('data-autoblank')); return; }
-
     if (target.closest('[data-stats-reset]')) { onStatsReset(); return; }
 
     var play = target.closest('[data-play]');
@@ -2603,63 +2578,7 @@
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Auto about:blank. The first script in index.html opens SahurHub inside a new
-  // about:blank tab (or waits for a click if pop-ups are blocked). This normal
-  // tab then shows this small screen instead of starting the site.
-  // ---------------------------------------------------------------------------
-
-  function showCloakScreen() {
-    var cloak = window.SahurHubCloak;
-    var screen = document.createElement('div');
-    screen.id = 'cloak-screen';
-    screen.innerHTML =
-      '<div class="cloak-card" role="dialog" aria-labelledby="cloak-title">' +
-        '<div class="cloak-logo" aria-hidden="true">' + glyph('controller') + '</div>' +
-        '<h1 class="cloak-title" id="cloak-title">SahurHub</h1>' +
-        '<p class="cloak-text"></p>' +
-        '<button class="btn btn-primary cloak-open" type="button"></button>' +
-        '<p class="cloak-msg" aria-live="polite"></p>' +
-        '<button class="link-btn cloak-stay" type="button">Use SahurHub in this tab instead</button>' +
-      '</div>';
-    document.body.appendChild(screen);
-    var text = screen.querySelector('.cloak-text');
-    var openBtn = screen.querySelector('.cloak-open');
-    var msg = screen.querySelector('.cloak-msg');
-
-    function show(opened) {
-      text.textContent = opened
-        ? 'SahurHub is open in an about:blank tab. You can close this tab.'
-        : 'Click anywhere to open SahurHub in an about:blank tab.';
-      openBtn.textContent = opened ? 'Open it again' : 'Open SahurHub';
-      msg.textContent = '';
-    }
-    var opened = !!cloak.opened;
-    function tryOpen() {
-      if (cloak.open()) { opened = true; show(true); return; }
-      msg.textContent = 'Your browser blocked the new tab. Allow pop-ups for sahurhub.github.io, then try again.';
-    }
-
-    show(opened);
-    // Any click on the screen opens it (a click lets the browser open a tab).
-    screen.addEventListener('click', function (e) {
-      if (e.target.closest('.cloak-stay')) {
-        // Run SahurHub right here this time.
-        window.SahurHubCloak = null;
-        document.documentElement.classList.remove('cloak');
-        screen.remove();
-        start();
-        return;
-      }
-      // Once it's open, only the button opens another one.
-      if (opened && !e.target.closest('.cloak-open')) return;
-      tryOpen();
-    });
-    openBtn.focus({ preventScroll: true });
-  }
-
   function start() {
-    if (window.SahurHubCloak) { showCloakScreen(); return; }
     fillIcons(document);
     applyThemeAttrs(themeChoice());
     // Stats: mark today as visited and count time while SahurHub is on screen.

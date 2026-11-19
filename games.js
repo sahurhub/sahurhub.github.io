@@ -113,20 +113,6 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
-    // "Driver Online Cars" by VayGame. games/drive-online/ loads a web version
-    // that someone else published on GitHub (see the notes in that page).
-    id: "drive-online",
-    title: "Rev Nation",
-    category: "Racing",
-    tags: ["driving", "cars", "online", "multiplayer", "open world", "city", "3d", "drive online", "driver online cars"],
-    description: "Pick a car and cruise an open world with other players online. Choose a server, join a room and drive.",
-    icon: "car",
-    colors: ["#ff8a3d", "#2b6cff"],
-    url: "games/drive-online/",
-    cover: "covers/drive-online.jpg",
-    isNew: true
-  },
-  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

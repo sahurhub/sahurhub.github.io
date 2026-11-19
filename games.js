@@ -102,9 +102,9 @@ window.SAHURHUB_GAMES = [
     // The game's files are in games/turbo-town/ in this repository. Players sign in with
     // their SahurHub Chat account; the game server is turbotown-79-72-86-205.nip.io.
     id: "turbo-town",
-    title: "Racing Bros",
+    title: "Turbo Town",
     category: "Racing",
-    tags: ["racing", "f1", "le mans", "race cars", "drift", "items", "grand prix", "time trials", "multiplayer", "online", "friends", "chat", "3d"],
+    tags: ["racing", "f1", "le mans", "race cars", "drift", "items", "grand prix", "time trials", "multiplayer", "online", "friends", "chat", "3d", "racing bros"],
     description: "Chunky arcade racing with real F1 and Le Mans cars: 8 seasonal maps, items and drifting. Race the computer or up to 11 friends online, and talk in the public chat. Sign in with your SahurHub Chat account.",
     icon: "car",
     colors: ["#ffd23f", "#2fb6ff"],

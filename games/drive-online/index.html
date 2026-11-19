@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Drive Online</title>
+  <title>Rev Nation</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <style>
     html, body { margin: 0; height: 100%; background: #0b0b10; color: #fff;
@@ -12,10 +12,11 @@
   </style>
 </head>
 <body>
-  <div class="msg" id="msg">Loading Drive Online...</div>
+  <div class="msg" id="msg">Loading Rev Nation...</div>
   <script>
     /*
-      Drive Online ("Driver Online Cars" by VayGame) is not stored in this
+      Rev Nation (shown as "Drive Online" at first; the game is "Driver Online
+      Cars" by VayGame) is not stored in this
       repository. Someone else published its web version on GitHub
       (nihathatpsin/seymaynem, served by jsDelivr) as an XML file with the game's
       web page inside. This page downloads that file and shows the page inside it
@@ -47,7 +48,7 @@
           var html = xml.slice(start + 9, end)
             .split(BASE + 'main/background.png').join(cover)
             .split(BASE + 'main').join(BASE + VERSION)
-            .replace('</head>', '<style>#unity-logo { display: none; }</style></head>');
+            .replace('</head>', '<title>Rev Nation</title><style>#unity-logo { display: none; }</style></head>');
           document.open();
           document.write(html);
           document.close();

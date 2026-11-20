@@ -23,7 +23,10 @@ const REVERSE_MAX = 8.5;
 const RADIUS = 0.85;
 // Drifts no longer charge boosts (kept so older imports still work).
 export const TIER_AT = [0, 1, 2, 3];
-export const DRIFT_BASE = 0.75, DRIFT_STEER = 0.35; // drift turn = driftTurn x (base + steer x into-turn)
+// drift turn = driftTurn x (base + steer x into-turn): steering into the drift turns tight
+// (1.1), a straight wheel barely pulls (0.15), steering the other way turns back (-0.8) and,
+// held for a moment, flips the drift over to that side (see AUTO_FLIP in autoDrift)
+export const DRIFT_BASE = 0.15, DRIFT_STEER = 0.95;
 // drift angle (how far the car swings sideways, looks only): it starts at your normal turning
 // angle and builds up while you keep turning into the drift, more the harder you steer in.
 // MAX is the angle at full steering (radians, about 45 degrees); GROW and EASE are how fast
@@ -251,14 +254,21 @@ function groundStep(k, world, dt, sp, pressed, control) {
 // turns tighter); holding the turn keeps it drifting; letting go (or steering the other
 // way for a moment) ends it. There is no boost at the end. st is a small state object.
 export const AUTO_HOLD = 0.6;
-const AUTO_SPEED = 12, AUTO_GRACE = 0.15, AUTO_OPPOSITE = 0.25;
+// a drift carries on through short let-gos (AUTO_GRACE); steering the other way for
+// AUTO_FLIP seconds swings the drift over to that side (it keeps drifting)
+const AUTO_SPEED = 12, AUTO_GRACE = 0.35, AUTO_FLIP = 0.15;
 export function autoDrift(k, steer, throttle, st, dt) {
   const d = k.drift;
   const dir = Math.abs(steer) > 0.55 ? Math.sign(steer) : 0;
   if (d.on) {
     if (throttle <= 0) return false;
     if (dir === d.dir) { st.relT = 0; st.oppT = 0; return true; }
-    if (dir === -d.dir) { st.oppT = (st.oppT || 0) + dt; return st.oppT < AUTO_OPPOSITE; }
+    if (dir === -d.dir) {
+      // steering the other way: after a moment the drift flips over to that side
+      st.oppT = (st.oppT || 0) + dt;
+      if (st.oppT >= AUTO_FLIP) { d.dir = dir; st.oppT = 0; st.relT = 0; ev(k, 'driftFlip', dir); }
+      return true;
+    }
     st.relT = (st.relT || 0) + dt; // short taps keep the slide going (to widen the line)
     return st.relT < AUTO_GRACE;
   }

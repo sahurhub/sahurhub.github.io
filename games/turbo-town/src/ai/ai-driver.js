@@ -246,6 +246,8 @@ export function createAI(difficulty = 'normal', rng = Math.random) {
       const f = k.p.driftTurn * Math.min(1, sAbs / 12);
       const rel = ((-needYaw / k.drift.dir) / Math.max(0.1, f) - DRIFT_BASE) / DRIFT_STEER;
       inp.steer = clamp(rel * k.drift.dir, -1, 1);
+      // computer drivers never flip a drift over (steering hard the other way would)
+      if (Math.sign(inp.steer) === -k.drift.dir) inp.steer = Math.sign(inp.steer) * Math.min(Math.abs(inp.steer), 0.5);
       const ending = Math.abs(curvAhead(path, local, 2, 14, 4).avg) < 0.008 || Math.sign(cNear) !== k.drift.dir;
       const offLine = Math.abs(n.lat) > hw + 0.5 && path === track.main;
       if (ending || offLine) inp.steer = clamp(-diff * 2.6, -0.45, 0.45); // let the drift end

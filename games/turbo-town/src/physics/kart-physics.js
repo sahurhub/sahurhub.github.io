@@ -114,7 +114,9 @@ export function stepKart(k, world, dt) {
   const rate = (k.steer !== 0 && Math.sign(want) !== Math.sign(k.steer)) ? 22 : 13; // snappy
   k.steer += clamp(want - k.steer, -rate * dt, rate * dt);
   // drifting comes from the steering alone (same rule for players and computer drivers)
-  inp.drift = autoDrift(k, control ? inp.steer : 0, control ? inp.throttle : 0, k.ad || (k.ad = { holdT: 0, dir: 0, relT: 0, oppT: 0 }), dt);
+  const auto = autoDrift(k, control ? inp.steer : 0, control ? inp.throttle : 0, k.ad || (k.ad = { holdT: 0, dir: 0, relT: 0, oppT: 0 }), dt);
+  // the drift key (Space, free roam only): drift as soon as you steer, for as long as it is held
+  inp.drift = auto || !!(control && inp.driftKey);
   const pressed = false;
 
   const sp = surfProps(k, k.surf);
@@ -377,13 +379,31 @@ function resolveObstacles(k, world) {
   world.nearObstacles(k.x, k.z, (o) => {
     if (k.y + 1.2 < o.y0 || k.y > o.y1) return;
     if (o.kind === 'mover' && k.invulnT > 0) return; // blinking karts pass through moving obstacles
-    const dx = k.x - o.x, dz = k.z - o.z;
-    const rr = o.r + k.radius;
-    const d2 = dx * dx + dz * dz;
-    if (d2 >= rr * rr) return;
-    const d = Math.sqrt(d2) || 1e-4;
-    const ox = dx / d, oz = dz / d;
-    k.x = o.x + ox * rr; k.z = o.z + oz * rr;
+    let ox, oz;
+    if (o.box) {
+      // a building: push out from the nearest point of the box
+      const px = clamp(k.x, o.x - o.hx, o.x + o.hx), pz = clamp(k.z, o.z - o.hz, o.z + o.hz);
+      const dx = k.x - px, dz = k.z - pz, d2 = dx * dx + dz * dz;
+      if (d2 >= k.radius * k.radius) return;
+      if (d2 > 1e-8) {
+        const d = Math.sqrt(d2);
+        ox = dx / d; oz = dz / d;
+        k.x = px + ox * k.radius; k.z = pz + oz * k.radius;
+      } else {
+        // the middle of the kart got inside: out through the nearest side
+        const ex = o.hx - Math.abs(k.x - o.x), ez = o.hz - Math.abs(k.z - o.z);
+        if (ex < ez) { ox = Math.sign(k.x - o.x) || 1; oz = 0; k.x = o.x + ox * (o.hx + k.radius); }
+        else { ox = 0; oz = Math.sign(k.z - o.z) || 1; k.z = o.z + oz * (o.hz + k.radius); }
+      }
+    } else {
+      const dx = k.x - o.x, dz = k.z - o.z;
+      const rr = o.r + k.radius;
+      const d2 = dx * dx + dz * dz;
+      if (d2 >= rr * rr) return;
+      const d = Math.sqrt(d2) || 1e-4;
+      ox = dx / d; oz = dz / d;
+      k.x = o.x + ox * rr; k.z = o.z + oz * rr;
+    }
     const rvx = k.vx - (o.vx || 0), rvz = k.vz - (o.vz || 0);
     const vIn = -(rvx * ox + rvz * oz);
     if (vIn > 0) {

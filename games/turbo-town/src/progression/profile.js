@@ -5,7 +5,7 @@
 //                  without the server. Never used on the published site.
 // Both offer the same methods to the rest of the game.
 import { KART_BY_ID } from '../shared/karts.js';
-import { START_MAPS, levelFromXp, CUPS } from '../shared/rules.js';
+import { START_MAPS, levelFromXp, CUPS, LAPS, LAP_COINS } from '../shared/rules.js';
 import { raceRewards, trophyFor, nextCup } from '../shared/rewards.js';
 import { unlockedAt, newUnlocks, paintColors } from '../shared/cosmetics.js';
 import { FLAGS } from '../config.js';
@@ -60,6 +60,12 @@ export class ServerProfile extends BaseProfile {
   }
   async submitRace(r) { const out = await this.net.request('raceResult', r); this.data = out.profile; return out; }
   async submitTT(r) { const out = await this.net.request('ttResult', r, 20000); this.data = out.profile; return out; }
+  // a lap finished: the server pays the lap coins and says the new total
+  async lapDone(ticket, lap) {
+    const out = await this.net.request('lapDone', { ticket, lap });
+    if (out && out.coins) this.data.coins = out.total;
+    return out;
+  }
   async ghost(map) { return this.net.request('ghost', { map }); }
   async leaderboard(map) { return this.net.request('leaderboard', { map }); }
 }
@@ -113,11 +119,18 @@ export class DevProfile extends BaseProfile {
   async setStyle(style) { Object.assign(this.data, Object.fromEntries(Object.entries(style).filter(([, v]) => v != null))); this.save(); }
   async startRace(cfg) {
     if (cfg.mode === 'gp' && cfg.race === 0) this.data.gpRun = { cup: cfg.cup, race: 0 };
+    this.lapsPaid = 0;
     return 'dev-' + Date.now();
+  }
+  async lapDone(ticket, lap) {
+    if (lap !== (this.lapsPaid || 0) + 1 || lap > LAPS) return { coins: 0, total: this.data.coins, lap: this.lapsPaid || 0 };
+    this.lapsPaid = lap;
+    this.data.coins += LAP_COINS; this.save();
+    return { coins: LAP_COINS, total: this.data.coins, lap };
   }
   pay(rw, extra = {}) {
     const before = this.level;
-    this.data.coins += rw.coins; this.data.xp += rw.xp;
+    this.data.coins += rw.coins - (rw.prepaid || 0); this.data.xp += rw.xp;
     this.data.recent = [...rw.lines.map((l) => l.label + ' +' + l.coins), ...this.data.recent].slice(0, 12);
     this.save();
     const after = this.level;
@@ -140,7 +153,7 @@ export class DevProfile extends BaseProfile {
       }
     }
     d.stats.races++; if (r.place === 1 && r.field > 1) d.stats.wins++; d.stats.overtakes += r.overtakes || 0;
-    const rw = raceRewards({ mode: r.mode, place: r.place, racers: r.field, overtakes: r.overtakes, difficulty: r.difficulty, gp, clean: r.clean });
+    const rw = raceRewards({ mode: r.mode, place: r.place, racers: r.field, overtakes: r.overtakes, difficulty: r.difficulty, gp, clean: r.clean, laps: LAPS, lapsPaid: this.lapsPaid });
     return this.pay(rw, { unlockMaps, unlockCups, cup });
   }
   async submitTT(r) {
@@ -151,7 +164,7 @@ export class DevProfile extends BaseProfile {
     if (pb) { rec.total = r.total; rec.kart = r.kart; d.ghosts[r.map] = r.ghost; rec.ghost = true; }
     if (lapPb) rec.lap = r.lap;
     d.records[r.map] = rec;
-    const out = this.pay(raceRewards({ mode: 'tt', pb: pb && had }));
+    const out = this.pay(raceRewards({ mode: 'tt', pb: pb && had, laps: LAPS, lapsPaid: this.lapsPaid }));
     return { ...out, pb, lapPb };
   }
   async ghost(map) { return this.data.ghosts[map] || null; }

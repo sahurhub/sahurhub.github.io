@@ -118,7 +118,7 @@ export class Net {
   retry() {
     this.setStatus('reconnecting');
     this.tries = (this.tries || 0) + 1;
-    if (this.firstReject && this.tries > 3) { this.firstReject(new Error('Could not reach the Racing Bros server. Check your internet and try again.')); this.firstResolve = this.firstReject = null; }
+    if (this.firstReject && this.tries > 3) { this.firstReject(new Error('Could not reach the Turbo Town server. Check your internet and try again.')); this.firstResolve = this.firstReject = null; }
     clearTimeout(this.retryTimer);
     this.retryTimer = setTimeout(() => { if (this.wantOpen) this.open(); }, Math.min(8000, 600 * this.tries));
   }

@@ -52,7 +52,7 @@ export class App {
     if (this.online) this.online.tick(dt);
     // public chat: bottom left while racing, bottom right everywhere else (when signed in)
     if (this.gchat) {
-      const racing = g.view === 'race' && g.race && !g.race.practice && !this.ui.current && !g.intro;
+      const racing = g.view === 'race' && g.race && (!g.race.practice || g.race.roam) && !this.ui.current && !g.intro;
       this.gchat.setMode(!this.profile ? 'hidden' : racing ? 'race' : 'menu');
       this.gchat.tick();
     }
@@ -205,6 +205,25 @@ export class App {
     return out;
   }
 
+  // Free roam on your own: drive anywhere in Turbo City, no race. Esc pauses (and leaves).
+  async freeRoam() {
+    const p = this.profile.get();
+    const look = this.profile.lookFor(p.kart);
+    this.ui.hide();
+    this.showLoading('Getting Turbo City ready');
+    await new Promise((r) => setTimeout(r, 30));
+    this.resultsShown = false;
+    this.game.paused = false;
+    await this.game.startRace({
+      map: 'turbo-city', laps: 99, items: false, countdown: 0.01, roam: true,
+      racers: [{ kart: p.kart, name: p.name || 'You', isPlayer: true, data: { paint: look.paint, cosmetics: this.cosmeticsFor(p.kart) } }],
+    });
+    this.active = { mode: 'roam', map: 'turbo-city' };
+    this.hideLoading();
+    this.game.hud.banner('TURBO CITY', 'title', 2.5);
+    setTimeout(() => { if (this.active && this.active.mode === 'roam') this.game.hud.toast('Drive anywhere! Hold Space to drift, Esc to pause or leave'); }, 1200);
+  }
+
   quickRace() {
     const maps = this.profile.get().maps;
     const map = maps[Math.floor(Math.random() * maps.length)];
@@ -268,6 +287,13 @@ export class App {
   onRaceEvent(e) {
     const race = this.game.race;
     if (!race || !this.active || race.online || race.practice) return;
+    // every lap you finish pays coins (the server checks it and pays straight away)
+    if (e.type === 'lap' && e.racer === race.player && this.active.ticket && e.lap >= 1 && e.lap <= race.laps) {
+      const lap = e.lap;
+      this.profile.lapDone(this.active.ticket, lap)
+        .then((out) => { if (out && out.coins && this.game.race === race) this.game.hud.toast(`Lap ${lap} +${out.coins} coins`, 'coin'); })
+        .catch(() => {});
+    }
     if (e.type === 'finish' && e.racer === race.player) {
       // let the computer drive the player's kart on, and show results shortly
       race.player.controller = createAI('hard');

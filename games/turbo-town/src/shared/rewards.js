@@ -1,6 +1,6 @@
 // TURBO TOWN - race rewards (shared). The server is the one that actually pays; the game
 // uses the same rules to show what to expect.
-import { FINISH_COINS, OVERTAKE_COINS, OVERTAKE_MAX, BONUS, FINISH_XP, XP_PER_OVERTAKE, CUPS } from './rules.js';
+import { FINISH_COINS, OVERTAKE_COINS, OVERTAKE_MAX, BONUS, FINISH_XP, XP_PER_OVERTAKE, CUPS, LAP_COINS, LAPS } from './rules.js';
 
 const DIFF_MUL = { easy: 0.8, normal: 1, hard: 1.15, expert: 1.3 };
 
@@ -25,6 +25,9 @@ export function raceRewards(o) {
   } else {
     xp += 20;
   }
+  // every lap finished pays LAP_COINS (they are paid during the race, see lapsPaid)
+  const laps = Math.max(0, Math.min(LAPS, Math.floor(o.laps || 0)));
+  if (laps) lines.push({ key: 'laps', label: laps + (laps > 1 ? ' laps' : ' lap'), coins: laps * LAP_COINS });
   if (o.pb) lines.push({ key: 'pb', label: 'New personal best', coins: BONUS.personalBest });
   if (o.shortcuts) lines.push({ key: 'shortcut', label: 'Found a new shortcut', coins: BONUS.shortcut * o.shortcuts });
   if (o.clean && o.mode !== 'tt' && field >= 4) lines.push({ key: 'clean', label: 'Clean race (no falls)', coins: BONUS.cleanRace });
@@ -34,7 +37,9 @@ export function raceRewards(o) {
     xp += o.gp.place <= 3 ? 80 : 30;
   }
   const coins = lines.reduce((s, l) => s + l.coins, 0);
-  return { lines, coins, xp };
+  // prepaid: lap coins already paid while racing (shown in the list, not paid twice)
+  const prepaid = Math.min(laps, Math.max(0, Math.floor(o.lapsPaid || 0))) * LAP_COINS;
+  return { lines, coins, xp, prepaid };
 }
 
 export function trophyFor(place) { return place === 1 ? 'gold' : place === 2 ? 'silver' : place === 3 ? 'bronze' : null; }

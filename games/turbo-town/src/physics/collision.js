@@ -25,6 +25,7 @@ export class CollisionWorld {
     this.moving = [];        // moving obstacles: { x, z, r, y0, y1, vx, vz, kind }
     this.water = [];         // { level, deep, test(x, z) }
     this.zones = (track && track.zones) || []; // open areas { x, z, r, y0, y1 }
+    this.rects = [];         // open rectangles { x0, z0, x1, z1 } (a whole city you can drive anywhere in)
     this._near = {};
   }
 
@@ -113,6 +114,25 @@ export class CollisionWorld {
     return o;
   }
 
+  // box obstacle (a building, a wall): { x, z, hx, hz, y0, y1 } - axis-aligned, hx/hz are
+  // half the width and depth
+  addBox(o) {
+    o.box = true;
+    o.r = Math.hypot(o.hx, o.hz);
+    o.y0 = o.y0 ?? -1e9; o.y1 = o.y1 ?? 1e9;
+    o.bounce = o.bounce ?? 0.3;
+    this.obstacles.push(o);
+    const x0 = Math.floor((o.x - o.hx) / OCELL), x1 = Math.floor((o.x + o.hx) / OCELL);
+    const z0 = Math.floor((o.z - o.hz) / OCELL), z1 = Math.floor((o.z + o.hz) / OCELL);
+    for (let gx = x0; gx <= x1; gx++) for (let gz = z0; gz <= z1; gz++) {
+      const k = key(gx, gz);
+      let list = this.ocells.get(k);
+      if (!list) this.ocells.set(k, list = []);
+      list.push(o);
+    }
+    return o;
+  }
+
   // Moving obstacles from the map data (see shared/movers.js), positioned by race time.
   setupMovers(list) {
     this.moving = (list || []).map((m) => ({ def: m, x: 0, z: 0, y: 0, vx: 0, vz: 0, r: m.r || 1.5, y0: -1e9, y1: 1e9, bounce: 0.8, kind: 'mover', heading: 0, ph: 0, spin: m.spin !== false }));
@@ -162,6 +182,22 @@ export class CollisionWorld {
       const dx = x - zn.x, dz = z - zn.z, d = Math.hypot(dx, dz) || 1e-6;
       const ex = d - (zn.r - radius);
       if (ex < n.excess) { n.excess = ex; n.ox = dx / d; n.oz = dz / d; n.zone = zn; }
+    }
+    for (const rc of this.rects) {
+      // inside: how far in from the nearest side; outside: how far out
+      const ox = Math.max(rc.x0 - x, 0, x - rc.x1), oz = Math.max(rc.z0 - z, 0, z - rc.z1);
+      let ex, nx = 0, nz = 0;
+      if (ox > 0 || oz > 0) {
+        const d = Math.hypot(ox, oz);
+        ex = d + radius;
+        nx = (x < rc.x0 ? -ox : x > rc.x1 ? ox : 0) / d; nz = (z < rc.z0 ? -oz : z > rc.z1 ? oz : 0) / d;
+      } else {
+        const dl = x - rc.x0, dr = rc.x1 - x, db = z - rc.z0, df = rc.z1 - z;
+        const m = Math.min(dl, dr, db, df);
+        ex = radius - m;
+        if (m === dl) nx = -1; else if (m === dr) nx = 1; else if (m === db) nz = -1; else nz = 1;
+      }
+      if (ex < n.excess) { n.excess = ex; n.ox = nx; n.oz = nz; n.zone = rc; }
     }
     n.inside = n.excess <= 0;
     return n;

@@ -20,7 +20,7 @@ const S = {
            <path d="M13 9l6 6M19 9l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,
   mystery: `<rect x="5" y="9" width="22" height="18" rx="3" fill="#a55eea" stroke="#2b2560" stroke-width="2"/>
             <rect x="4" y="6" width="24" height="6" rx="2" fill="#ff4f9a" stroke="#2b2560" stroke-width="2"/>
-            <text x="16" y="25" text-anchor="middle" font-family="'Press Start 2P', monospace" font-size="11" fill="#fff">?</text>`,
+            <text x="16" y="25" text-anchor="middle" font-family="'Bungee', sans-serif" font-size="14" fill="#fff">?</text>`,
 };
 
 export function itemIcon(id) {

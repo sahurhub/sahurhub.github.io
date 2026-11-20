@@ -10,8 +10,8 @@
   --orange: #ff8a3d;
   --panel: #ffffff;
   --shadow: 4px 4px 0 var(--ink);
-  --font: 'Pixelify Sans', 'Trebuchet MS', system-ui, sans-serif;
-  --pixel: 'Press Start 2P', 'Pixelify Sans', monospace;
+  --font: 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
+  --pixel: 'Bungee', 'Nunito', 'Trebuchet MS', sans-serif;
   /* hard pixel outlines around text (instead of a smooth stroke): small, normal, big */
   --outline-sm: -2px 0 0 var(--ink), 2px 0 0 var(--ink), 0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink);
   --outline: -3px 0 0 var(--ink), 3px 0 0 var(--ink), 0 -3px 0 var(--ink), 0 3px 0 var(--ink), -3px -3px 0 var(--ink), 3px -3px 0 var(--ink), -3px 3px 0 var(--ink), 3px 3px 0 var(--ink);
@@ -425,7 +425,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .hud-buttons .icon { width: 24px; height: 24px; }
 .hud-map { left: auto; bottom: auto; right: 14px; top: 50%; transform: translateY(-58%); width: min(230px, 26vw); background: transparent; border: 0; box-shadow: none; }
 .hud-tags { inset: 0; }
-.hud-tag { position: absolute; left: 0; top: 0; display: flex; font-family: var(--pixel); font-size: 11px; line-height: 1; white-space: nowrap; border: 2px solid var(--ink); }
+.hud-tag { position: absolute; left: 0; top: 0; display: flex; font-family: var(--pixel); font-size: 12px; line-height: 1; white-space: nowrap; border: 2px solid var(--ink); }
 .hud-tag b { background: #7b8cff; color: #fff; padding: 5px 6px 4px; font-weight: 400; }
 .hud-tag span { background: rgba(43, 37, 96, 0.85); color: #fff; padding: 5px 8px 4px; }
 .hud-banner.count.n3 { color: #ff4040; }
@@ -446,7 +446,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 }
 /* notices at the top of the race screen: hits and pause requests */
 .hud-notices { left: 50%; top: 16px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(640px, 64vw); }
-.hud-notice { font-family: var(--pixel); font-size: 12px; line-height: 1.5; text-align: center; color: #fff; padding: 8px 14px 6px;
+.hud-notice { font-family: var(--pixel); font-size: 14px; line-height: 1.5; text-align: center; color: #fff; padding: 8px 14px 6px;
   background: rgba(43, 37, 96, 0.88); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); animation: notice 3.2s ease-out forwards; }
 .hud-notice.good { background: #1f9d5a; }
 .hud-notice.bad { background: #d6304a; }
@@ -455,7 +455,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 @media (max-width: 640px) { .hud-notices { top: 54px; width: 70vw; } .hud-notice { font-size: 9px; padding: 6px 8px 4px; } }
 /* sign-in page: big "new" / "already have an account" tabs */
 .signin-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
-.signin-tab { font-family: var(--pixel); font-size: 11px; line-height: 1.5; padding: 12px 8px 10px; cursor: pointer; color: var(--ink);
+.signin-tab { font-family: var(--pixel); font-size: 13px; line-height: 1.5; padding: 12px 8px 10px; cursor: pointer; color: var(--ink);
   background: #ece8ff; border: 4px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 .signin-tab.have { background: #fff3b0; }
 .signin-tab.on { background: var(--pink); color: #fff; transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3); }
@@ -472,7 +472,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
   background: transparent; border: 0; box-shadow: none; animation: help-in 0.4s ease-out; }
 .help-card.out { opacity: 0; transform: translate(-50%, -50%); }
 @keyframes help-in { from { opacity: 0; } }
-.hk { position: absolute; display: flex; align-items: center; gap: 6px; font-family: var(--pixel); font-size: 10px; color: #fff; text-shadow: var(--outline-sm); }
+.hk { position: absolute; display: flex; align-items: center; gap: 6px; font-family: var(--pixel); font-size: 13px; color: #fff; text-shadow: var(--outline-sm); }
 .hk kbd { min-width: 34px; font-size: 11px; padding: 7px 8px 5px; color: var(--ink); text-shadow: none; }
 .hk.up { left: 50%; top: 0; transform: translateX(-50%); flex-direction: column-reverse; }
 .hk.down { left: 50%; top: 104px; transform: translateX(-50%); flex-direction: column; }
@@ -480,7 +480,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .hk.right { right: 40px; top: 66px; }
 .hk.back { left: 0; bottom: 0; }
 .hk.item { right: 0; bottom: 0; flex-direction: row-reverse; }
-.hk-note { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); white-space: nowrap; font-family: var(--pixel); font-size: 9px; color: var(--yellow); text-shadow: var(--outline-sm); }
+.hk-note { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); white-space: nowrap; font-family: var(--pixel); font-size: 12px; color: var(--yellow); text-shadow: var(--outline-sm); }
 @media (max-width: 640px) { .help-card { transform: translate(-50%, -50%) scale(0.75); } }
 
 @media (max-width: 640px) {
@@ -504,7 +504,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .gchat.menu.collapsed { height: auto; }
 .gchat.menu.collapsed .gchat-log, .gchat.menu.collapsed .gchat-form { display: none; }
 .gchat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 5px 10px; cursor: pointer;
-  background: var(--purple, #7b5cff); color: #fff; font-family: var(--pixel); font-size: 10px; border-bottom: 3px solid var(--ink); user-select: none; }
+  background: var(--purple, #7b5cff); color: #fff; font-family: var(--pixel); font-size: 12px; border-bottom: 3px solid var(--ink); user-select: none; }
 .gchat-toggle { width: 24px; height: 22px; padding: 0; font-family: var(--pixel); font-size: 12px; line-height: 1; cursor: pointer;
   color: var(--ink); background: #fff; border: 2px solid var(--ink); }
 .gchat-log { flex: 1; overflow-y: auto; padding: 6px 8px; font-size: 13px; line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
@@ -514,7 +514,7 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .gchat-line.sys { color: #7a7598; font-style: italic; }
 .gchat-form { display: flex; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: #f3f1fa; }
 .gchat-input { flex: 1; min-width: 0; padding: 6px 8px; font-size: 13px; border: 2px solid var(--ink); background: #fff; color: var(--ink); }
-.gchat-send { padding: 4px 10px; font-family: var(--pixel); font-size: 9px; cursor: pointer; color: #fff; background: var(--pink, #ff4f9a); border: 2px solid var(--ink); }
+.gchat-send { padding: 4px 10px; font-family: var(--pixel); font-size: 11px; cursor: pointer; color: #fff; background: var(--pink, #ff4f9a); border: 2px solid var(--ink); }
 /* during a race: no panel, just the newest lines over the road, faded when old */
 .gchat.race { left: 22px; bottom: clamp(150px, 26vh, 230px); width: min(360px, 40vw); height: auto; pointer-events: none; }
 .gchat.race .gchat-head { display: none; }
@@ -532,11 +532,30 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .gchat.race .gchat-send { display: none; }
 .gchat.race.typing .gchat-form { opacity: 1; }
 .gchat.race.typing .gchat-input { background: rgba(43, 37, 96, 0.9); border-color: #fff; }
+/* party (or public city) chat: green tag, green names; the box turns green while typing to it */
+.gchat-chan { flex: none; padding: 4px 7px; font-family: var(--pixel); font-size: 11px; cursor: pointer; color: #fff; background: var(--purple, #7b5cff); border: 2px solid var(--ink); }
+.gchat-chan.party { background: #18b86a; }
+.gchat-tag { display: inline-block; margin-right: 5px; padding: 0 4px; font-style: normal; font-family: var(--pixel); font-size: 10px; color: #fff; background: #18b86a; vertical-align: 1px; }
+.gchat-line.party b { color: #0f8f50; }
+.gchat-line.party.sys { color: #3f8a64; }
+.gchat.race .gchat-line.party b { color: #7dffb4; }
+.gchat.race .gchat-line.party.sys { color: #c4ffdc; }
+.gchat.to-party .gchat-input { border-color: #18b86a; }
+.gchat.race.to-party.typing .gchat-input { background: rgba(10, 90, 52, 0.9); border-color: #7dffb4; }
+.gchat.race .gchat-chan { display: none; }
+.gchat.race.typing .gchat-chan { display: block; }
 @media (max-width: 640px) {
   .gchat.menu { width: 60vw; height: 180px; right: 8px; bottom: 8px; }
   .gchat.race { left: 10px; bottom: 120px; width: 60vw; }
   .gchat-log { font-size: 11px; }
 }
+
+/* the party panel stops above the chat box (bottom right) and scrolls if it is long */
+.party-panel { max-height: calc(100vh - 64px - 280px); }
+@media (max-width: 640px) { .party-panel { max-height: calc(100vh - 64px - 205px); } }
+
+/* free roam (Turbo City): no laps, places, items or wrong way */
+#hud.roam .hud-lapbox, #hud.roam .hud-pos, #hud.roam .hud-wrong, #hud.roam .hud-item, #hud.roam .hud-tags { display: none !important; }
 
 /* speedometer: bottom middle, just above the FPS counter */
 .hud-speed { left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; align-items: baseline; gap: 6px; font-family: var(--pixel);

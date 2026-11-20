@@ -25,7 +25,7 @@ export class Online {
     this.listeners = [];
     const on = (t, fn) => this.listeners.push(net.on(t, fn));
     on('party', (m) => this.onParty(m.party));
-    on('partyGone', (m) => { this.party = null; this.ui.toast(m.reason || 'You left the party.'); this.exitToMenu(); });
+    on('partyGone', (m) => { this.party = null; this.chatLog = []; this.ui.toast(m.reason || 'You left the party.'); this.exitToMenu(); });
     on('chat', (m) => this.onChat(m));
     on('ps', (m) => this.onPractice(m.k));
     on('raceLoad', (m) => this.onRaceLoad(m));
@@ -42,6 +42,12 @@ export class Online {
     on('boom', (m) => this.raceEvent('rocketBoom', null, { x: m.x, y: m.y, z: m.z }));
     on('overtake', () => { const me = this.meRacer(); if (me) { me.ov = me.ov || { count: 0 }; me.ov.count++; this.raceEvent('overtake', me, {}); } });
     on('finish', (m) => this.onFinish(m));
+    // coins for a lap, paid by the server as you cross the line
+    on('lapCoins', (m) => {
+      const prof = this.app.profile && this.app.profile.get();
+      if (prof && typeof m.total === 'number') prof.coins = m.total;
+      if (this.game.race && this.game.race.online) this.game.hud.toast(`Lap ${m.lap} +${m.coins} coins`, 'coin');
+    });
     on('raceEnd', (m) => this.onRaceEnd(m));
     on('lobby', () => this.enterLobby());
     on('pause', (m) => this.onPause(m));
@@ -60,7 +66,8 @@ export class Online {
   async create() { await this.net.request('partyCreate'); }
   async join(code) { await this.net.request('partyJoin', { code }); }
   async queue() { await this.net.request('queue'); }
-  async leave() { await this.net.request('partyLeave').catch(() => {}); this.party = null; this.exitToMenu(); }
+  async roam() { await this.net.request('roamJoin'); } // the public city (free roam with anyone)
+  async leave() { await this.net.request('partyLeave').catch(() => {}); this.party = null; this.chatLog = []; this.exitToMenu(); }
   async setKart(kart) { await this.net.request('partyKart', { kart }); }
   async ready(on) { await this.net.request('partyReady', { ready: on }); }
   async settings(s) { await this.net.request('partySettings', s); }
@@ -71,6 +78,7 @@ export class Online {
   onParty(p) {
     const first = !this.party;
     this.party = p;
+    if (this.app.gchat) this.app.gchat.setParty(p);
     if (first && p.state === 'lobby') this.enterLobby();
     // missed the end of a race (connection trouble): go back to the lobby with everyone
     else if (p.state === 'lobby' && (this.mode === 'race' || this.mode === 'results')) this.enterLobby();
@@ -78,14 +86,16 @@ export class Online {
     if (this.resultsScreen && this.resultsScreen.refresh) this.resultsScreen.refresh();
   }
 
+  // party chat (and the game's party notes) go in the chat box, tagged PARTY / CITY
   onChat(m) {
     this.chatLog.push(m);
     if (this.chatLog.length > 60) this.chatLog.shift();
-    if (this.lobbyScreen && this.lobbyScreen.addChat) this.lobbyScreen.addChat(m);
+    if (this.app.gchat) this.app.gchat.addParty(m);
   }
 
   exitToMenu() {
     this.mode = 'none';
+    if (this.app.gchat) this.app.gchat.setParty(null);
     this.clearRemote();
     this.game.endRace();
     this.app.menu();
@@ -102,11 +112,11 @@ export class Online {
     const p = this.app.profile.get();
     const look = this.app.profile.lookFor(p.kart);
     this.clearRemote();
+    // the lobby (and the public city) is Turbo City: drive around with everyone while you wait
     await this.game.startRace({
-      map: 'practice-arena', laps: 99, items: false, countdown: 0.01,
+      map: 'turbo-city', laps: 99, items: false, countdown: 0.01, roam: true,
       racers: [{ kart: p.kart, name: p.name, isPlayer: true, data: { paint: look.paint, cosmetics: this.app.cosmeticsFor(p.kart) } }],
     });
-    this.game.race.practice = true;
     this.game.hud.show(false);
     this.lobbyScreen = this.ui.show(screens.PartyLobby, { online: this }, { replace: true });
   }

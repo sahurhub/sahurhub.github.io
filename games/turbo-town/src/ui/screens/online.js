@@ -47,11 +47,11 @@ export function SignIn(ui, params) {
   };
   pass.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   const el = h('div', { class: 'menu-center' },
-    h('div', { class: 'logo' }, h('span', { class: 'logo-a' }, 'RACING'), h('span', { class: 'logo-b' }, 'BROS')),
+    h('div', { class: 'logo' }, h('span', { class: 'logo-a' }, 'TURBO'), h('span', { class: 'logo-b' }, 'TOWN')),
     h('div', { class: 'panel signin' },
       swap,
       title,
-      h('p', {}, 'Racing Bros uses your SahurHub Chat account (the same one as the chat). Your coins, karts and records are saved to it.'),
+      h('p', {}, 'Turbo Town uses your SahurHub Chat account (the same one as the chat). Your coins, karts and records are saved to it.'),
       name, pass, go, msg,
       h('p', { class: 'muted small' }, 'Names are 3 to 20 letters, numbers or underscores. Passwords need at least 6 characters.')));
   return { el, noBack: true, enter() { name.focus(); } };
@@ -63,7 +63,7 @@ export function Multiplayer(ui) {
   const app = ui.app;
   const online = app.online;
   if (!online) {
-    return { el: h('div', { class: 'menu-full' }, header(ui, 'Multiplayer'), h('div', { class: 'panel' }, h('h2', {}, 'Online racing'), h('p', {}, 'Multiplayer needs the Racing Bros server. Start the game signed in (it is online-only) to race with friends.'))) };
+    return { el: h('div', { class: 'menu-full' }, header(ui, 'Multiplayer'), h('div', { class: 'panel' }, h('h2', {}, 'Online racing'), h('p', {}, 'Multiplayer needs the Turbo Town server. Start the game signed in (it is online-only) to race with friends.'))) };
   }
   const code = h('input', { type: 'text', maxlength: 6, placeholder: 'ABC123', class: 'field code', autocapitalize: 'characters' });
   const msg = h('p', { class: 'muted' });
@@ -76,8 +76,11 @@ export function Multiplayer(ui) {
         h('h3', {}, 'Got a code?'),
         h('div', { class: 'row' }, code, btn({ label: 'Join', icon: 'next', color: '#3ddc84', onClick: () => act(() => online.join(code.value)) }))),
       h('div', { class: 'panel' }, h('h2', { html: icon('flag') + ' Public race' }),
-        h('p', {}, 'Race real players from anywhere. A race starts 30 seconds after a second player arrives, or straight away with 8.'),
-        btn({ label: 'Find a race', icon: 'play', color: '#ff4f9a', onClick: () => act(() => online.queue()) }))),
+        h('p', {}, `Race real players from anywhere. A race starts 30 seconds after a second player arrives, or straight away with ${MAX_RACERS}.`),
+        btn({ label: 'Find a race', icon: 'play', color: '#ff4f9a', onClick: () => act(() => online.queue()) })),
+      h('div', { class: 'panel' }, h('h2', { html: icon('map') + ' Public city' }),
+        h('p', {}, `Drive around Turbo City with anyone who is online. No race, just fun. Up to ${MAX_RACERS} drivers in each city.`),
+        btn({ label: 'Drive in the city', icon: 'play', color: '#ff7a45', onClick: () => act(() => online.roam()) }))),
     msg);
   code.addEventListener('input', () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   return { el };
@@ -91,14 +94,8 @@ export function PartyLobby(ui, params) {
   const list = h('div', { class: 'party-members' });
   const settings = h('div', { class: 'party-settings' });
   const actions = h('div', { class: 'party-actions' });
-  const chatLog = h('div', { class: 'chat-log' });
-  const chatIn = h('input', { type: 'text', maxlength: 140, placeholder: 'Party chat (only your party sees it)', class: 'field chat-in' });
-  chatIn.addEventListener('keydown', (e) => {
-    e.stopPropagation();
-    if (e.key === 'Enter' && chatIn.value.trim()) { online.chat(chatIn.value); chatIn.value = ''; }
-    if (e.key === 'Escape') chatIn.blur();
-  });
-  const help = h('div', { class: 'party-help' }, 'Test-drive your kart while you wait: loop, ramps, boost pads, a drift pad and cones.');
+  // party chat lives in the chat box (bottom right): press / to talk to the party
+  const help = h('div', { class: 'party-help' }, 'Drive around Turbo City while you wait. Press / to talk to your party, T for the public chat.');
   let kartPicker = null;
 
   const refresh = () => {
@@ -107,6 +104,28 @@ export function PartyLobby(ui, params) {
     const me = p.members.find((m) => m.uid === online.me.uid);
     const leader = online.isLeader();
     codeChip.innerHTML = '';
+    help.textContent = p.roam
+      ? 'Drive anywhere in Turbo City with everyone here. Hold Space to drift. Press / to talk to the city, T for the public chat.'
+      : 'Drive around Turbo City while you wait. Hold Space to drift. Press / to talk to your party, T for the public chat.';
+    if (p.roam) {
+      // the public city: no code, no race, just who is here
+      codeChip.append(h('span', {}, 'PUBLIC CITY'), h('b', {}, ` ${p.members.length}/${MAX_RACERS} drivers`));
+      list.innerHTML = '';
+      list.append(h('div', { class: 'pm-head' }, `Drivers ${p.members.length}/${MAX_RACERS}`));
+      for (const m of p.members) {
+        const kd = KART_BY_ID[m.kart];
+        list.append(h('div', { class: 'pm' + (m.uid === online.me.uid ? ' me' : '') },
+          h('span', { class: 'pm-dot', style: { background: kd ? kd.colors[0] : '#ccc' } }),
+          h('span', { class: 'pm-name' }, m.name),
+          h('span', { class: 'pm-kart muted' }, (KART_BY_ID[m.kart] || {}).name || m.kart)));
+      }
+      settings.innerHTML = '';
+      actions.innerHTML = '';
+      actions.append(
+        btn({ label: 'Change car', icon: 'kart', cls: 'small', onClick: () => toggleKartPicker() }),
+        btn({ label: 'Leave city', icon: 'close', cls: 'small danger', onClick: () => online.leave() }));
+      return;
+    }
     if (p.code) {
       const copy = h('button', { class: 'copy', type: 'button', html: icon('copy') + ' Copy' });
       copy.addEventListener('click', () => {
@@ -164,21 +183,13 @@ export function PartyLobby(ui, params) {
     el.appendChild(kartPicker);
   };
 
-  const addChat = (m) => {
-    chatLog.append(h('div', { class: 'chat-line' + (m.from ? '' : ' sys') }, m.from ? h('b', {}, m.name + ': ') : null, m.text));
-    while (chatLog.children.length > 50) chatLog.firstChild.remove();
-    chatLog.scrollTop = chatLog.scrollHeight;
-  };
-  for (const m of online.chatLog) addChat(m);
-
   const el = h('div', { class: 'party-lobby' },
     codeChip,
     h('div', { class: 'panel party-panel' }, list, settings, actions),
-    h('div', { class: 'panel party-chat' }, chatLog, chatIn),
     help);
-  const timer = setInterval(() => { if (online.party && online.party.public) refresh(); }, 1000);
+  const timer = setInterval(() => { if (online.party && online.party.public && !online.party.roam) refresh(); }, 1000);
   refresh();
-  return { el, refresh, addChat, noBack: true, padNav: false, leave() { clearInterval(timer); }, onKey(e) { if (e.code === 'Escape') return true; return false; } };
+  return { el, refresh, noBack: true, padNav: false, leave() { clearInterval(timer); }, onKey(e) { if (e.code === 'Escape') return true; return false; } };
 }
 
 // ------------------------------------------------------------------ online results
@@ -192,7 +203,7 @@ export function OnlineResults(ui, params) {
   const refresh = () => {
     actions.innerHTML = '';
     if (online.isLeader() && online.party && !online.party.public) actions.append(btn({ label: 'Back to lobby', icon: 'users', color: '#3ddc84', onClick: () => online.back().catch((e) => ui.toast(e.message, 'bad')) }));
-    else actions.append(h('p', { class: 'muted' }, online.party && online.party.public ? 'Back to the lobby in a few seconds...' : 'Waiting for the party leader...'));
+    else actions.append(h('p', { class: 'muted' }, online.party && online.party.closing ? 'The party leader left, so the party closes after the results.' : online.party && online.party.public ? 'Back to the lobby in a few seconds...' : 'Waiting for the party leader...'));
     actions.append(btn({ label: 'Leave party', icon: 'close', cls: 'danger small', onClick: () => online.leave() }));
   };
   const el = h('div', { class: 'menu-results' },

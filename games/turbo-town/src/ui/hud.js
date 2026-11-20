@@ -66,10 +66,15 @@ export class Hud {
 
   show(on) { this.root.classList.toggle('hidden', !on); }
 
+  // free roam: only the speedometer, the minimap and the buttons
+  setRoam(on) { this.root.classList.toggle('roam', on); }
+
   // the sound button shows whether sound is on
   setSound(on) { this.el.buttons.querySelector('[data-b="sound"]').innerHTML = icon(on ? 'sound' : 'mute'); }
 
   setupMap(track) {
+    const city = track.def && track.def.city;
+    if (city) { this.setupCityMap(city); return; }
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
     for (const p of track.main.pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
     const W = MAP_W, pad = 10 * MS;
@@ -93,6 +98,29 @@ export class Hud {
     const p0 = track.main.pts[0];
     g.strokeStyle = '#2b2560'; g.lineWidth = 2;
     g.beginPath(); g.moveTo(sx - p0.rx * 4, sz - p0.rz * 4); g.lineTo(sx + p0.rx * 4, sz + p0.rz * 4); g.stroke();
+    this.mapBg = bg;
+  }
+
+  // a city map: its streets from above (blocks dark, roads light)
+  setupCityMap(city) {
+    const [x0, z0, x1, z1] = city.bounds;
+    const W = MAP_W, pad = 6 * MS;
+    const sc = Math.min((W - pad * 2) / (x1 - x0), (W - pad * 2) / (z1 - z0));
+    const ox = (W - (x1 - x0) * sc) / 2, oz = (W - (z1 - z0) * sc) / 2;
+    // drawn the way you see the city when you start (facing north = up the map)
+    this.mapTf = (x, z) => [ox + (x1 - x) * sc, oz + (z1 - z) * sc];
+    const bg = document.createElement('canvas');
+    bg.width = bg.height = W;
+    const g = bg.getContext('2d');
+    const rect = (r, color, grow = 0) => {
+      const [ax, az] = this.mapTf(r[0], r[1]);
+      const [bx, bz] = this.mapTf(r[2], r[3]);
+      const sx = Math.min(ax, bx), sz = Math.min(az, bz);
+      g.fillStyle = color; g.fillRect(sx - grow, sz - grow, Math.abs(bx - ax) + grow * 2, Math.abs(bz - az) + grow * 2);
+    };
+    rect(city.bounds, 'rgba(43,37,96,0.75)', 2 * MS);
+    for (const r of city.roads || []) rect(r, 'rgba(240,240,250,0.95)');
+    for (const b of city.boxes || []) if (b[5] > 3) rect([b[0] - b[2], b[1] - b[3], b[0] + b[2], b[1] + b[3]], 'rgba(150,140,210,0.9)');
     this.mapBg = bg;
   }
 
@@ -221,7 +249,7 @@ export class Hud {
     g.clearRect(0, 0, MAP_W, MAP_W);
     g.drawImage(this.mapBg, 0, 0);
     // the other drivers: round tokens in their kart colour with their first letter
-    g.font = 'bold 7px "Press Start 2P", monospace';
+    g.font = '8px "Bungee", sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const r of race.racers) {
       if (r === me) continue;

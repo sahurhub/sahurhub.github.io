@@ -10,14 +10,15 @@ const mapName = (id) => (MAP_INFO.find((m) => m.id === id) || {}).name || id;
 
 export function PauseMenu(ui, params) {
   const app = ui.app;
-  const canRestart = params.mode !== 'gp';
+  const canRestart = params.mode !== 'gp' && params.mode !== 'roam';
+  const quit = params.mode === 'gp' ? 'Quit Grand Prix' : params.mode === 'roam' ? 'Leave Turbo City' : 'Quit to menu';
   const el = h('div', { class: 'menu-overlay' },
     h('div', { class: 'panel pause' },
       h('h1', {}, 'Paused'),
       btn({ label: 'Resume', icon: 'play', color: '#3ddc84', onClick: () => app.closePause() }),
       canRestart ? btn({ label: 'Restart', icon: 'restart', onClick: () => app.restart() }) : null,
       btn({ label: 'Settings', icon: 'gear', onClick: () => ui.show(Settings) }),
-      btn({ label: params.mode === 'gp' ? 'Quit Grand Prix' : 'Quit to menu', icon: 'home', cls: 'danger', onClick: () => app.menu() })));
+      btn({ label: quit, icon: 'home', cls: 'danger', onClick: () => app.menu() })));
   return { el, onKey(e) { if (e.code === 'Escape' && ui.stack.length === 1) { e.preventDefault(); app.closePause(); return true; } return false; } };
 }
 

@@ -13,6 +13,7 @@ import { buildTrack, pointAt } from './shared/track-math.js';
 import { KART_BY_ID } from './shared/karts.js';
 import { loadMap } from './maps/index.js';
 import { buildTrackWorld } from './maps/track-builder.js';
+import { buildCityWorld } from './maps/city-builder.js';
 import { KartVisual } from './karts/kart-visual.js';
 import { kartEffects, kartEventFx } from './karts/kart-effects.js';
 import { Race } from './race/race.js';
@@ -73,7 +74,8 @@ export class Game {
     // this map's own scenery models (only the selected map is downloaded)
     if (this.assets && vis.models) await this.assets.loadAll(vis.models);
     const track = buildTrack(def);
-    const ctx = buildTrackWorld(track, vis);
+    // a city (free roam) has no race track to build: you drive anywhere inside its wall
+    const ctx = def.city ? buildCityWorld(track, vis) : buildTrackWorld(track, vis);
     const scene = this.r.scene;
     const root = new THREE.Group();
     root.name = 'map_' + id;
@@ -113,6 +115,9 @@ export class Game {
     for (const r of racers) if (r.isPlayer && !r.controller) r.controller = this.playerController();
     const race = new Race({ track: map.track, world: map.world, grid: map.ctx.grid, laps: opts.laps || map.def.laps || 3, racers, countdown: opts.countdown, items: opts.items });
     this.race = race;
+    // free roam (Turbo City, alone or with others): no laps, places or finish
+    if (opts.roam) { race.practice = true; race.roam = true; }
+    this.hud.setRoam(!!opts.roam);
     this.itemVis = race.items ? new ItemVisuals(this, race) : null;
     this.visuals = race.racers.map((r) => {
       // the contact shadow stays on even with real shadows, so karts sit on the road
@@ -153,6 +158,8 @@ export class Game {
       const ki = r.kart.input;
       if (r.finished) { ki.throttle = 0.4; ki.steer = 0; ki.back = false; return; }
       ki.throttle = s.throttle; ki.steer = s.steer; ki.item = s.item; ki.back = s.back;
+      // Turbo City (free roam) only: hold Space (the item button) to drift straight away
+      ki.driftKey = !!(s.item && this.race && this.race.roam);
     };
   }
 

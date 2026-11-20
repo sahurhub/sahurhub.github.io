@@ -52,7 +52,7 @@ async function onlineBoot(app, game, ui) {
     const session = chatSession();
     if (!session) { ui.show(SignIn, { onSignedIn: go }, { replace: true }); return; }
     try {
-      what.textContent = 'Connecting to Racing Bros';
+      what.textContent = 'Connecting to Turbo Town';
       const welcome = await net.connect(session);
       app.profile = new ServerProfile(net, welcome.profile, welcome.admin);
       if (!app.online) app.online = new Online(app, net);

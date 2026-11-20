@@ -9,6 +9,8 @@ export const GP_POINTS = [15, 12, 10, 8, 6, 5, 4, 3];
 // coins for finishing 1st..12th
 export const FINISH_COINS = [100, 85, 75, 65, 55, 45, 35, 25, 20, 16, 13, 10];
 export const OVERTAKE_COINS = 5;
+// coins for every lap you finish in a race (paid by the server as you cross the line)
+export const LAP_COINS = 10;
 export const OVERTAKE_COOLDOWN = 12;   // seconds before passing the same rival pays again
 export const OVERTAKE_MAX = 20;        // most overtake coins in one race (x5 = 100)
 // extra coins

@@ -24,6 +24,11 @@ const RADIUS = 0.85;
 // Drifts no longer charge boosts (kept so older imports still work).
 export const TIER_AT = [0, 1, 2, 3];
 export const DRIFT_BASE = 0.75, DRIFT_STEER = 0.35; // drift turn = driftTurn x (base + steer x into-turn)
+// drift angle (how far the car swings sideways, looks only): it starts at your normal turning
+// angle and builds up while you keep turning into the drift, more the harder you steer in.
+// MAX is the angle at full steering (radians, about 45 degrees); GROW and EASE are how fast
+// it builds up and comes back (radians a second).
+export const DRIFT_ANGLE_MAX = 0.78, DRIFT_ANGLE_GROW = 0.65, DRIFT_ANGLE_EASE = 1.6;
 
 export function createKart(def, opts = {}) {
   const p = deriveKart(def);
@@ -34,7 +39,7 @@ export function createKart(def, opts = {}) {
     grounded: false, nx: 0, ny: 1, nz: 0, snx: 0, sny: 1, snz: 0, surf: SURF.ROAD, lastGroundSurf: SURF.ROAD,
     steer: 0, input: { throttle: 0, steer: 0, drift: false, item: false, back: false },
     prevDrift: false,
-    drift: { on: false, dir: 0, charge: 0, tier: 0, t: 0 },
+    drift: { on: false, dir: 0, charge: 0, tier: 0, t: 0, ang: 0 },
     hop: { on: false, dir: 0 },
     driftVis: 0,                                  // smoothed visual drift angle
     boostT: 0, boostMul: 1, boostKind: '', padCool: 0,
@@ -130,10 +135,17 @@ export function stepKart(k, world, dt) {
   const a = 1 - Math.exp(-dt * (k.grounded ? 14 : 3));
   const tnx = k.grounded ? k.nx : 0, tny = k.grounded ? k.ny : 1, tnz = k.grounded ? k.nz : 0;
   k.snx += (tnx - k.snx) * a; k.sny += (tny - k.sny) * a; k.snz += (tnz - k.snz) * a;
-  // the kart swings well sideways while drifting (about 30-45 degrees, more when steering in)
-  const rel = k.drift.on ? clamp(k.steer * k.drift.dir, -1, 1) : 0;
-  const dv = k.drift.on ? k.drift.dir * -(0.5 + 0.28 * rel) : 0;
-  k.driftVis += (dv - k.driftVis) * (1 - Math.exp(-dt * 12));
+  // drift angle: no sudden swing when the drift starts; it builds up from your normal turning
+  // angle while you keep turning into the drift, and the harder you steer in the bigger it
+  // gets (about 45 degrees at full steering). Easing off the steering brings it back down.
+  const dr = k.drift;
+  if (dr.on) {
+    const cur = dr.ang || 0;
+    const want = DRIFT_ANGLE_MAX * clamp(k.steer * dr.dir, 0, 1);
+    dr.ang = want > cur ? Math.min(want, cur + DRIFT_ANGLE_GROW * dt) : Math.max(want, cur - DRIFT_ANGLE_EASE * dt);
+  } else dr.ang = 0;
+  const dv = dr.on ? -dr.dir * dr.ang : 0;
+  k.driftVis += (dv - k.driftVis) * (1 - Math.exp(-dt * (dr.on ? 14 : 6)));
 }
 
 function groundStep(k, world, dt, sp, pressed, control) {
@@ -231,7 +243,7 @@ function groundStep(k, world, dt, sp, pressed, control) {
 // at speed for AUTO_HOLD seconds puts the kart into a drift (a big sideways slide that
 // turns tighter); holding the turn keeps it drifting; letting go (or steering the other
 // way for a moment) ends it. There is no boost at the end. st is a small state object.
-export const AUTO_HOLD = 1.0;
+export const AUTO_HOLD = 0.6;
 const AUTO_SPEED = 12, AUTO_GRACE = 0.15, AUTO_OPPOSITE = 0.25;
 export function autoDrift(k, steer, throttle, st, dt) {
   const d = k.drift;
@@ -255,6 +267,7 @@ export function autoDrift(k, steer, throttle, st, dt) {
 function startDrift(k, dir) {
   const d = k.drift;
   d.on = true; d.dir = dir; d.charge = 0; d.tier = 0; d.t = 0;
+  d.ang = Math.max(0, -dir * (k.driftVis || 0)); // carry on from the angle the car has now
   ev(k, 'driftStart', dir);
 }
 

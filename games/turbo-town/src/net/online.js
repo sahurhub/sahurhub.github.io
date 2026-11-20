@@ -398,7 +398,7 @@ export class Online {
       const k = me.kart;
       let fl = flagsOf(k);
       if (this.respawnFlagT > 0) fl |= FL.RESPAWN;
-      this.net.send('k', { x: +k.x.toFixed(2), y: +k.y.toFixed(2), z: +k.z.toFixed(2), yaw: +k.yaw.toFixed(3), vx: +k.vx.toFixed(2), vz: +k.vz.toFixed(2), sp: +k.speed.toFixed(1), fl, d: k.drift.on ? k.drift.dir * (1 + k.drift.tier) : 0 });
+      this.net.send('k', { x: +k.x.toFixed(2), y: +k.y.toFixed(2), z: +k.z.toFixed(2), yaw: +k.yaw.toFixed(3), vx: +k.vx.toFixed(2), vz: +k.vz.toFixed(2), sp: +k.speed.toFixed(1), fl, d: k.drift.on ? k.drift.dir * (2 + Math.round((k.drift.ang || 0) * 57.3)) : 0 }); // d: drift side and angle in degrees (+2)
     }
     if (this.respawnFlagT > 0) this.respawnFlagT -= dt;
     if (me && me.kart.events.some((e) => e.type === 'rescue')) this.respawnFlagT = 0.8;
@@ -477,14 +477,16 @@ function flagsOf(k) {
 function applyFlags(k, fl, d) {
   k.drift.on = !!(fl & FL.DRIFT);
   k.drift.dir = d ? Math.sign(d) : (k.drift.dir || 1);
-  k.drift.tier = d ? Math.abs(d) - 1 : 0;
+  k.drift.tier = 0;
+  // drift angle from the other player's game (degrees + 2); an older game version only sends 1
+  k.drift.ang = !k.drift.on ? 0 : Math.abs(d) >= 2 ? (Math.abs(d) - 2) / 57.3 : 0.42;
   k.boostT = fl & FL.BOOST ? 0.1 : 0;
   k.boostKind = 'item';
   k.grounded = !(fl & FL.AIR);
   if (fl & FL.SPIN) { k.spinT = 0.2; k.spinAngle += 0.25; } else { k.spinT = 0; k.spinAngle = 0; }
   if (fl & FL.TRAIL && k.trailT <= 0) k.trailT = 0.2;
   if (fl & FL.RAINBOW) k.rainbowT = Math.max(k.rainbowT || 0, 0.2);
-  const dv = k.drift.on ? k.drift.dir * -0.42 : 0;
+  const dv = k.drift.on ? -k.drift.dir * k.drift.ang : 0;
   k.driftVis += (dv - k.driftVis) * 0.2;
   k.snx = 0; k.sny = 1; k.snz = 0;
 }

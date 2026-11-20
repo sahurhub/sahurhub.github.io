@@ -102,7 +102,7 @@ export class KartVisual {
     _q2.setFromAxisAngle(_up, yaw + k.driftVis + k.spinAngle + k.trickSpin);
     this.root.quaternion.copy(_q).multiply(_q2);
     // body lean into turns and squash on landing
-    const lean = -k.steer * Math.min(1, Math.abs(k.speed) / 15) * 0.09 + (k.drift.on ? k.drift.dir * 0.06 : 0);
+    const lean = -k.steer * Math.min(1, Math.abs(k.speed) / 15) * 0.09 + (k.drift.on ? k.drift.dir * 0.06 * Math.min(1, (k.drift.ang || 0) / 0.78) : 0);
     this.tilt.rotation.z += (lean - this.tilt.rotation.z) * (1 - Math.exp(-dt * 10));
     const pitch = k.grounded ? 0 : Math.max(-0.25, Math.min(0.25, -k.vy * 0.025));
     this.tilt.rotation.x += (pitch - this.tilt.rotation.x) * (1 - Math.exp(-dt * 6));

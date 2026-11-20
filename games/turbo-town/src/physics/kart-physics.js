@@ -178,7 +178,12 @@ function groundStep(k, world, dt, sp, pressed, control) {
     if (vf < btop) vf = Math.min(btop, vf + 48 * dt);
     top = btop;
   } else if (thr > 0) {
-    if (vf < top) {
+    if (k.noTopSpeed) {
+      // free roam (Turbo City): no top speed - past the normal top it keeps speeding up,
+      // just more slowly, for as long as you hold the accelerator
+      const f = Math.max(0.2, 1 - 0.78 * Math.pow(Math.max(0, vf) / top, 2));
+      vf += P.accel * sp.accel * f * thr * accelBonus * dt;
+    } else if (vf < top) {
       const f = Math.max(0.12, 1 - 0.78 * Math.pow(Math.max(0, vf) / top, 2));
       vf = Math.min(top, vf + P.accel * sp.accel * f * thr * accelBonus * dt);
     }
@@ -189,7 +194,7 @@ function groundStep(k, world, dt, sp, pressed, control) {
   } else if (thr === 0 && !boosting) {
     vf -= Math.sign(vf) * Math.min(Math.abs(vf), COAST * dt);
   }
-  if (!boosting && vf > top) vf = Math.max(top, vf - (sp.offroad ? 24 : 10) * dt);
+  if (!boosting && vf > top && !k.noTopSpeed) vf = Math.max(top, vf - (sp.offroad ? 24 : 10) * dt);
   if (k.spinT > 0) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 15 * dt);
   vf -= GRAVITY * 0.5 * fy * dt; // roll down hills, slow down going up
 

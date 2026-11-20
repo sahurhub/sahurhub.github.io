@@ -40,7 +40,8 @@ export class ChaseCamera {
     else if (dy < -SLACK) this.yaw = kv.yaw + SLACK;
     this.yaw += (kv.yaw - this.yaw) * (1 - Math.exp(-dt * (kv.air ? 1.5 : 3)));
     const yaw = this.yaw + (back ? Math.PI : 0);
-    const spd = Math.max(0, kv.speed) / (kv.top || 28);
+    // (capped: in free roam there is no top speed, and the view must not keep widening)
+    const spd = Math.min(2.5, Math.max(0, kv.speed) / (kv.top || 28));
     const dist = this.distance + spd * 0.25 + (kv.boost ? 0.2 : 0);
     const hgt = this.height + spd * 0.08;
     _t.set(kv.x - Math.sin(yaw) * dist, kv.y + hgt, kv.z - Math.cos(yaw) * dist);

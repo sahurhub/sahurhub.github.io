@@ -116,7 +116,10 @@ export class Game {
     const race = new Race({ track: map.track, world: map.world, grid: map.ctx.grid, laps: opts.laps || map.def.laps || 3, racers, countdown: opts.countdown, items: opts.items });
     this.race = race;
     // free roam (Turbo City, alone or with others): no laps, places or finish
-    if (opts.roam) { race.practice = true; race.roam = true; }
+    if (opts.roam) {
+      race.practice = true; race.roam = true;
+      if (race.player) race.player.kart.noTopSpeed = true; // your car has no top speed there
+    }
     this.hud.setRoam(!!opts.roam);
     this.itemVis = race.items ? new ItemVisuals(this, race) : null;
     this.visuals = race.racers.map((r) => {

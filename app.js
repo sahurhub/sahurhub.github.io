@@ -1049,13 +1049,33 @@
     streakChip.setAttribute('aria-label', 'Streak: ' + plural2(n, 'day', 'days') + '. Open stats');
   }
 
+  // "N playing" on opsec cards and in their details (2026-11-22). Opsec tabs (about:blank and
+  // play.html) tell the chat server which opsec they show; every answer brings the counts.
+  // Opsecs opened in a plain new tab can't be counted. Hidden while nobody is playing.
+  var playing = {};
+  function playingText(n) { return n + ' playing'; }
+  function playingHtml(id, inSheet) {
+    var n = playing[id] || 0;
+    return '<span class="playing' + (inSheet ? ' in-sheet' : '') + '" data-playing="' + escapeHtml(id) + '"' + (n ? '' : ' hidden') + '>' +
+      '<i aria-hidden="true"></i><span class="playing-n">' + escapeHtml(playingText(n)) + '</span></span>';
+  }
+  function updatePlaying(games) {
+    playing = games || {};
+    document.querySelectorAll('[data-playing]').forEach(function (el) {
+      var n = playing[el.dataset.playing] || 0;
+      el.hidden = !n;
+      if (n) el.querySelector('.playing-n').textContent = playingText(n);
+    });
+  }
+
   // "Player Count" pill: presence.js pings the chat server every 30 s and gets back how
   // many devices are on SahurHub right now. The dot is green while the number is live and
   // grey (with "-") when the server can't be reached.
   function startPlayerCount() {
     if (!window.SahurHubPlayers || !playersEl) return;
     var countEl = playersEl.querySelector('.pl-count');
-    window.SahurHubPlayers.start(function (n) {
+    window.SahurHubPlayers.start(function (n, games) {
+      updatePlaying(games);
       var live = typeof n === 'number';
       playersEl.classList.toggle('is-live', live);
       countEl.textContent = live ? n.toLocaleString() : '-';
@@ -1314,6 +1334,7 @@
     var badges = '';
     if (g.isNew) badges += '<span class="badge badge-new">NEW</span>';
     if (!g.url) badges += '<span class="badge">SOON</span>';
+    if (g.url) badges += playingHtml(g.id);
     // Play button on the picture: shows on hover and goes straight into the game.
     var playBtn = g.url
       ? '<button class="card-play" type="button" data-play="' + escapeHtml(g.id) + '" aria-label="' + escapeHtml('Play ' + g.title) + '">' + uiIcon('play') + '</button>'
@@ -2018,7 +2039,7 @@
       // Player Count: this tab keeps counting as "on SahurHub" too (even if the hub tab is closed).
       if (window.SahurHubPlayers) {
         var here = d.createElement('script');
-        here.textContent = '(' + window.SahurHubPlayers.pingerSource + ')(' + JSON.stringify(window.SahurHubPlayers.base) + ', null, "game");';
+        here.textContent = '(' + window.SahurHubPlayers.pingerSource + ')(' + JSON.stringify(window.SahurHubPlayers.base) + ', null, "game", ' + JSON.stringify(gameId || '') + ');';
         d.body.appendChild(here);
       }
       w.opener = null;
@@ -2095,7 +2116,7 @@
       '<h2 class="sheet-title" id="sheet-title">' + escapeHtml(g.title) + '</h2>' +
       '<div class="sheet-sub"><span>' + escapeHtml(g.category) + '</span>' +
         (g.isNew ? '<span class="badge badge-new">NEW</span>' : '') +
-        (g.url ? '' : '<span class="badge">COMING SOON</span>') + '</div>' +
+        (g.url ? playingHtml(g.id, true) : '<span class="badge">COMING SOON</span>') + '</div>' +
       '<p class="sheet-desc">' + escapeHtml(g.description) + '</p>' +
       '<div class="sheet-tags">' + tags.map(function (t) { return '<span>' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
       '<div class="sheet-actions">' +
@@ -2351,6 +2372,89 @@
     coinChip.setAttribute('aria-label', w.coins + ' coins. Open the shop');
     if (lastCoins !== null && w.coins > lastCoins) bounce(coinChip.querySelector('.coin-ico'));
     lastCoins = w.coins;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Patch notes: pop up once after each update. Closing it saves PATCH.id in this browser
+  // (localStorage "sahurhub.patchSeen"), so it only comes back for the next update.
+  // For a new update: change PATCH.id (any new text) and the items.
+  // ---------------------------------------------------------------------------
+
+  var PATCH_KEY = 'sahurhub.patchSeen';
+  var PATCH = {
+    id: '2026-11-22',
+    date: '22 November 2026',
+    items: [
+      { icon: 'coin', color: '#ffc83d', title: 'Coins', text: 'Earn coins with your SahurHub Chat account: a daily reward that grows with your streak (with bonuses on day 7 and every 30 days), plus 1 coin a minute while you’re on SahurHub or playing an opsec, up to 60 a day. Your coins show under the Chat button.' },
+      { icon: 'bag', color: '#a368e8', title: 'The Shop', text: 'Spend coins on profile banners, avatar frames, name styles and profile effects. They show on your chat profile, your messages and the member list. Find the Shop tab at the bottom, or the Shop button in the chat.' },
+      { icon: 'live', color: '#30d158', title: 'Currently playing', text: 'Opsec cards now show how many people are playing them right now.' },
+      { icon: 'users', color: '#30d158', title: 'Player Count', text: 'See how many people are on SahurHub right now, next to the Stats button.' },
+      { icon: 'mower', color: '#5cc93b', title: 'New opsec: Lawn Mowing Simulator', text: 'Mow gardens, parks, a sports field and a golf course with five mowers. Earn money, buy upgrades, hats and pets, and run your own lawn care business.' },
+      { icon: 'dots', color: '#8e8e93', title: 'New theme: Dots', text: 'A dark charcoal look with a dotted background. It’s the new default; you can still pick Light, Dark, Christmas or Auto in Settings.' },
+      { icon: 'gear', color: '#5b8def', title: 'Fixes', text: 'On the Dots theme, the chat’s send button, the NEW badges and the Play button are easier to read.' }
+    ]
+  };
+  var PATCH_ICONS = {
+    bag: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+    live: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2" fill="#fff" stroke="none"/><path d="M7.6 7.6a6.2 6.2 0 0 0 0 8.8M16.4 7.6a6.2 6.2 0 0 1 0 8.8M4.8 4.8a10.2 10.2 0 0 0 0 14.4M19.2 4.8a10.2 10.2 0 0 1 0 14.4"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.5"/><path d="M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/></svg>',
+    mower: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4l5 8"/><rect x="7" y="11" width="12" height="5" rx="1.6"/><circle cx="9" cy="18" r="2" fill="#fff" stroke="none"/><circle cx="17" cy="18" r="2" fill="#fff" stroke="none"/></svg>',
+    dots: '<svg viewBox="0 0 24 24" fill="#fff"><circle cx="6" cy="6" r="1.7"/><circle cx="12" cy="6" r="1.7"/><circle cx="18" cy="6" r="1.7"/><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/><circle cx="6" cy="18" r="1.7"/><circle cx="12" cy="18" r="1.7"/><circle cx="18" cy="18" r="1.7"/></svg>',
+    gear: '<svg viewBox="0 0 24 24"><path fill="#fff" fill-rule="evenodd" d="M12 3.2l1.4.2.5 2.1 1.6.7 1.9-1.1 1.9 1.9-1.1 1.9.7 1.6 2.1.5.2 1.4-.2 1.4-2.1.5-.7 1.6 1.1 1.9-1.9 1.9-1.9-1.1-1.6.7-.5 2.1-1.4.2-1.4-.2-.5-2.1-1.6-.7-1.9 1.1-1.9-1.9 1.1-1.9-.7-1.6-2.1-.5L3.2 12l.2-1.4 2.1-.5.7-1.6-1.1-1.9 1.9-1.9 1.9 1.1 1.6-.7.5-2.1ZM12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 1 0 0-6.4Z"/></svg>'
+  };
+  var patchEl = null;
+
+  function schedulePatchNotes() {
+    if (storage.getRaw(PATCH_KEY) === PATCH.id) return;
+    setTimeout(function () {
+      if (state.desktopOpen || sheetIsOpen()) return; // try again on the next visit
+      showPatchNotes();
+    }, 1100);
+  }
+
+  function showPatchNotes() {
+    if (patchEl) return;
+    var el = document.createElement('div');
+    el.id = 'patch';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'patch-title');
+    el.innerHTML =
+      '<div class="patch-scrim" data-patch-close></div>' +
+      '<div class="patch-card" tabindex="-1">' +
+        '<button class="patch-x" type="button" data-patch-close aria-label="Close">' + uiIcon('close') + '</button>' +
+        '<p class="patch-eyebrow">SahurHub update · ' + escapeHtml(PATCH.date) + '</p>' +
+        '<h2 class="patch-title" id="patch-title">What’s new</h2>' +
+        '<ul class="patch-list">' + PATCH.items.map(function (it) {
+          var ico = it.icon === 'coin' ? COIN_SVG : (PATCH_ICONS[it.icon] || '');
+          return '<li><span class="patch-ico' + (it.icon === 'coin' ? ' is-coin' : '') + '" style="--c:' + it.color + '">' + ico + '</span>' +
+            '<div><b>' + escapeHtml(it.title) + '</b><p>' + escapeHtml(it.text) + '</p></div></li>';
+        }).join('') + '</ul>' +
+        '<button class="btn btn-primary patch-ok" type="button" data-patch-close>Got it</button>' +
+      '</div>';
+    document.body.appendChild(el);
+    patchEl = el;
+    el.addEventListener('click', function (e) { if (e.target.closest('[data-patch-close]')) closePatchNotes(); });
+    document.addEventListener('keydown', patchKey, true);
+    requestAnimationFrame(function () {
+      el.classList.add('open');
+      el.querySelector('.patch-card').focus({ preventScroll: true });
+    });
+  }
+
+  function patchKey(e) {
+    if (e.key === 'Escape' && patchEl) { e.stopPropagation(); e.preventDefault(); closePatchNotes(); }
+  }
+
+  function closePatchNotes() {
+    if (!patchEl) return;
+    storage.setRaw(PATCH_KEY, PATCH.id); // closed: don't show these notes again
+    document.removeEventListener('keydown', patchKey, true);
+    var el = patchEl;
+    patchEl = null;
+    el.classList.remove('open');
+    el.classList.add('closing');
+    setTimeout(function () { el.remove(); }, reduceMotion() ? 0 : 320);
   }
 
   function openChat() {
@@ -2709,6 +2813,7 @@
     requestAnimationFrame(function () {
       requestAnimationFrame(function () { document.body.classList.add('ready'); });
     });
+    schedulePatchNotes();
 
     initGlass();
 

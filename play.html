@@ -18,7 +18,7 @@
        Only opsecs listed in games.js can be opened here: play.html?g=<id> -->
   <script src="games.js?v=20261122lm"></script>
   <script src="stats.js?v=20261114d"></script>
-  <script src="presence.js?v=20261122s"></script>
+  <script src="presence.js?v=20261122p"></script>
   <script>
     (function () {
       var id = new URLSearchParams(location.search).get('g');
@@ -40,7 +40,7 @@
       // Time spent here counts toward this opsec in Stats.
       if (window.SahurHubStats) window.SahurHubStats.track('game', g.id);
       // Playing here counts as being on SahurHub for the Player Count.
-      if (window.SahurHubPlayers) window.SahurHubPlayers.start(null, 'game');
+      if (window.SahurHubPlayers) window.SahurHubPlayers.start(null, 'game', g.id);
     })();
   </script>
 </body>

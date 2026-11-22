@@ -25,7 +25,9 @@
   // about:blank opsec tab (which has no address of its own to work the server out from).
   // kind: 'site' (the hub: needs a click, key or scroll in the last 5 minutes to earn
   // coins) or 'game' (an opsec: being on screen is enough).
-  function pinger(base, onCount, kind) {
+  // game: the opsec's id in an opsec tab, so the hub can show "N playing" (2026-11-22).
+  // onCount(count, games): games = { opsec id: how many devices are playing it }.
+  function pinger(base, onCount, kind, game) {
     var KEY = 'sahurhub.presence';
     var EVERY = 30000;
     var IDLE = 5 * 60 * 1000;
@@ -56,6 +58,7 @@
       clearTimeout(timer);
       timer = setTimeout(ping, EVERY);
       var body = { id: id };
+      if (game) body.game = game;
       var auth = chatSignIn();
       if (auth) {
         body.token = auth.token;
@@ -65,8 +68,8 @@
       // Sent as plain text so the browser doesn't need an extra permission check first.
       fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), cache: 'no-store', credentials: 'omit' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) { if (onCount) onCount(d && typeof d.count === 'number' ? d.count : null); })
-        .catch(function () { if (onCount) onCount(null); });
+        .then(function (d) { if (onCount) onCount(d && typeof d.count === 'number' ? d.count : null, d && d.games && typeof d.games === 'object' ? d.games : null); })
+        .catch(function () { if (onCount) onCount(null, null); });
     }
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') ping();
@@ -75,7 +78,9 @@
     // SahurHub tab on the same device adds it back on its next ping).
     window.addEventListener('pagehide', function () {
       clearTimeout(timer);
-      try { navigator.sendBeacon(url, new Blob([JSON.stringify({ id: id, leave: true })], { type: 'text/plain' })); } catch (e) { /* ignore */ }
+      var bye = { id: id, leave: true };
+      if (game) bye.game = game; // an opsec tab only takes its opsec off
+      try { navigator.sendBeacon(url, new Blob([JSON.stringify(bye)], { type: 'text/plain' })); } catch (e) { /* ignore */ }
     });
     window.addEventListener('pageshow', function (e) { if (e.persisted) ping(); });
     ping();
@@ -83,9 +88,10 @@
 
   window.SahurHubPlayers = {
     base: BASE,
-    // start(onCount, kind): onCount(number) after every answer, onCount(null) when the server
-    // can't be reached. kind: 'site' (default, the hub) or 'game' (play.html).
-    start: function (onCount, kind) { pinger(BASE, onCount, kind || 'site'); },
+    // start(onCount, kind, game): onCount(count, games) after every answer, onCount(null, null)
+    // when the server can't be reached. kind: 'site' (default, the hub) or 'game' (play.html,
+    // with the opsec's id as game).
+    start: function (onCount, kind, game) { pinger(BASE, onCount, kind || 'site', game || ''); },
     pingerSource: pinger.toString()
   };
 })();

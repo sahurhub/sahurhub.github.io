@@ -583,6 +583,15 @@ h1, h2, h3, p { margin: 0; }
 }
 .badge-new { background: var(--accent); color: #fff; }
 
+/* "N playing" on opsec cards and in their details (hidden while nobody is playing) */
+.playing { flex: none; display: inline-flex; align-items: center; gap: 5px; margin-left: auto; font-size: 11.5px; font-weight: 650; color: var(--label-2); white-space: nowrap; }
+.card-meta .playing span { overflow: visible; }
+.playing i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #30d158; box-shadow: 0 0 0 2px rgba(48, 209, 88, 0.25); animation: playingPulse 2.2s ease-in-out infinite; }
+.playing.in-sheet { margin-left: 4px; font-size: 13.5px; }
+.playing.in-sheet i { width: 8px; height: 8px; }
+@keyframes playingPulse { 50% { box-shadow: 0 0 0 4.5px rgba(48, 209, 88, 0); } }
+@media (prefers-reduced-motion: reduce) { .playing i { animation: none; } }
+
 .fav-btn {
   position: absolute;
   top: 10px;
@@ -943,6 +952,43 @@ body.ready #coin-chip { translate: 0 0; transition-delay: 0.15s, 0s; }
 @media (max-width: 520px) {
   #coin-chip { right: calc(var(--corner-right) + 44px + var(--top-gap) + var(--desktop-w) / 2); }
 }
+/* Patch notes: pop up once after each update (app.js PATCH) */
+#patch { position: fixed; inset: 0; z-index: 140; display: flex; align-items: center; justify-content: center; padding: max(16px, var(--safe-top)) 16px max(16px, var(--safe-bottom)); }
+.patch-scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: 0; transition: opacity 0.3s ease; }
+.patch-card {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 26px 24px 22px;
+  border-radius: 32px;
+  outline: none;
+  color: var(--label);
+  background: var(--panel-solid);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), inset 0 0 0 1px var(--glass-simple-edge);
+  opacity: 0;
+  transform: translateY(24px) scale(0.94);
+  transition: opacity 0.3s ease, transform 0.55s var(--spring);
+}
+#patch.open .patch-scrim, #patch.open .patch-card { opacity: 1; }
+#patch.open .patch-card { transform: none; }
+#patch.closing .patch-card { transform: translateY(12px) scale(0.97); transition: opacity 0.2s ease, transform 0.3s ease; }
+.patch-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--fill); color: var(--label-2); }
+.patch-x .ico { width: 18px; height: 18px; }
+.patch-eyebrow { margin: 0; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--label-2); }
+.patch-title { margin: 4px 0 16px; font-size: 30px; font-weight: 800; letter-spacing: -0.035em; }
+.patch-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.patch-list li { display: flex; gap: 13px; align-items: flex-start; }
+.patch-list b { display: block; font-size: 15.5px; font-weight: 750; letter-spacing: -0.015em; }
+.patch-list p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--label-2); }
+.patch-ico { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--c); box-shadow: 0 6px 14px color-mix(in srgb, var(--c) 35%, transparent); }
+.patch-ico svg { width: 21px; height: 21px; display: block; }
+.patch-ico.is-coin { background: color-mix(in srgb, var(--c) 22%, transparent); box-shadow: none; }
+.patch-ico.is-coin svg { width: 26px; height: 26px; }
+.patch-ok { width: 100%; height: 48px; margin-top: 22px; font-size: 16px; }
+@media (prefers-reduced-motion: reduce) { .patch-card, .patch-scrim { transition: none; } }
+
 #shop-host { min-height: 260px; margin-top: 18px; }
 .shop-loading { margin: 0; padding: 36px 0; text-align: center; color: var(--label-2); }
 
@@ -1823,6 +1869,9 @@ body.ready #nextup { translate: 0 0; }
   --pill: #f5f5f7;
   --pill-text: #111113;
 }
+/* The accent is white here, so text on accent-coloured buttons and badges is dark. */
+:root[data-skin="dots"] .btn-primary,
+:root[data-skin="dots"] .badge-new { color: #111113; }
 
 /* Falling snow: just above the wallpaper, behind everything else on the page. */
 #snow {

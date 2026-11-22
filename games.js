@@ -128,6 +128,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // The files are in games/lawn-mowing-simulator/ in this repository. Offline only: progress is
+    // saved in the player's browser (no accounts, no server).
+    id: "lawn-mowing-simulator",
+    title: "Lawn Mowing Simulator",
+    category: "Simulator",
+    tags: ["lawn", "mowing", "mower", "grass", "garden", "career", "upgrades", "pets", "golf", "relaxing", "simulator", "3d"],
+    description: "Mow gardens, parks, a sports field and a golf course with five mowers, from a push mower to a zero-turn. Earn money, buy upgrades, hats and pets, and build up your own lawn care business.",
+    icon: "star",
+    colors: ["#5cc93b", "#2f8f2a"],
+    url: "games/lawn-mowing-simulator/",
+    cover: "covers/lawn-mowing-simulator.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

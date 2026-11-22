@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Lawn Mowing Simulator</title>
+  <meta name="theme-color" content="#5cc93b">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" crossorigin>
+</head>
+<body>
+  <div id="loading">
+    <div class="load-sky"></div>
+    <div class="load-hills"></div>
+    <div class="load-card">
+      <div class="load-title">Lawn Mowing<span>Simulator</span></div>
+      <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
+      <div class="load-text" id="load-text">Starting the engine...</div>
+    </div>
+  </div>
+  <canvas id="game" tabindex="0" aria-label="Lawn Mowing Simulator"></canvas>
+  <div id="ui"></div>
+  <noscript><p style="padding:20px;font-family:sans-serif">This game needs JavaScript.</p></noscript>
+  <script type="module" src="src/main.js?v=1"></script>
+</body>
+</html>

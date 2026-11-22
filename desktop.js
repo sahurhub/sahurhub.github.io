@@ -229,6 +229,18 @@ function drawWallpaper() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const dark = H.isDark();
 
+  // Dots theme: the same flat charcoal and dot grid as the main site.
+  if (H.skin && H.skin() === 'dots') {
+    const base = ctx.createLinearGradient(0, 0, w, h);
+    base.addColorStop(0, '#161618');
+    base.addColorStop(1, '#121214');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, w, h);
+    H.drawDotGrid(ctx, w, h, H.dotGrid);
+    if (lg) lg.markChanged(wallpaper);
+    return;
+  }
+
   const sky = ctx.createLinearGradient(0, 0, 0, h);
   const skyStops = dark
     ? [[0, '#070b24'], [0.42, '#22185a'], [0.72, '#4d2462'], [1, '#160c26']]

@@ -9,19 +9,20 @@
 
   var LIQUID_GLASS_URL = 'https://cdn.jsdelivr.net/npm/@ybouane/liquidglass@1.0.3/dist/index.js';
   // Bump when desktop.js or desktop.css change, so browsers fetch the new copies.
-  var DESKTOP_VERSION = '?v=20261114c';
+  var DESKTOP_VERSION = '?v=20261122d';
   var KEYS = {
     theme: 'sahurhub.theme', favorites: 'sahurhub.favorites', recent: 'sahurhub.recent',
     openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow'
   };
   // Settings (the gear button). "auto" follows the device's light/dark setting.
   // DEFAULT_THEME is used until the visitor picks one (keep in step with the head script in index.html).
-  var DEFAULT_THEME = 'christmas';
+  var DEFAULT_THEME = 'dots';
   var THEMES = [
     { id: 'auto', label: 'Auto' },
     { id: 'light', label: 'Light' },
     { id: 'dark', label: 'Dark' },
-    { id: 'christmas', label: 'Christmas' }
+    { id: 'christmas', label: 'Christmas' },
+    { id: 'dots', label: 'Dots' }
   ];
   // Christmas snow amount (Settings > Theme, when Christmas is picked).
   var SNOW_LEVELS = [
@@ -550,6 +551,12 @@
         [0.06, 0.96, 0.5, [5, 30, 21, 0.45]],
         [0.94, 0.96, 0.5, [5, 30, 21, 0.45]]
       ]
+    },
+    // Dots: flat charcoal with a soft grid of small grey dots (user's reference picture, 2026-11-22).
+    dots: {
+      base: ['#161618', '#121214'],
+      blobs: [],
+      dots: { gap: 24, r: 1.35, color: 'rgba(255, 255, 255, 0.15)' }
     }
   };
 
@@ -561,7 +568,7 @@
     wallpaper.height = Math.max(1, Math.round(h * dpr));
     var ctx = wallpaper.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var theme = WALLPAPERS[isChristmas() ? 'christmas' : isDark() ? 'dark' : 'light'];
+    var theme = WALLPAPERS[currentSkin() || (isDark() ? 'dark' : 'light')];
     var base = ctx.createLinearGradient(0, 0, w, h);
     base.addColorStop(0, theme.base[0]);
     base.addColorStop(1, theme.base[1]);
@@ -579,35 +586,52 @@
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
     });
+    if (theme.dots) drawDotGrid(ctx, w, h, theme.dots);
     if (lg) lg.markChanged(wallpaper);
+  }
+
+  // A grid of small round dots (the Dots theme). Desktop Mode draws the same one.
+  function drawDotGrid(ctx, w, h, d) {
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    for (var y = d.gap / 2; y < h; y += d.gap) {
+      for (var x = d.gap / 2; x < w; x += d.gap) {
+        ctx.moveTo(x + d.r, y);
+        ctx.arc(x, y, d.r, 0, Math.PI * 2);
+      }
+    }
+    ctx.fill();
   }
 
   // ---------------------------------------------------------------------------
   // Theme (auto / light / dark / christmas), with a circular reveal
   // ---------------------------------------------------------------------------
-  // Christmas is a dark theme plus data-skin="christmas", so everything that
-  // checks for dark mode keeps working.
+  // Christmas and Dots are the dark theme plus data-skin="christmas" / "dots", so
+  // everything that checks for dark mode keeps working.
 
   function themeChoice() {
     var saved = storage.getRaw(KEYS.theme);
     return THEMES.some(function (t) { return t.id === saved; }) ? saved : DEFAULT_THEME;
   }
 
-  function isChristmas() { return document.documentElement.getAttribute('data-skin') === 'christmas'; }
+  var SKINS = { christmas: '#0e3a2a', dots: '#161618' }; // skin -> browser bar colour
+
+  function currentSkin() { return document.documentElement.getAttribute('data-skin') || null; }
+  function isChristmas() { return currentSkin() === 'christmas'; }
 
   function themeLook(choice) {
-    var christmas = choice === 'christmas';
-    var dark = christmas || (choice === 'auto' ? darkQuery.matches : choice === 'dark');
-    return { dark: dark, christmas: christmas };
+    var skin = SKINS[choice] ? choice : null;
+    var dark = !!skin || (choice === 'auto' ? darkQuery.matches : choice === 'dark');
+    return { dark: dark, skin: skin, christmas: skin === 'christmas' };
   }
 
   function applyThemeAttrs(choice) {
     var look = themeLook(choice);
     var root = document.documentElement;
     root.setAttribute('data-theme', look.dark ? 'dark' : 'light');
-    if (look.christmas) root.setAttribute('data-skin', 'christmas'); else root.removeAttribute('data-skin');
+    if (look.skin) root.setAttribute('data-skin', look.skin); else root.removeAttribute('data-skin');
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', look.christmas ? '#0e3a2a' : look.dark ? '#05060c' : '#eef1fb');
+    if (meta) meta.setAttribute('content', look.skin ? SKINS[look.skin] : look.dark ? '#05060c' : '#eef1fb');
   }
 
   function onThemeChanged() {
@@ -622,10 +646,10 @@
 
   function setThemeChoice(choice, originEl) {
     if (!THEMES.some(function (t) { return t.id === choice; })) return;
-    // Every choice is saved, Auto included (no saved choice now means the default, Christmas).
+    // Every choice is saved, Auto included (no saved choice means the default theme, DEFAULT_THEME).
     storage.setRaw(KEYS.theme, choice);
     var look = themeLook(choice);
-    var same = look.dark === isDark() && look.christmas === isChristmas();
+    var same = look.dark === isDark() && look.skin === currentSkin();
     if (same) { syncSettings(); document.dispatchEvent(new CustomEvent('sahurhub:theme')); return; }
     var apply = function () { applyThemeAttrs(choice); onThemeChanged(); };
     if (!document.startViewTransition || reduceMotion()) { apply(); return; }
@@ -2323,6 +2347,9 @@
     setOpenMode: setOpenMode,
     isDark: isDark,
     isChristmas: isChristmas,
+    skin: currentSkin,
+    drawDotGrid: drawDotGrid,
+    dotGrid: WALLPAPERS.dots.dots,
     setTheme: setTheme,
     toggleTheme: toggleTheme,
     themes: THEMES,

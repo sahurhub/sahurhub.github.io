@@ -1349,7 +1349,8 @@ html.lg-ready #sheet::after {
   text-transform: uppercase;
   color: var(--label-2);
 }
-.theme-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.theme-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .theme-opt,
 .glass-opt {
   border-radius: 18px;
@@ -1379,6 +1380,11 @@ html.lg-ready #sheet::after {
     radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.5px) 11px 9px / 23px 19px,
     radial-gradient(60% 60% at 50% 0%, rgba(60, 140, 100, 0.7), transparent),
     linear-gradient(160deg, #124a36, #0b3124);
+}
+.swatch-dots {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.3) 0 1px, transparent 1.6px) 4px 4px / 9px 9px,
+    #161618;
 }
 .theme-name { font-size: 13.5px; font-weight: 650; }
 .glass-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1754,6 +1760,34 @@ body.ready #nextup { translate: 0 0; }
   --glass-simple-edge: rgba(255, 255, 255, 0.12);
   --panel-solid: rgba(16, 56, 41, 0.97);
   --sheet-tint: rgba(14, 50, 37, 0.6);
+}
+
+/* ---------- Dots theme (Settings > Theme) ----------
+   Flat charcoal with a soft grid of grey dots (app.js draws the dots on the
+   wallpaper), dark grey panels, grey text and white instead of a colour accent.
+   Based on the user's reference picture (2026-11-22). */
+:root[data-skin="dots"] {
+  --bg: #161618;
+  --label: #f5f5f7;
+  --label-2: rgba(235, 235, 240, 0.6);
+  --label-3: rgba(235, 235, 240, 0.32);
+  --separator: rgba(255, 255, 255, 0.08);
+  --accent: #f5f5f7;
+  --mark: rgba(255, 255, 255, 0.16);
+  --card: rgba(31, 31, 34, 0.96);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --fill: rgba(255, 255, 255, 0.07);
+  --fill-strong: rgba(255, 255, 255, 0.12);
+  --edge: rgba(22, 22, 24, 0.9);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 26px 56px rgba(0, 0, 0, 0.65), 0 8px 18px rgba(0, 0, 0, 0.45);
+  --glass-fallback: rgba(36, 36, 40, 0.7);
+  --glass-simple: rgba(32, 32, 35, 0.92);
+  --glass-simple-edge: rgba(255, 255, 255, 0.08);
+  --panel-solid: rgba(28, 28, 31, 0.98);
+  --sheet-tint: rgba(22, 22, 24, 0.62);
+  --pill: #f5f5f7;
+  --pill-text: #111113;
 }
 
 /* Falling snow: just above the wallpaper, behind everything else on the page. */

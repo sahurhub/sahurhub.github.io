@@ -14,20 +14,21 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.2.8/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=20261122pc">
+  <link rel="stylesheet" href="styles.css?v=20261122d">
   <script>
     // Pick the theme and glass style before the page draws, so it never flashes
     // the wrong look. Both are chosen in Settings (the gear button).
     (function () {
       var theme = null, glass = null;
       try { theme = localStorage.getItem('sahurhub.theme'); glass = localStorage.getItem('sahurhub.glass'); } catch (e) {}
-      // No theme picked yet: Christmas is the default (keep in step with DEFAULT_THEME in app.js).
-      if (theme !== 'auto' && theme !== 'light' && theme !== 'dark' && theme !== 'christmas') theme = 'christmas';
+      // No theme picked yet: Dots is the default (keep in step with DEFAULT_THEME in app.js).
+      if (theme !== 'auto' && theme !== 'light' && theme !== 'dark' && theme !== 'christmas' && theme !== 'dots') theme = 'dots';
       var root = document.documentElement;
-      var christmas = theme === 'christmas';
-      var dark = christmas || (theme === 'light' || theme === 'dark' ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
+      // Christmas and Dots are dark themes with their own colours (data-skin).
+      var skin = theme === 'christmas' || theme === 'dots' ? theme : null;
+      var dark = !!skin || (theme === 'light' || theme === 'dark' ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
       root.setAttribute('data-theme', dark ? 'dark' : 'light');
-      if (christmas) root.setAttribute('data-skin', 'christmas');
+      if (skin) root.setAttribute('data-skin', skin);
       root.setAttribute('data-glass', glass === 'liquid' ? 'liquid' : 'simple');
       if (glass === 'liquid') {
         // Liquid glass needs this library; Simple glass never downloads it.
@@ -211,6 +212,6 @@
   <script src="countdown.js"></script>
   <script src="stats.js?v=20261114d"></script>
   <script src="presence.js?v=20261122"></script>
-  <script src="app.js?v=20261122pc"></script>
+  <script src="app.js?v=20261122d"></script>
 </body>
 </html>

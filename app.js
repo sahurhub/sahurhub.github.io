@@ -152,6 +152,7 @@
     house: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.4v9.6c0 .6.4 1 1 1H10v-5.5h4V20h3.2c.6 0 1-.4 1-1V9.4"/>',
     heart: '<path d="M12 20s-7.6-4.6-7.6-10.3A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.6 2.5C19.6 15.4 12 20 12 20Z"/>',
     clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.2 2"/>',
+    bag: '<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>',
     search: '<circle cx="10.6" cy="10.6" r="6.4"/><path d="m15.4 15.4 4.9 4.9"/>',
     close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
     sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.1M12 19.3v2.1M4.7 4.7l1.5 1.5M17.8 17.8l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.7 19.3l1.5-1.5M17.8 6.2l1.5-1.5"/>',
@@ -297,6 +298,8 @@
   var chatGlass = $('chat-glass');
   var playersGlass = $('players-glass');
   var playersEl = $('players');
+  var coinChip = $('coin-chip');
+  var shopHost = $('shop-host');
   var chatBtn = $('chat-btn');
   var chatBadge = chatBtn.querySelector('.chat-badge');
   var tabbar = $('tabbar');
@@ -315,9 +318,10 @@
     home: $('view-home'),
     favorites: $('view-favorites'),
     recent: $('view-recent'),
+    shop: $('view-shop'),
     search: $('view-search')
   };
-  var VIEW_ORDER = { home: 0, favorites: 1, recent: 2, search: 3 };
+  var VIEW_ORDER = { home: 0, favorites: 1, recent: 2, shop: 3, search: 4 };
 
   // ---------------------------------------------------------------------------
   // Liquid glass
@@ -1621,6 +1625,7 @@
     if (name === 'home') renderHome(entering);
     else if (name === 'favorites') renderFavorites(entering);
     else if (name === 'recent') renderRecent();
+    else if (name === 'shop') renderShopView();
     else if (name === 'search') renderSearch(entering);
   }
 
@@ -2013,7 +2018,7 @@
       // Player Count: this tab keeps counting as "on SahurHub" too (even if the hub tab is closed).
       if (window.SahurHubPlayers) {
         var here = d.createElement('script');
-        here.textContent = '(' + window.SahurHubPlayers.pingerSource + ')(' + JSON.stringify(window.SahurHubPlayers.base) + ');';
+        here.textContent = '(' + window.SahurHubPlayers.pingerSource + ')(' + JSON.stringify(window.SahurHubPlayers.base) + ', null, "game");';
         d.body.appendChild(here);
       }
       w.opener = null;
@@ -2293,6 +2298,7 @@
       chatLoading = Promise.all([loadChatCss(), import(CHAT_FILES + 'chat.js')]).then(function (res) {
         chatModule = res[1];
         chatModule.onBadge(updateChatBadge);
+        if (chatModule.onWallet) chatModule.onWallet(updateCoins);
         return chatModule;
       }).catch(function (err) {
         chatLoading = null;
@@ -2312,6 +2318,39 @@
     chatBadge.textContent = n ? (n > 99 ? '99+' : String(n)) : '';
     chatBtn.setAttribute('aria-label', 'Open SahurHub Chat' + (n ? ', ' + n + ' unread' : ''));
     document.dispatchEvent(new CustomEvent('sahurhub:chat', { detail: info }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Coins and the Shop tab. The chat server keeps everyone's coins; chat.js draws the
+  // shop (the same one as in the chat) into the Shop tab and tells us the coin count.
+  // ---------------------------------------------------------------------------
+
+  var COIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="#ffc83d" stroke="#e0a100" stroke-width="1.9"/><circle cx="12" cy="12" r="5.2" fill="none" stroke="#e0a100" stroke-width="1.5"/><path d="M12 9.2v5.6" stroke="#e0a100" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  var shopMounted = false;
+  var lastCoins = null;
+
+  function renderShopView() {
+    if (shopMounted) return;
+    shopMounted = true;
+    loadChat().then(function (m) {
+      shopHost.innerHTML = '';
+      if (m.mountShop) m.mountShop(shopHost);
+      else shopHost.innerHTML = '<p class="shop-loading">The shop is being updated. Reload the page in a minute.</p>';
+    }).catch(function () {
+      shopMounted = false;
+      shopHost.innerHTML = '<p class="shop-loading">The shop could not load. Check your connection and open this tab again.</p>';
+    });
+  }
+
+  // Coin count under the Chat button (only for people signed in to the chat).
+  function updateCoins(info) {
+    var w = info && info.wallet;
+    coinChip.hidden = !w;
+    if (!w) { lastCoins = null; return; }
+    coinChip.querySelector('.coin-text').textContent = w.coins.toLocaleString();
+    coinChip.setAttribute('aria-label', w.coins + ' coins. Open the shop');
+    if (lastCoins !== null && w.coins > lastCoins) bounce(coinChip.querySelector('.coin-ico'));
+    lastCoins = w.coins;
   }
 
   function openChat() {
@@ -2510,6 +2549,12 @@
       openStats();
     });
     streakChip.addEventListener('click', openStats);
+    coinChip.querySelector('.coin-ico').innerHTML = COIN_SVG;
+    coinChip.addEventListener('click', function () {
+      if (sheetIsOpen()) closeSheet();
+      if (state.searchOpen) closeSearch();
+      selectTab('shop');
+    });
     // Coming back to the tab (maybe on a new day) updates the streak.
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible' && window.SahurHubStats) {

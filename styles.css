@@ -912,6 +912,40 @@ body.ready #streak-chip { translate: 0 0; transition-delay: 0.1s, 0s; }
 #streak-chip:active { scale: 0.93; transition-duration: 0.1s; }
 .streak-fire { font-size: 13px; line-height: 1; }
 
+/* Coins (only for people signed in to SahurHub Chat), centered under the Chat button
+   (under Desktop on phones, where Chat sits too close to the Streak text). Opens the Shop tab. */
+#coin-chip {
+  position: fixed;
+  z-index: 30;
+  top: calc(var(--safe-top) + 62px);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap) + var(--chat-w) / 2);
+  transform: translateX(50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--label);
+  background: none;
+  translate: 0 -120px;
+  transition: translate 0.8s var(--spring), scale 0.25s var(--spring);
+}
+body.ready #coin-chip { translate: 0 0; transition-delay: 0.15s, 0s; }
+#coin-chip:active { scale: 0.93; transition-duration: 0.1s; }
+.coin-ico { display: block; width: 15px; height: 15px; }
+.coin-ico svg { display: block; width: 100%; height: 100%; }
+@media (max-width: 520px) {
+  #coin-chip { right: calc(var(--corner-right) + 44px + var(--top-gap) + var(--desktop-w) / 2); }
+}
+#shop-host { min-height: 260px; margin-top: 18px; }
+.shop-loading { margin: 0; padding: 36px 0; text-align: center; color: var(--label-2); }
+
 /* "Player Count" pill (left of Stats): an empty glass shape with the text on top,
    like the "next up" pill, so the number can change without redrawing the glass. */
 #players-glass {

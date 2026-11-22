@@ -14,7 +14,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.2.8/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=20261122d">
+  <link rel="stylesheet" href="styles.css?v=20261122s">
   <script>
     // Pick the theme and glass style before the page draws, so it never flashes
     // the wrong look. Both are chosen in Settings (the gear button).
@@ -124,6 +124,16 @@
           </div>
         </section>
 
+        <!-- Shop: coins and profile cosmetics for SahurHub Chat. The shop itself comes from
+             chat.js (mountShop), because the chat server keeps everyone's coins. -->
+        <section class="view" id="view-shop" data-title="Shop" aria-labelledby="shop-title">
+          <header class="view-header">
+            <h1 class="large-title" id="shop-title">Shop</h1>
+            <p class="subtitle">Banners, frames, name styles and effects for your SahurHub Chat profile.</p>
+          </header>
+          <div id="shop-host"><p class="shop-loading">Opening the shop...</p></div>
+        </section>
+
         <section class="view" id="view-search" data-title="Search" aria-labelledby="search-title">
           <header class="view-header">
             <h1 class="large-title" id="search-title">Search</h1>
@@ -168,6 +178,11 @@
       <span class="pl-dot" aria-hidden="true"></span><span class="pl-text"><span class="pl-label">Player Count: </span><b class="pl-count">-</b></span>
     </div>
 
+    <!-- Coins (SahurHub Chat accounts only), under the Chat button. Opens the Shop tab. -->
+    <button id="coin-chip" type="button" aria-label="Your coins. Open the shop" hidden>
+      <span class="coin-ico" aria-hidden="true"></span><span class="coin-text">0</span>
+    </button>
+
     <!-- SahurHub Chat button (the chat itself is chat.js and chat.css) -->
     <div class="glass glass-top" id="chat-glass" aria-hidden="true"></div>
     <button id="chat-btn" type="button" aria-label="Open SahurHub Chat" title="Chat">
@@ -192,6 +207,7 @@
       <button class="tab" type="button" data-view="home"><span data-icon="house"></span><span class="tab-label">Home</span></button>
       <button class="tab" type="button" data-view="favorites"><span data-icon="heart"></span><span class="tab-label">Favorites</span></button>
       <button class="tab" type="button" data-view="recent"><span data-icon="clock"></span><span class="tab-label">Recent</span></button>
+      <button class="tab" type="button" data-view="shop"><span data-icon="bag"></span><span class="tab-label">Shop</span></button>
     </nav>
 
     <div class="glass" id="tab-lens" aria-hidden="true"></div>
@@ -221,7 +237,7 @@
   <script src="games.js?v=20261122lm"></script>
   <script src="countdown.js"></script>
   <script src="stats.js?v=20261114d"></script>
-  <script src="presence.js?v=20261122"></script>
-  <script src="app.js?v=20261122d"></script>
+  <script src="presence.js?v=20261122s"></script>
+  <script src="app.js?v=20261122s"></script>
 </body>
 </html>

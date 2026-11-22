@@ -53,6 +53,7 @@
   --desktop-w: 116px;
   --chat-w: 92px;
   --stats-w: 96px;
+  --players-w: 150px; /* "Player Count" pill, left of Stats */
   --top-gap: 10px; /* space between the top-right buttons */
 
   color-scheme: light;
@@ -910,6 +911,77 @@ body.ready .glass-top { translate: 0 0; }
 body.ready #streak-chip { translate: 0 0; transition-delay: 0.1s, 0s; }
 #streak-chip:active { scale: 0.93; transition-duration: 0.1s; }
 .streak-fire { font-size: 13px; line-height: 1; }
+
+/* "Player Count" pill (left of Stats): an empty glass shape with the text on top,
+   like the "next up" pill, so the number can change without redrawing the glass. */
+#players-glass {
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 4 * var(--top-gap));
+  width: var(--players-w);
+  height: 44px;
+  pointer-events: none;
+}
+#players {
+  position: fixed;
+  z-index: 31;
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 4 * var(--top-gap));
+  width: var(--players-w);
+  height: 44px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+  color: var(--glass-label);
+  cursor: default;
+  translate: 0 -90px;
+  transition: translate 0.8s var(--spring);
+}
+body.ready #players { translate: 0 0; }
+.pl-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #8e8e93;
+  box-shadow: 0 0 0 3px rgba(142, 142, 147, 0.28);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+#players.is-live .pl-dot {
+  background: #30d158;
+  box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.28);
+  animation: plPulse 2.2s ease-in-out infinite;
+}
+@keyframes plPulse { 50% { box-shadow: 0 0 0 6px rgba(48, 209, 88, 0); } }
+.pl-count { font-weight: 750; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { #players.is-live .pl-dot { animation: none; } }
+/* The centered "SahurHub" title that shows when scrolled would touch the pill below this width. */
+@media (max-width: 1210px) { .compact-title { display: none; } }
+/* Phones and small tablets: no room in the top row, so the count sits under the buttons as
+   plain text (like the Streak text), just left of the Stats column. The empty glass goes
+   off-screen (hidden glass left on screen ghosts into the other glass). */
+@media (max-width: 760px) {
+  :root { --players-w: 0px; }
+  #players-glass { top: -200px; }
+  #players {
+    top: calc(var(--safe-top) + 62px);
+    right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 3 * var(--top-gap) + 18px);
+    width: auto;
+    height: 26px;
+    padding: 0 4px;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--label);
+    translate: 0 -120px;
+  }
+  .pl-dot { width: 7px; height: 7px; }
+}
 /* Up to 820px wide the pill would sit on top of the page titles (like "Recently
    Played"), so the page starts a little lower there. */
 @media (max-width: 820px) {
@@ -1493,7 +1565,7 @@ html.lg-ready #sheet::after {
   left: var(--nu-left);
   top: calc(var(--safe-top) + 12px);
   height: 44px;
-  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--chat-w) - var(--stats-w) - 3 * var(--top-gap) - 10px);
+  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--chat-w) - var(--stats-w) - var(--players-w) - 4 * var(--top-gap) - 10px);
   padding: 0 16px 0 14px;
   border-radius: 22px;
   overflow: hidden;

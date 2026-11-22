@@ -15,6 +15,8 @@
     openMode: 'sahurhub.openMode', glass: 'sahurhub.glass', snow: 'sahurhub.snow'
   };
   // Settings (the gear button). "auto" follows the device's light/dark setting.
+  // DEFAULT_THEME is used until the visitor picks one (keep in step with the head script in index.html).
+  var DEFAULT_THEME = 'christmas';
   var THEMES = [
     { id: 'auto', label: 'Auto' },
     { id: 'light', label: 'Light' },
@@ -292,6 +294,8 @@
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
   var chatGlass = $('chat-glass');
+  var playersGlass = $('players-glass');
+  var playersEl = $('players');
   var chatBtn = $('chat-btn');
   var chatBadge = chatBtn.querySelector('.chat-badge');
   var tabbar = $('tabbar');
@@ -319,7 +323,7 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, statsBtn, nextupGlass, chatGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, statsBtn, nextupGlass, chatGlass, playersGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
 
   // The sheet shows a game's details, Settings or Stats.
   function sheetIsOpen() { return !!(state.sheetGame || state.settingsOpen || state.statsOpen); }
@@ -342,7 +346,7 @@
     };
     var extra;
     if (el === settingsBtn || el === desktopBtn || el === statsBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
-    else if (el === nextupGlass || el === chatGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
+    else if (el === nextupGlass || el === chatGlass || el === playersGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
     else if (el === sheet) extra = { blurAmount: 1, refraction: 0.55, cornerRadius: 36, zRadius: 30, brightness: dark ? -0.36 : 0.26, saturation: 0.35, shadowOpacity: dark ? 0.55 : 0.24, shadowSpread: 30, shadowOffsetY: 10 };
@@ -357,7 +361,7 @@
   }
 
   function visibleGlass() {
-    var list = [settingsBtn, desktopBtn, statsBtn, nextupGlass, chatGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [settingsBtn, desktopBtn, statsBtn, nextupGlass, chatGlass, playersGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
     if (sheetIsOpen()) list.push(sheet);
     return list;
@@ -586,7 +590,7 @@
 
   function themeChoice() {
     var saved = storage.getRaw(KEYS.theme);
-    return THEMES.some(function (t) { return t.id === saved; }) ? saved : 'auto';
+    return THEMES.some(function (t) { return t.id === saved; }) ? saved : DEFAULT_THEME;
   }
 
   function isChristmas() { return document.documentElement.getAttribute('data-skin') === 'christmas'; }
@@ -618,7 +622,8 @@
 
   function setThemeChoice(choice, originEl) {
     if (!THEMES.some(function (t) { return t.id === choice; })) return;
-    if (choice === 'auto') storage.remove(KEYS.theme); else storage.setRaw(KEYS.theme, choice);
+    // Every choice is saved, Auto included (no saved choice now means the default, Christmas).
+    storage.setRaw(KEYS.theme, choice);
     var look = themeLook(choice);
     var same = look.dark === isDark() && look.christmas === isChristmas();
     if (same) { syncSettings(); document.dispatchEvent(new CustomEvent('sahurhub:theme')); return; }
@@ -1014,6 +1019,20 @@
     streakChip.querySelector('.streak-fire').textContent = '\u{1F525}';
     streakChip.querySelector('.streak-text').textContent = 'Streak: ' + n;
     streakChip.setAttribute('aria-label', 'Streak: ' + plural2(n, 'day', 'days') + '. Open stats');
+  }
+
+  // "Player Count" pill: presence.js pings the chat server every 30 s and gets back how
+  // many devices are on SahurHub right now. The dot is green while the number is live and
+  // grey (with "-") when the server can't be reached.
+  function startPlayerCount() {
+    if (!window.SahurHubPlayers || !playersEl) return;
+    var countEl = playersEl.querySelector('.pl-count');
+    window.SahurHubPlayers.start(function (n) {
+      var live = typeof n === 'number';
+      playersEl.classList.toggle('is-live', live);
+      countEl.textContent = live ? n.toLocaleString() : '-';
+      playersEl.title = live ? plural2(n, 'person', 'people') + ' on SahurHub right now' : 'Player count is offline right now';
+    });
   }
 
   function statsData() {
@@ -1967,6 +1986,12 @@
         timer.textContent = '(' + window.SahurHubStats.trackerSource + ')("game", ' + JSON.stringify(gameId) + ');';
         d.body.appendChild(timer);
       }
+      // Player Count: this tab keeps counting as "on SahurHub" too (even if the hub tab is closed).
+      if (window.SahurHubPlayers) {
+        var here = d.createElement('script');
+        here.textContent = '(' + window.SahurHubPlayers.pingerSource + ')(' + JSON.stringify(window.SahurHubPlayers.base) + ');';
+        d.body.appendChild(here);
+      }
       w.opener = null;
     } catch (e) {
       w.location.href = url;
@@ -2587,6 +2612,7 @@
       window.SahurHubStats.track('site');
     }
     updateStreakChip();
+    startPlayerCount();
     $('today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
     drawWallpaper();

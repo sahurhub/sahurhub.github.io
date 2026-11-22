@@ -14,13 +14,15 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.2.8/files/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=20261114f">
+  <link rel="stylesheet" href="styles.css?v=20261122pc">
   <script>
     // Pick the theme and glass style before the page draws, so it never flashes
     // the wrong look. Both are chosen in Settings (the gear button).
     (function () {
       var theme = null, glass = null;
       try { theme = localStorage.getItem('sahurhub.theme'); glass = localStorage.getItem('sahurhub.glass'); } catch (e) {}
+      // No theme picked yet: Christmas is the default (keep in step with DEFAULT_THEME in app.js).
+      if (theme !== 'auto' && theme !== 'light' && theme !== 'dark' && theme !== 'christmas') theme = 'christmas';
       var root = document.documentElement;
       var christmas = theme === 'christmas';
       var dark = christmas || (theme === 'light' || theme === 'dark' ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -148,6 +150,13 @@
       <span class="streak-fire" aria-hidden="true"></span><span class="streak-text">Streak: 1</span>
     </button>
 
+    <!-- "Player Count" pill, left of Stats: how many devices are on SahurHub right now
+         (presence.js asks the SahurHub Chat server; app.js fills in the number) -->
+    <div class="glass glass-top" id="players-glass" aria-hidden="true"></div>
+    <div id="players" title="People on SahurHub right now">
+      <span class="pl-dot" aria-hidden="true"></span><span class="pl-text"><span class="pl-label">Player Count: </span><b class="pl-count">-</b></span>
+    </div>
+
     <!-- SahurHub Chat button (the chat itself is chat.js and chat.css) -->
     <div class="glass glass-top" id="chat-glass" aria-hidden="true"></div>
     <button id="chat-btn" type="button" aria-label="Open SahurHub Chat" title="Chat">
@@ -201,6 +210,7 @@
   <script src="games.js?v=20261122lm"></script>
   <script src="countdown.js"></script>
   <script src="stats.js?v=20261114d"></script>
-  <script src="app.js?v=20261114e"></script>
+  <script src="presence.js?v=20261122"></script>
+  <script src="app.js?v=20261122pc"></script>
 </body>
 </html>

@@ -20,6 +20,16 @@
     // the wrong look. Both are chosen in Settings (the gear button).
     (function () {
       var theme = null, glass = null;
+      // One-time reset: everyone goes back to the default theme (Dots) once, even if they had
+      // picked another theme. After that, whatever they pick is kept. To do it again some day,
+      // change THEME_RESET to a new value.
+      var THEME_RESET = 'dots-20261122';
+      try {
+        if (localStorage.getItem('sahurhub.themeReset') !== THEME_RESET) {
+          localStorage.removeItem('sahurhub.theme');
+          localStorage.setItem('sahurhub.themeReset', THEME_RESET);
+        }
+      } catch (e) {}
       try { theme = localStorage.getItem('sahurhub.theme'); glass = localStorage.getItem('sahurhub.glass'); } catch (e) {}
       // No theme picked yet: Dots is the default (keep in step with DEFAULT_THEME in app.js).
       if (theme !== 'auto' && theme !== 'light' && theme !== 'dark' && theme !== 'christmas' && theme !== 'dots') theme = 'dots';

@@ -142,6 +142,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // The files are in games/pressure-washer-simulator/ in this repository. Offline only: progress is
+    // saved in the player's browser (no accounts, no server).
+    id: "pressure-washer-simulator",
+    title: "Pressure Washer Simulator",
+    category: "Simulator",
+    tags: ["pressure washer", "power wash", "washing", "cleaning", "satisfying", "jobs", "upgrades", "relaxing", "simulator", "3d"],
+    description: "Blast the grime off a driveway, a patio, a tagged van, a chip shop, a boat and a skate park. Get paid, buy a bigger tank, more pressure and a surface cleaner, and make Britain sparkle.",
+    icon: "bubbles",
+    colors: ["#3fb4ff", "#1466e0"],
+    url: "games/pressure-washer-simulator/",
+    cover: "covers/pressure-washer-simulator.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

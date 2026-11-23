@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pressure Washer Simulator</title>
+  <meta name="description" content="Blast the grime off driveways, vans, shopfronts and boats with a pressure washer.">
+  <meta name="theme-color" content="#1e9bff">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" crossorigin>
+</head>
+<body>
+  <div id="loading">
+    <div class="load-sky"></div>
+    <div class="load-bubbles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="load-card">
+      <div class="logo"><span class="w1" data-t="PRESSURE">PRESSURE</span><span class="w2" data-t="WASHER">WASHER</span><span class="w3" data-t="SIMULATOR">SIMULATOR</span></div>
+      <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
+      <div class="load-text" id="load-text">Unrolling the hose...</div>
+    </div>
+  </div>
+  <canvas id="game" tabindex="0" aria-label="Pressure Washer Simulator"></canvas>
+  <div id="ui"></div>
+  <noscript><p style="padding:20px;font-family:sans-serif">This game needs JavaScript.</p></noscript>
+  <script type="module" src="src/main.js?v=2"></script>
+</body>
+</html>

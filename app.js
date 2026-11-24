@@ -163,6 +163,7 @@
     chevron: '<path d="m9 5.5 6.5 6.5L9 18.5"/>',
     desktop: '<rect x="2.8" y="4" width="18.4" height="12.6" rx="2.6"/><path d="M8.6 20.2h6.8M12 16.6v3.6M7.6 13.2h8.8"/>',
     chat: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5Z"/><path d="M8.2 9.4h7.6M8.2 12.6h4.6"/>',
+    globe: '<circle cx="12" cy="12" r="8.6"/><path d="M3.6 12h16.8M12 3.4c2.4 2.4 3.6 5.3 3.6 8.6s-1.2 6.2-3.6 8.6c-2.4-2.4-3.6-5.3-3.6-8.6S9.6 5.8 12 3.4Z"/>',
     controller: '<path d="M7.5 7.5h9a4.6 4.6 0 0 1 4.5 5.6l-.7 3.4a2.4 2.4 0 0 1-4.1 1.1L14.4 15.7H9.6l-1.8 1.9a2.4 2.4 0 0 1-4.1-1.1L3 13.1a4.6 4.6 0 0 1 4.5-5.6Z"/><path d="M8 10.4v3.2M6.4 12h3.2"/>'
   };
 
@@ -296,6 +297,8 @@
   var desktopBtn = $('desktop-btn');
   var nextupGlass = $('nextup-glass');
   var chatGlass = $('chat-glass');
+  var browseGlass = $('browse-glass');
+  var browseBtn = $('browse-btn');
   var playersGlass = $('players-glass');
   var playersEl = $('players');
   var coinChip = $('coin-chip');
@@ -328,7 +331,7 @@
   // ---------------------------------------------------------------------------
 
   var lg = null;
-  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, statsBtn, nextupGlass, chatGlass, playersGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
+  var GLASS_ELEMENTS = [desktopBtn, settingsBtn, statsBtn, nextupGlass, chatGlass, browseGlass, playersGlass, tabbar, lensEl, searchbar, searchBtn, sheet];
 
   // The sheet shows a game's details, Settings or Stats.
   function sheetIsOpen() { return !!(state.sheetGame || state.settingsOpen || state.statsOpen); }
@@ -351,7 +354,7 @@
     };
     var extra;
     if (el === settingsBtn || el === desktopBtn || el === statsBtn) extra = { blurAmount: 0.3, cornerRadius: 22, zRadius: 16, button: true, shadowSpread: 10 };
-    else if (el === nextupGlass || el === chatGlass || el === playersGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
+    else if (el === nextupGlass || el === chatGlass || el === browseGlass || el === playersGlass) extra = { blurAmount: 0.36, cornerRadius: 22, zRadius: 16, shadowSpread: 10 };
     else if (el === searchBtn) extra = { blurAmount: 0.34, cornerRadius: 31, zRadius: 22, button: true };
     else if (el === lensEl) extra = { blurAmount: 0, refraction: 1.15, chromAberration: 0.14, edgeHighlight: 0.3, specular: 0.7, fresnel: dark ? 0.9 : 1.2, cornerRadius: 40, zRadius: 36, brightness: dark ? -0.08 : 0.08, saturation: 0.15, shadowOpacity: dark ? 0.4 : 0.22, shadowSpread: 16, shadowOffsetY: 6 };
     else if (el === sheet) extra = { blurAmount: 1, refraction: 0.55, cornerRadius: 36, zRadius: 30, brightness: dark ? -0.36 : 0.26, saturation: 0.35, shadowOpacity: dark ? 0.55 : 0.24, shadowSpread: 30, shadowOffsetY: 10 };
@@ -366,7 +369,7 @@
   }
 
   function visibleGlass() {
-    var list = [settingsBtn, desktopBtn, statsBtn, nextupGlass, chatGlass, playersGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
+    var list = [settingsBtn, desktopBtn, statsBtn, nextupGlass, chatGlass, browseGlass, playersGlass, searchBtn, state.searchOpen ? searchbar : tabbar];
     if (lens.shown) list.push(lensEl);
     if (sheetIsOpen()) list.push(sheet);
     return list;
@@ -2271,6 +2274,7 @@
     if (state.searchOpen) closeSearch();
     if (window.SahurHubCountdown) window.SahurHubCountdown.closePanel();
     if (chatModule) chatModule.close();
+    if (browseModule && browseModule.isOpen()) browseModule.close();
     state.desktopOpen = true;
     updateSnow(); // no snow behind Desktop Mode (saves battery)
     app.inert = true;
@@ -2382,19 +2386,19 @@
 
   var PATCH_KEY = 'sahurhub.patchSeen';
   var PATCH = {
-    id: '2026-11-22',
-    date: '22 November 2026',
+    id: '2026-11-24',
+    date: '24 November 2026',
     items: [
-      { icon: 'coin', color: '#ffc83d', title: 'Coins', text: 'Earn coins with your SahurHub Chat account: a daily reward that grows with your streak (with bonuses on day 7 and every 30 days), plus 1 coin a minute while you’re on SahurHub or playing an opsec, up to 60 a day. Your coins show under the Chat button.' },
-      { icon: 'bag', color: '#a368e8', title: 'The Shop', text: 'Spend coins on profile banners, avatar frames, name styles and profile effects. They show on your chat profile, your messages and the member list. Find the Shop tab at the bottom, or the Shop button in the chat.' },
-      { icon: 'live', color: '#30d158', title: 'Currently playing', text: 'Opsec cards now show how many people are playing them right now.' },
-      { icon: 'users', color: '#30d158', title: 'Player Count', text: 'See how many people are on SahurHub right now, next to the Stats button.' },
-      { icon: 'mower', color: '#5cc93b', title: 'New opsec: Lawn Mowing Simulator', text: 'Mow gardens, parks, a sports field and a golf course with five mowers. Earn money, buy upgrades, hats and pets, and run your own lawn care business.' },
-      { icon: 'dots', color: '#8e8e93', title: 'New theme: Dots', text: 'A dark charcoal look with a dotted background. It’s the new default; you can still pick Light, Dark, Christmas or Auto in Settings.' },
-      { icon: 'gear', color: '#5b8def', title: 'Fixes', text: 'On the Dots theme, the chat’s send button, the NEW badges and the Play button are easier to read.' }
+      { icon: 'globe', color: '#0a84ff', title: 'New: Browse', text: 'A web browser inside SahurHub. Press Browse at the top (between Chat and Desktop). Tabs, zoom, mute, fullscreen, sharing pages to the chat, and ads and trackers are blocked. Your tabs are saved for next time. You need a SahurHub Chat account to use it.' },
+      { icon: 'sliders', color: '#5e5ce6', title: 'Make Browse yours', text: 'In Browse settings (the gear) pick your search engine, a start page wallpaper, a compact sidebar, and dark mode for bright websites.' },
+      { icon: 'bag', color: '#a368e8', title: 'Browse themes in the Shop', text: 'Spend coins on sidebar themes for Browse, from Midnight to an animated Gold Rush. Find them in the Shop’s new Browse tab.' },
+      { icon: 'washer', color: '#30b0ff', title: 'New opsec: Pressure Washer Simulator', text: 'Blast dirt, moss and graffiti off driveways, vans, a chip shop, a boat and more. Earn money, buy upgrades and watch the before and after.' }
     ]
   };
   var PATCH_ICONS = {
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.6 12h16.8M12 3.4c2.4 2.4 3.6 5.3 3.6 8.6s-1.2 6.2-3.6 8.6c-2.4-2.4-3.6-5.3-3.6-8.6S9.6 5.8 12 3.4Z"/></svg>',
+    sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 7h9M18 7h1M5 17h1M10 17h9"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>',
+    washer: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h7l2 2v3H6a2 2 0 0 1-2-2Z"/><path d="M8 14v4M13 11.5h3"/><path d="M18 9.5l2.5-1.5M18 11.5h3M18 13.5l2.5 1.5"/></svg>',
     bag: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
     live: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2" fill="#fff" stroke="none"/><path d="M7.6 7.6a6.2 6.2 0 0 0 0 8.8M16.4 7.6a6.2 6.2 0 0 1 0 8.8M4.8 4.8a10.2 10.2 0 0 0 0 14.4M19.2 4.8a10.2 10.2 0 0 1 0 14.4"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.5"/><path d="M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/></svg>',
@@ -2466,6 +2470,72 @@
       chatBtn.classList.remove('is-loading');
       console.warn('SahurHub: the chat could not load.', err);
       showToast('The chat could not load. Check your connection.');
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Browse (added 2026-11-23): a web browser inside SahurHub. browse.js and
+  // browse.css load the first time the Browse button is pressed.
+  // ---------------------------------------------------------------------------
+
+  var BROWSE_VERSION = '?v=20261124b';
+  var browseModule = null;
+  var browseLoading = null;
+
+  function loadBrowse() {
+    if (browseModule) return Promise.resolve(browseModule);
+    if (!browseLoading) {
+      var css = new Promise(function (resolve) {
+        if (document.getElementById('browse-css')) { resolve(); return; }
+        var link = document.createElement('link');
+        link.id = 'browse-css';
+        link.rel = 'stylesheet';
+        link.href = 'browse.css' + BROWSE_VERSION;
+        link.onload = resolve;
+        link.onerror = resolve;
+        document.head.appendChild(link);
+      });
+      browseLoading = Promise.all([css, import('./browse.js' + BROWSE_VERSION)]).then(function (res) {
+        browseModule = res[1];
+        return browseModule;
+      });
+      browseLoading.catch(function () { browseLoading = null; });
+    }
+    return browseLoading;
+  }
+
+  var browseApi = {
+    loadChat: loadChat,
+    openChat: function () { loadChat().then(function (m) { m.open(chatBtn); }); },
+    // "Get more themes in the Shop": close Browse and go to the Shop tab
+    openShop: function () {
+      if (browseModule && browseModule.isOpen()) browseModule.close();
+      selectTab('shop');
+    },
+    toast: showToast,
+    onChange: function (open) {
+      document.body.classList.toggle('browse-open', open);
+      browseBtn.classList.toggle('is-active', open);
+      browseBtn.setAttribute('aria-pressed', open ? 'true' : 'false');
+      browseBtn.setAttribute('aria-label', open ? 'Close Browse' : 'Open Browse');
+      if (open) {
+        if (sheetIsOpen()) closeSheet(true);
+        if (state.searchOpen) closeSearch();
+        if (window.SahurHubCountdown) window.SahurHubCountdown.closePanel();
+      }
+      refreshGlass();
+    }
+  };
+
+  function toggleBrowse() {
+    browseBtn.classList.add('is-loading');
+    loadBrowse().then(function (m) {
+      browseBtn.classList.remove('is-loading');
+      if (m.isOpen()) m.close(); else m.open(browseApi);
+    }).catch(function (err) {
+      browseBtn.classList.remove('is-loading');
+      console.warn('SahurHub: Browse could not load.', err);
+      showToast('Browse could not load. Check your connection.');
     });
   }
 
@@ -2682,6 +2752,18 @@
       chatBtn.addEventListener(type, function () {
         chatBtn.classList.remove('is-pressed');
         chatGlass.classList.remove('is-pressed');
+      });
+    });
+
+    browseBtn.addEventListener('click', toggleBrowse);
+    browseBtn.addEventListener('pointerdown', function () {
+      browseBtn.classList.add('is-pressed');
+      browseGlass.classList.add('is-pressed');
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
+      browseBtn.addEventListener(type, function () {
+        browseBtn.classList.remove('is-pressed');
+        browseGlass.classList.remove('is-pressed');
       });
     });
 

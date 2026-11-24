@@ -52,6 +52,7 @@
   --corner-right: max(16px, calc((100vw - 1240px) / 2 + 24px));
   --desktop-w: 116px;
   --chat-w: 92px;
+  --browse-w: 108px;
   --stats-w: 96px;
   --players-w: 150px; /* "Player Count" pill, left of Stats */
   --top-gap: 10px; /* space between the top-right buttons */
@@ -59,7 +60,7 @@
   color-scheme: light;
 }
 @media (max-width: 520px) {
-  :root { --desktop-w: 44px; --chat-w: 44px; --stats-w: 44px; --top-gap: 6px; }
+  :root { --desktop-w: 44px; --browse-w: 44px; --chat-w: 44px; --stats-w: 44px; --top-gap: 6px; }
 }
 
 :root[data-theme="dark"] {
@@ -875,7 +876,7 @@ body.ready .glass-top { translate: 0 0; }
 
 /* Stats button (left of Chat) */
 #stats-btn {
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + 3 * var(--top-gap));
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + var(--chat-w) + 4 * var(--top-gap));
   width: var(--stats-w);
   height: 44px;
   padding: 0 4px;
@@ -900,7 +901,7 @@ body.ready .glass-top { translate: 0 0; }
   position: fixed;
   z-index: 30;
   top: calc(var(--safe-top) + 62px);
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + 3 * var(--top-gap) + var(--stats-w) / 2);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + var(--chat-w) + 4 * var(--top-gap) + var(--stats-w) / 2);
   transform: translateX(50%);
   display: flex;
   align-items: center;
@@ -927,7 +928,7 @@ body.ready #streak-chip { translate: 0 0; transition-delay: 0.1s, 0s; }
   position: fixed;
   z-index: 30;
   top: calc(var(--safe-top) + 62px);
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap) + var(--chat-w) / 2);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + 3 * var(--top-gap) + var(--chat-w) / 2);
   transform: translateX(50%);
   display: flex;
   align-items: center;
@@ -995,7 +996,7 @@ body.ready #coin-chip { translate: 0 0; transition-delay: 0.15s, 0s; }
 /* "Player Count" pill (left of Stats): an empty glass shape with the text on top,
    like the "next up" pill, so the number can change without redrawing the glass. */
 #players-glass {
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 4 * var(--top-gap));
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + var(--chat-w) + var(--stats-w) + 5 * var(--top-gap));
   width: var(--players-w);
   height: 44px;
   pointer-events: none;
@@ -1004,7 +1005,7 @@ body.ready #coin-chip { translate: 0 0; transition-delay: 0.15s, 0s; }
   position: fixed;
   z-index: 31;
   top: calc(var(--safe-top) + 12px);
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 4 * var(--top-gap));
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + var(--chat-w) + var(--stats-w) + 5 * var(--top-gap));
   width: var(--players-w);
   height: 44px;
   border-radius: 22px;
@@ -1049,7 +1050,7 @@ body.ready #players { translate: 0 0; }
   #players-glass { top: -200px; }
   #players {
     top: calc(var(--safe-top) + 62px);
-    right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--chat-w) + var(--stats-w) + 3 * var(--top-gap) + 18px);
+    right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + var(--chat-w) + var(--stats-w) + 4 * var(--top-gap) + 18px);
     width: auto;
     height: 26px;
     padding: 0 4px;
@@ -1070,7 +1071,7 @@ body.ready #players { translate: 0 0; }
 
 /* Chat button (left of Desktop): a plain button on top of an empty glass shape. */
 #chat-glass {
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + 3 * var(--top-gap));
   width: var(--chat-w);
   height: 44px;
   pointer-events: none;
@@ -1080,7 +1081,7 @@ body.ready #players { translate: 0 0; }
   position: fixed;
   z-index: 31;
   top: calc(var(--safe-top) + 12px);
-  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + var(--browse-w) + 3 * var(--top-gap));
   width: var(--chat-w);
   height: 44px;
   border-radius: 22px;
@@ -1122,6 +1123,44 @@ body.ready #chat-btn { translate: 0 0; }
 @keyframes badgePop { from { transform: scale(0); } }
 @media (max-width: 520px) {
   #chat-btn .chat-label { display: none; }
+}
+
+/* Browse button (between Chat and Desktop, added 2026-11-23): a plain button on an empty
+   glass shape, like Chat. Opens the Browse menu (browse.js, browse.css). */
+#browse-glass {
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
+  width: var(--browse-w);
+  height: 44px;
+  pointer-events: none;
+}
+#browse-glass.is-pressed { transform: scale(0.95); }
+#browse-btn {
+  position: fixed;
+  z-index: 31;
+  top: calc(var(--safe-top) + 12px);
+  right: calc(var(--corner-right) + 44px + var(--desktop-w) + 2 * var(--top-gap));
+  width: var(--browse-w);
+  height: 44px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  color: var(--glass-label);
+  translate: 0 -90px;
+  transition: translate 0.8s var(--spring), transform 0.45s var(--spring), background-color 0.25s, color 0.25s;
+}
+body.ready #browse-btn { translate: 0 0; }
+#browse-btn.is-pressed { transform: scale(0.95); transition-duration: 0.12s; }
+#browse-btn [data-icon] { width: 21px; height: 21px; }
+#browse-btn.is-loading [data-icon] { animation: pulse 0.9s ease-in-out infinite; }
+#browse-btn.is-active { background: var(--label); color: var(--bg); }
+@media (max-width: 520px) {
+  #browse-btn .browse-label { display: none; }
 }
 
 /* Bottom bar: tab bar + search button, or search field + close button. */
@@ -1651,7 +1690,7 @@ html.lg-ready #sheet::after {
   left: var(--nu-left);
   top: calc(var(--safe-top) + 12px);
   height: 44px;
-  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--chat-w) - var(--stats-w) - var(--players-w) - 4 * var(--top-gap) - 10px);
+  max-width: calc(100vw - var(--nu-left) - var(--corner-right) - 44px - var(--desktop-w) - var(--browse-w) - var(--chat-w) - var(--stats-w) - var(--players-w) - 5 * var(--top-gap) - 10px);
   padding: 0 16px 0 14px;
   border-radius: 22px;
   overflow: hidden;

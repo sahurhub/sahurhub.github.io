@@ -2389,7 +2389,7 @@
     id: '2026-11-24',
     date: '24 November 2026',
     items: [
-      { icon: 'globe', color: '#0a84ff', title: 'New: Browse', text: 'A web browser inside SahurHub. Press Browse at the top (between Chat and Desktop). Tabs, zoom, mute, fullscreen, sharing pages to the chat, and ads and trackers are blocked. Your tabs are saved for next time. You need a SahurHub Chat account to use it.' },
+      { icon: 'globe', color: '#0a84ff', title: 'New: Browse', text: 'A web browser inside SahurHub. Press Browse at the top (between Chat and Desktop). Tabs, Quick open shortcuts (GeForce NOW, YouTube, TikTok, or add your own), zoom, mute, fullscreen, a sidebar you can drag wider or narrower, sharing pages to the chat, and ads and trackers are blocked. Your tabs are saved for next time. You need a SahurHub Chat account to use it.' },
       { icon: 'sliders', color: '#5e5ce6', title: 'Make Browse yours', text: 'In Browse settings (the gear) pick your search engine, a start page wallpaper, a compact sidebar, and dark mode for bright websites.' },
       { icon: 'bag', color: '#a368e8', title: 'Browse themes in the Shop', text: 'Spend coins on sidebar themes for Browse, from Midnight to an animated Gold Rush. Find them in the Shop’s new Browse tab.' },
       { icon: 'washer', color: '#30b0ff', title: 'New opsec: Pressure Washer Simulator', text: 'Blast dirt, moss and graffiti off driveways, vans, a chip shop, a boat and more. Earn money, buy upgrades and watch the before and after.' }
@@ -2478,7 +2478,7 @@
   // browse.css load the first time the Browse button is pressed.
   // ---------------------------------------------------------------------------
 
-  var BROWSE_VERSION = '?v=20261124b';
+  var BROWSE_VERSION = '?v=20261124c';
   var browseModule = null;
   var browseLoading = null;
 

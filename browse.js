@@ -41,7 +41,28 @@ const WALLPAPERS = [
   { id: 'sunset', name: 'Sunset' }, { id: 'ocean', name: 'Ocean' }, { id: 'midnight', name: 'Midnight' }
 ];
 
-let prefs = { engine: 'brave', wallpaper: 'dots', compact: false, darkSites: false };
+// Quick open: shortcut tiles on the start page (saved on this device; you can add and remove them).
+const SHORTCUTS_KEY = 'sahurhub.browse.shortcuts';
+const MAX_SHORTCUTS = 16;
+const DEFAULT_SHORTCUTS = [
+  { name: 'GeForce NOW', url: 'https://play.geforcenow.com/' },
+  { name: 'YouTube', url: 'https://www.youtube.com/' },
+  { name: 'TikTok', url: 'https://www.tiktok.com/' }
+];
+let shortcuts = DEFAULT_SHORTCUTS.slice();
+try {
+  const saved = JSON.parse(localStorage.getItem(SHORTCUTS_KEY) || 'null');
+  if (Array.isArray(saved)) shortcuts = saved.filter((s) => s && /^https?:\/\//i.test(s.url)).slice(0, MAX_SHORTCUTS).map((s) => ({ name: String(s.name || '').slice(0, 40), url: String(s.url) }));
+} catch (e) {}
+function saveShortcuts() { try { localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(shortcuts)); } catch (e) {} }
+let quickEdit = false;
+
+// Sidebar width (drag the handle between the sidebar and the website).
+const SIDE_MIN = 200;
+const SIDE_MAX = 440;
+const SIDE_DEFAULT = 256;
+
+let prefs = { engine: 'brave', wallpaper: 'dots', compact: false, darkSites: false, sideWidth: SIDE_DEFAULT };
 try { prefs = Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS_KEY) || '{}')); } catch (e) {}
 function engine() { return ENGINES.find((x) => x.id === prefs.engine) || ENGINES[0]; }
 function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {} }
@@ -207,6 +228,7 @@ function build() {
         <button class="br-iconbtn br-owner-btn" type="button" data-act="owner" aria-label="Browse controls (Owner)" title="Browse controls (Owner)" hidden>${ico('sliders')}</button>
       </div>
     </aside>
+    <div class="br-resizer" role="separator" aria-orientation="vertical" aria-label="Drag to resize the sidebar" title="Drag to resize. Double-click to reset." tabindex="0"><span></span></div>
     <section class="br-main">
       <div class="br-card">
         <div class="br-host"></div>
@@ -218,6 +240,10 @@ function build() {
               <span>${ico('search')}</span>
               <input type="text" spellcheck="false" autocapitalize="off" aria-label="Search or address">
             </form>
+            <div class="br-quick">
+              <div class="br-quick-head"><span>Quick open</span><button class="br-link" type="button" data-act="quick-edit">Edit</button></div>
+              <div class="br-quick-grid"></div>
+            </div>
             <p class="br-start-note">${ico('shield')}Ads and trackers are blocked</p>
           </div>
         </div>
@@ -245,6 +271,10 @@ function build() {
   el.start = root.querySelector('.br-start');
   el.startForm = root.querySelector('.br-start-form');
   el.startInput = el.startForm.querySelector('input');
+  el.quick = root.querySelector('.br-quick');
+  el.quickGrid = root.querySelector('.br-quick-grid');
+  el.quickEditBtn = root.querySelector('[data-act="quick-edit"]');
+  el.resizer = root.querySelector('.br-resizer');
   el.msg = root.querySelector('.br-msg');
   el.scrim = root.querySelector('.br-scrim');
   el.panel = root.querySelector('.br-panel');
@@ -257,7 +287,7 @@ function build() {
 
   root.addEventListener('click', onClick);
   root.addEventListener('pointerdown', (e) => {
-    const b = e.target.closest('.br-iconbtn, .br-newtab, .br-zoom-val, .br-tab, .br-engine, .br-wall, .br-theme, .br-btn');
+    const b = e.target.closest('.br-iconbtn, .br-newtab, .br-zoom-val, .br-tab, .br-engine, .br-wall, .br-theme, .br-btn, .br-qt-btn, .br-qt-del');
     if (b && !b.disabled) b.classList.add('is-pressed');
   });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => root.addEventListener(t, () => {
@@ -270,12 +300,25 @@ function build() {
   el.startForm.addEventListener('submit', (e) => { e.preventDefault(); navigate(el.startInput.value); el.startInput.value = ''; });
   el.tabs.addEventListener('auxclick', (e) => { const t = e.target.closest('[data-tab]'); if (t && e.button === 1) { e.preventDefault(); closeTab(t.dataset.tab); } });
   el.scrim.addEventListener('click', () => closePanel());
+  el.resizer.addEventListener('pointerdown', startResize);
+  el.resizer.addEventListener('dblclick', () => setSideWidth(SIDE_DEFAULT, true));
+  el.resizer.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    setSideWidth((prefs.sideWidth || SIDE_DEFAULT) + (e.key === 'ArrowRight' ? 16 : -16), true);
+  });
+  root.addEventListener('submit', (e) => {
+    if (!e.target.classList.contains('br-sc-form')) return;
+    e.preventDefault();
+    addShortcut(e.target);
+  });
   root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panel) { e.stopPropagation(); closePanel(); } });
   document.addEventListener('fullscreenchange', render);
   window.addEventListener('message', onHostMessage);
   window.addEventListener('resize', () => { if (opened) queueRender(); });
   setInterval(checkTicketAge, 5 * 60 * 1000);
   applyPrefs();
+  renderQuick(false);
 }
 
 // ---------------------------------------------------------------- open / close
@@ -616,6 +659,15 @@ function onClick(e) {
     case 'switch': setPref(b.dataset.pref, !prefs[b.dataset.pref]); break;
     case 'theme': pickTheme(b); break;
     case 'shop': closePanel(true); if (api && api.openShop) api.openShop(); break;
+    case 'quick': {
+      if (quickEdit) break;
+      const s = shortcuts[Number(b.dataset.i)];
+      if (s) { bounce(b.querySelector('.br-qt-ico')); setTimeout(() => navigate(s.url), 120); }
+      break;
+    }
+    case 'quick-del': removeShortcut(Number(b.dataset.i), b); break;
+    case 'quick-edit': toggleQuickEdit(); break;
+    case 'quick-add': quickEdit = false; renderQuick(false); togglePanel('shortcut'); break;
   }
 }
 
@@ -630,6 +682,152 @@ function shieldPop() {
   if (shieldPop.at && now - shieldPop.at < 700) return;
   shieldPop.at = now;
   spring(el.shield.querySelector('svg'), [{ transform: 'scale(1.35) rotate(-8deg)' }, { transform: 'none' }], SPRING.pop);
+}
+
+// ---------------------------------------------------------------- resizing the sidebar (drag the handle)
+// Drag left or right to make the sidebar (and so the website) narrower or wider. Dragging it
+// right down snaps to the compact sidebar; dragging out of compact opens it again.
+
+function sideAnim(fromW) {
+  const now = el.side.getBoundingClientRect().width;
+  if (Math.abs(now - fromW) > 1) spring(el.side, [{ width: fromW + 'px' }, { width: now + 'px' }], SPRING.snap);
+}
+
+function setSideWidth(w, animate) {
+  const from = el.side.getBoundingClientRect().width;
+  prefs.sideWidth = Math.round(Math.max(SIDE_MIN, Math.min(SIDE_MAX, w)));
+  if (prefs.compact) prefs.compact = false;
+  savePrefs();
+  applyPrefs();
+  if (animate) sideAnim(from);
+  queueRender();
+  if (panel === 'prefs') updatePrefs();
+}
+
+function startResize(e) {
+  if (narrow() || e.button !== 0) return;
+  e.preventDefault();
+  const r = el.resizer;
+  try { r.setPointerCapture(e.pointerId); } catch (err) {}
+  r.classList.add('is-drag');
+  root.classList.add('is-resizing');
+  const left = el.side.getBoundingClientRect().left;
+  const move = (ev) => {
+    const w = ev.clientX - left - 6;
+    if (prefs.compact) {
+      if (w > 160) { const from = el.side.getBoundingClientRect().width; prefs.compact = false; prefs.sideWidth = Math.max(SIDE_MIN, Math.min(SIDE_MAX, w)); applyPrefs(); sideAnim(from); }
+      return;
+    }
+    if (w < 130) { const from = el.side.getBoundingClientRect().width; prefs.compact = true; applyPrefs(); sideAnim(from); return; }
+    prefs.sideWidth = Math.round(Math.max(SIDE_MIN, Math.min(SIDE_MAX, w)));
+    root.style.setProperty('--side-w', prefs.sideWidth + 'px');
+    queueRender();
+  };
+  const up = () => {
+    r.removeEventListener('pointermove', move);
+    r.removeEventListener('pointerup', up);
+    r.removeEventListener('pointercancel', up);
+    r.classList.remove('is-drag');
+    root.classList.remove('is-resizing');
+    savePrefs();
+    queueRender();
+    if (panel === 'prefs') updatePrefs();
+  };
+  r.addEventListener('pointermove', move);
+  r.addEventListener('pointerup', up);
+  r.addEventListener('pointercancel', up);
+}
+
+// ---------------------------------------------------------------- Quick open (shortcut tiles on the start page)
+
+function hueOf(s) { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+
+// A tile's picture: known sites get their colours, everything else a letter on a colour picked from its name.
+function quickIcon(s) {
+  const host = hostOf(s.url);
+  if (/(^|\.)(youtube\.com|youtu\.be)$/.test(host)) return { bg: '#ff0033', html: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="4" fill="#fff"/><path d="M10.2 9.2v5.6l4.8-2.8Z" fill="#ff0033"/></svg>' };
+  if (/(^|\.)tiktok\.com$/.test(host)) return { bg: '#111114', html: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 4.5v9.8a3.2 3.2 0 1 1-2.8-3.2" stroke="#25f4ee" transform="translate(-.8 -.6)"/><path d="M13.6 4.5c.4 2.2 2 3.7 4.2 3.9" stroke="#25f4ee" transform="translate(-.8 -.6)"/><path d="M13.6 4.5v9.8a3.2 3.2 0 1 1-2.8-3.2" stroke="#fe2c55" transform="translate(.8 .6)"/><path d="M13.6 4.5c.4 2.2 2 3.7 4.2 3.9" stroke="#fe2c55" transform="translate(.8 .6)"/><path d="M13.6 4.5v9.8a3.2 3.2 0 1 1-2.8-3.2M13.6 4.5c.4 2.2 2 3.7 4.2 3.9" stroke="#fff"/></svg>' };
+  if (/(^|\.)(geforcenow\.com|nvidia\.com)$/.test(host)) return { bg: '#76b900', html: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="11" rx="2.5"/><path d="M10.3 8.6v4.8l4-2.4Z" fill="#fff"/><path d="M9 19.5h6"/></svg>' };
+  const letter = esc(siteLetter(host) || String(s.name || '?').charAt(0).toUpperCase());
+  return { bg: `hsl(${hueOf(host || s.name)} 62% 46%)`, html: `<span>${letter}</span>` };
+}
+
+function renderQuick(animate) {
+  if (!el.quickGrid) return;
+  el.quick.classList.toggle('is-editing', quickEdit);
+  el.quickEditBtn.textContent = quickEdit ? 'Done' : 'Edit';
+  el.quickGrid.innerHTML = shortcuts.map((s, i) => {
+    const ic = quickIcon(s);
+    const name = s.name || hostOf(s.url);
+    return `<div class="br-qt" style="--d:${(i % 5) * -0.07}s">
+      <button class="br-qt-btn" type="button" data-act="quick" data-i="${i}" title="${esc(s.url)}"><span class="br-qt-ico" style="background:${esc(ic.bg)}">${ic.html}</span><span class="br-qt-name">${esc(name)}</span></button>
+      <button class="br-qt-del" type="button" data-act="quick-del" data-i="${i}" aria-label="Remove ${esc(name)}">${ico('minus')}</button>
+    </div>`;
+  }).join('') + (shortcuts.length < MAX_SHORTCUTS ? `<div class="br-qt"><button class="br-qt-btn is-add" type="button" data-act="quick-add"><span class="br-qt-ico">${ico('plus')}</span><span class="br-qt-name">Add</span></button></div>` : '');
+  if (animate) {
+    el.quickGrid.querySelectorAll('.br-qt').forEach((t, i) => {
+      spring(t, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRING.pop, { delay: 120 + i * 35, fill: 'backwards' });
+    });
+  }
+}
+
+function toggleQuickEdit() {
+  quickEdit = !quickEdit;
+  renderQuick(false);
+  if (quickEdit) el.quickGrid.querySelectorAll('.br-qt-del').forEach((d, i) => spring(d, [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], SPRING.pop, { delay: i * 25, fill: 'backwards' }));
+}
+
+function removeShortcut(i, btn) {
+  const tile = btn && btn.closest('.br-qt');
+  const done = () => {
+    shortcuts.splice(i, 1);
+    saveShortcuts();
+    renderQuick(false);
+  };
+  if (!tile) { done(); return; }
+  const a = ease(tile, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.3)', opacity: 0 }], 200, EASE_IN, { fill: 'forwards' });
+  (a ? a.finished : Promise.resolve()).then(done, done);
+}
+
+function buildShortcutForm() {
+  el.panel.innerHTML = `<div class="br-panel-in">
+    ${panelHead('Add to Quick open')}
+    <form class="br-sc-form br-sec" autocomplete="off">
+      <label class="br-label" for="br-sc-url">Web address</label>
+      <input class="br-input" id="br-sc-url" name="url" type="text" inputmode="url" spellcheck="false" autocapitalize="off" placeholder="example.com" required>
+      <label class="br-label" for="br-sc-name">Name (optional)</label>
+      <input class="br-input" id="br-sc-name" name="name" type="text" maxlength="40" placeholder="My site">
+      <p class="br-sc-err" hidden></p>
+      <button class="br-btn" type="submit">${ico('plus')}Add</button>
+      <p class="br-muted br-small">Tip: the page you're on now can be added with this too.</p>
+    </form>
+  </div>`;
+  const t = active();
+  const urlIn = el.panel.querySelector('[name="url"]');
+  if (t && t.url) { urlIn.value = t.url; el.panel.querySelector('[name="name"]').value = (t.title || '').slice(0, 40); }
+  setTimeout(() => { if (matchMedia('(hover: hover)').matches) urlIn.focus(); }, 260);
+}
+
+function addShortcut(form) {
+  const err = form.querySelector('.br-sc-err');
+  let url = form.url.value.trim();
+  if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+  let host = '';
+  try { host = new URL(url).hostname; } catch (e) {}
+  if (!host || !/\./.test(host)) {
+    err.textContent = 'Type a web address, for example youtube.com.';
+    err.hidden = false;
+    spring(form.url, [{ transform: 'translateX(-8px)' }, { transform: 'none' }], SPRING.pop);
+    return;
+  }
+  if (shortcuts.length >= MAX_SHORTCUTS) { err.textContent = 'Quick open is full. Remove one first.'; err.hidden = false; return; }
+  shortcuts.push({ name: form.name.value.trim().slice(0, 40) || hostOf(url), url });
+  saveShortcuts();
+  closePanel();
+  renderQuick(false);
+  const last = el.quickGrid.querySelectorAll('.br-qt')[shortcuts.length - 1];
+  if (last) spring(last, [{ transform: 'scale(.4)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRING.pop);
+  if (api) api.toast('Added to Quick open.');
 }
 
 // ---------------------------------------------------------------- compact sidebar ("peek" opens it over the page while typing)
@@ -663,6 +861,8 @@ function setPref(key, value) {
 
 function applyPrefs() {
   root.classList.toggle('is-compact', !!prefs.compact);
+  const w = Math.max(SIDE_MIN, Math.min(SIDE_MAX, Number(prefs.sideWidth) || SIDE_DEFAULT));
+  root.style.setProperty('--side-w', w + 'px');
   el.start.dataset.wall = WALLPAPERS.some((w) => w.id === prefs.wallpaper) ? prefs.wallpaper : 'dots';
   applyTheme();
 }
@@ -729,8 +929,10 @@ function togglePanel(kind) {
   el.scrim.hidden = false;
   el.panel.hidden = false;
   el.panel.className = 'br-panel is-' + kind;
-  el.panel.setAttribute('aria-label', kind === 'owner' ? 'Browse controls' : 'Browse settings');
-  if (kind === 'prefs') buildPrefs(); else { ownerData = null; renderOwner(); loadOwner(); }
+  el.panel.setAttribute('aria-label', kind === 'owner' ? 'Browse controls' : kind === 'shortcut' ? 'Add to Quick open' : 'Browse settings');
+  if (kind === 'prefs') buildPrefs();
+  else if (kind === 'shortcut') buildShortcutForm();
+  else { ownerData = null; renderOwner(); loadOwner(); }
   render();
   const sheet = narrow();
   ease(el.scrim, [{ opacity: 0 }, { opacity: 1 }], 260);
@@ -1018,8 +1220,10 @@ function render() {
   el.start.hidden = !showStart;
   if (showStart && !startShown && opened) {
     spring(el.start.querySelector('.br-start-logo'), [{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRING.pop);
-    stagger(el.start.querySelectorAll('h2, .br-start-form, .br-start-note'), 60, 45);
+    stagger(el.start.querySelectorAll('h2, .br-start-form, .br-quick-head, .br-start-note'), 60, 45);
+    renderQuick(true);
   }
+  if (!showStart && quickEdit) { quickEdit = false; renderQuick(false); }
   startShown = showStart;
   el.host.classList.toggle('is-shown', ready && hasUrl);
 

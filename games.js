@@ -166,6 +166,7 @@ window.SAHURHUB_GAMES = [
     icon: "car",
     colors: ["#2f8cff", "#0d1b33"],
     url: "games/driver-online-usa/",
+    cover: "covers/driver-online-usa.jpg",
     isNew: true
   },
   {

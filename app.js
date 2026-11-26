@@ -229,6 +229,7 @@
         cover: COVER_RE.test(String(g.cover || '')) ? String(g.cover) : '',
         newTabOnly: !!g.newTabOnly,
         featured: !!g.featured,
+        featuredFit: g.featuredFit === 'full' ? 'full' : '',
         isNew: !!g.isNew
       };
       game.nTitle = normalize(game.title);
@@ -1438,8 +1439,11 @@
     var slot = $('featured-slot');
     var g = GAMES.filter(function (x) { return x.featured; })[0];
     if (!g) { slot.innerHTML = ''; return; }
+    // featuredFit "full": the whole picture on the right with a blurred copy behind (styles.css).
+    var full = !!(g.cover && g.featuredFit === 'full');
     slot.innerHTML =
-      '<article class="featured' + (g.cover ? ' has-cover' : '') + '" style="' + artStyle(g) + '">' +
+      '<article class="featured' + (g.cover ? ' has-cover' : '') + (full ? ' fit-full' : '') + '" style="' + artStyle(g) + '">' +
+        (full ? '<span class="featured-backdrop" aria-hidden="true">' + coverImg(g, 'featured-backdrop-img') + '</span>' : '') +
         (g.cover ? coverImg(g, 'featured-cover') : '') +
         '<span class="featured-clip" aria-hidden="true"><span class="featured-shine"></span></span>' +
         '<span class="snowcap" aria-hidden="true"></span>' +

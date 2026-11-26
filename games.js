@@ -25,6 +25,8 @@
                 small spots (like the Recently Played row) only show the middle square.
                 Without a cover the card shows the icon and colors instead.
     featured    true for the game shown in the big banner at the top (pick one)
+    featuredFit "full" to show the whole cover picture in the banner (on the right, with a
+                blurred copy behind the text) instead of zooming in to fill it. Wider screens only.
     isNew       true to show a "NEW" badge
 
   The placeholder opsecs were removed on 2026-11-26; only real games are listed.
@@ -104,12 +106,13 @@ window.SAHURHUB_GAMES = [
     title: "Turbo Town",
     category: "Racing",
     tags: ["racing", "f1", "le mans", "race cars", "drift", "items", "grand prix", "time trials", "free roam", "city", "multiplayer", "online", "friends", "chat", "3d", "racing bros"],
-    description: "Chunky arcade racing with real F1 and Le Mans cars: 8 seasonal maps, items and drifting, plus Turbo City to drive around freely, alone or with anyone online. Race the computer or up to 11 friends, and talk in the chat. Sign in with your SahurHub Chat account.",
+    description: "Chunky arcade racing with real F1 and Le Mans cars. Race your friends online or cruise around Turbo City.",
     icon: "car",
     colors: ["#ffd23f", "#2fb6ff"],
     url: "games/turbo-town/",
     cover: "covers/turbo-town.jpg",
     featured: true,
+    featuredFit: "full",
     isNew: true
   },
   {

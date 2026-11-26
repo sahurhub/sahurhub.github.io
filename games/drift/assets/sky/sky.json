@@ -1,0 +1,12 @@
+{
+ "sunDir": [
+  0.591,
+  0.6817,
+  0.4313
+ ],
+ "rot": 0,
+ "sunElevationDeg": 43.0,
+ "credits": {
+  "sunny": "https://polyhaven.com/a/sunflowers_puresky"
+ }
+}

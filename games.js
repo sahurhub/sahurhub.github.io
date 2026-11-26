@@ -156,6 +156,20 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
+    // Drift!. The files are in games/drift/ in this repository. Players sign in with their SahurHub
+    // Chat account; the game server is drift-79-72-86-205.nip.io (user service drift, port 10008).
+    id: "drift",
+    title: "Drift!",
+    category: "Racing",
+    tags: ["drift", "drifting", "cars", "tandem", "free roam", "open world", "coast", "tyre smoke", "multiplayer", "online", "rooms", "chat", "3d"],
+    description: "Slide round a sunny seaside county with up to 20 friends: a coast road, village lanes, hairpins, the docks and an airfield. 11 cars, all free, drift assists you can switch off, tyre smoke and loose bonnets and doors. Sign in with your SahurHub Chat account.",
+    icon: "car",
+    colors: ["#ff5a1f", "#15213b"],
+    url: "games/drift/",
+    cover: "covers/drift.jpg",
+    isNew: true
+  },
+  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

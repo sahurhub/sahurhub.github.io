@@ -27,7 +27,7 @@
     featured    true for the game shown in the big banner at the top (pick one)
     isNew       true to show a "NEW" badge
 
-  Everything below is a placeholder. Replace it with your real games.
+  The placeholder opsecs were removed on 2026-11-26; only real games are listed.
 */
 window.SAHURHUB_GAMES = [
   {
@@ -168,127 +168,5 @@ window.SAHURHUB_GAMES = [
     url: "games/drift/",
     cover: "covers/drift.jpg",
     isNew: true
-  },
-  {
-    id: "sky-runner",
-    title: "Sky Runner",
-    category: "Arcade",
-    tags: ["runner", "endless", "jump", "one tap"],
-    description: "Placeholder opsec. Dash across floating islands and see how far you can get before you fall.",
-    icon: "rocket",
-    colors: ["#5ac8fa", "#3a5bff"],
-    url: ""
-  },
-  {
-    id: "neon-drift",
-    title: "Neon Drift",
-    category: "Racing",
-    tags: ["cars", "drift", "speed", "night"],
-    description: "Placeholder opsec. Slide through glowing city streets and chain drifts for a high score.",
-    icon: "car",
-    colors: ["#ff2d55", "#8e3cff"],
-    url: "",
-    isNew: true
-  },
-  {
-    id: "block-builder",
-    title: "Block Builder",
-    category: "Puzzle",
-    tags: ["blocks", "building", "relaxing"],
-    description: "Placeholder opsec. Fit falling blocks together and clear the board.",
-    icon: "cube",
-    colors: ["#ff9f0a", "#ff375f"],
-    url: ""
-  },
-  {
-    id: "pixel-quest",
-    title: "Pixel Quest",
-    category: "Action",
-    tags: ["adventure", "retro", "rpg", "sword"],
-    description: "Placeholder opsec. A small retro adventure with dungeons, loot and a big final boss.",
-    icon: "sword",
-    colors: ["#30d158", "#0a84ff"],
-    url: ""
-  },
-  {
-    id: "tower-stack",
-    title: "Tower Stack",
-    category: "Arcade",
-    tags: ["stacking", "timing", "one tap"],
-    description: "Placeholder opsec. Drop each floor at the perfect moment and build the tallest tower.",
-    icon: "castle",
-    colors: ["#ffd60a", "#ff9f0a"],
-    url: ""
-  },
-  {
-    id: "star-hopper",
-    title: "Star Hopper",
-    category: "Action",
-    tags: ["space", "platformer", "stars"],
-    description: "Placeholder opsec. Jump from planet to planet and collect every star.",
-    icon: "star",
-    colors: ["#5e5ce6", "#bf5af2"],
-    url: "",
-    isNew: true
-  },
-  {
-    id: "maze-master",
-    title: "Maze Master",
-    category: "Puzzle",
-    tags: ["maze", "brain", "logic"],
-    description: "Placeholder opsec. Find the way out of mazes that get trickier every level.",
-    icon: "target",
-    colors: ["#64d2ff", "#30d158"],
-    url: ""
-  },
-  {
-    id: "turbo-kart",
-    title: "Turbo Kart",
-    category: "Racing",
-    tags: ["karts", "boost", "multiplayer"],
-    description: "Placeholder opsec. Short, chaotic kart races with boosts on every corner.",
-    icon: "bolt",
-    colors: ["#ff453a", "#ff9f0a"],
-    url: ""
-  },
-  {
-    id: "bubble-pop",
-    title: "Bubble Pop",
-    category: "Puzzle",
-    tags: ["match", "casual", "colors"],
-    description: "Placeholder opsec. Match three bubbles of the same color to pop them.",
-    icon: "bubbles",
-    colors: ["#ff6482", "#ffb340"],
-    url: ""
-  },
-  {
-    id: "castle-siege",
-    title: "Castle Siege",
-    category: "Strategy",
-    tags: ["tower defense", "castles", "waves"],
-    description: "Placeholder opsec. Build defenses and hold your castle against wave after wave.",
-    icon: "crown",
-    colors: ["#8e8e93", "#5e5ce6"],
-    url: ""
-  },
-  {
-    id: "space-miner",
-    title: "Space Miner",
-    category: "Strategy",
-    tags: ["idle", "mining", "space", "upgrades"],
-    description: "Placeholder opsec. Mine asteroids, upgrade your ship and expand your space station.",
-    icon: "gem",
-    colors: ["#00c7be", "#5856d6"],
-    url: ""
-  },
-  {
-    id: "arena-clash",
-    title: "Arena Clash",
-    category: "Multiplayer",
-    tags: ["pvp", "online", "friends"],
-    description: "Placeholder opsec. Quick online battles against friends.",
-    icon: "controller",
-    colors: ["#bf5af2", "#ff375f"],
-    url: ""
   }
 ];

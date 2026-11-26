@@ -156,20 +156,6 @@ window.SAHURHUB_GAMES = [
     isNew: true
   },
   {
-    // Driver Online USA. The files are in games/driver-online-usa/ in this repository. Players sign
-    // in with their SahurHub Chat account; the game server is driveronline-79-72-86-205.nip.io.
-    id: "driver-online-usa",
-    title: "Driver Online USA",
-    category: "Multiplayer",
-    tags: ["driving", "cars", "open world", "free roam", "drift", "traffic", "weather", "usa", "highway", "multiplayer", "online", "rooms", "chat", "3d"],
-    description: "Drive real cars around a big American map with highways, a town, farms and a river. Make or join a room with up to 20 friends, change the weather, add traffic and talk in the room chat. Sign in with your SahurHub Chat account.",
-    icon: "car",
-    colors: ["#2f8cff", "#0d1b33"],
-    url: "games/driver-online-usa/",
-    cover: "covers/driver-online-usa.jpg",
-    isNew: true
-  },
-  {
     id: "sky-runner",
     title: "Sky Runner",
     category: "Arcade",

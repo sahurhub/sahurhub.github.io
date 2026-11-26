@@ -41,7 +41,6 @@ window.SAHURHUB_GAMES = [
     colors: ["#e10600", "#1e1e2a"],
     url: "games/f1-simulator/",
     cover: "covers/f1-simulator.jpg",
-    featured: true,
     isNew: true
   },
   {
@@ -110,6 +109,7 @@ window.SAHURHUB_GAMES = [
     colors: ["#ffd23f", "#2fb6ff"],
     url: "games/turbo-town/",
     cover: "covers/turbo-town.jpg",
+    featured: true,
     isNew: true
   },
   {

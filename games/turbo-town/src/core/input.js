@@ -9,6 +9,7 @@ const KEYMAP = {
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
   Space: 'item', ShiftLeft: 'back', ShiftRight: 'back', KeyQ: 'back', Escape: 'pause',
   Backquote: 'quickpause', // ` : pause at once (online: votes for a pause, no menu)
+  // (keys 1-4 are the admin quick commands in online races: ui/admin-quick.js reads them)
 };
 
 export class Input {

@@ -234,6 +234,16 @@ export function renderPauseVote(el, online, s) {
   const state = s ? s.state : 'none';
   el.innerHTML = '';
   const nameOf = (u) => (players.find((p) => p.uid === u) || {}).name || 'Racer';
+  if ((state === 'paused' || state === 'countdown') && s.admin) {
+    // an admin's pause: no ready-ups, only the admin carries on
+    const secs = state === 'countdown' ? Math.max(0, Math.ceil((s.resumeAt - online.net.serverNow()) / 1000)) : 0;
+    const mine = s.admin === online.me.uid;
+    el.append(h('div', { class: 'panel pause-panel big' },
+      h('h1', {}, state === 'countdown' ? 'Back in ' + secs + '...' : 'RACE PAUSED'),
+      state === 'paused' ? h('p', {}, mine ? 'Press 1 to carry on the race.' : 'The race carries on soon.') : null));
+    if (state === 'countdown') setTimeout(() => online.renderPause(), 250);
+    return;
+  }
   if (state === 'paused' || state === 'countdown') {
     const secs = state === 'countdown' ? Math.max(0, Math.ceil((s.resumeAt - online.net.serverNow()) / 1000)) : 0;
     const iReady = s.ready.includes(online.me.uid);

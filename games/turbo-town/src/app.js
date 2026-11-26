@@ -9,6 +9,7 @@ import { Showroom } from './render/showroom.js';
 import * as screens from './ui/screens/index.js';
 import { makeRng } from './core/noise.js';
 import { saveSettings } from './save/settings.js';
+import { AdminQuick } from './ui/admin-quick.js';
 
 const TIPS = [
   'Keep turning for a moment at speed and your kart slides into a drift. Drifting turns tighter, so it gets you round sharp corners.',
@@ -56,6 +57,10 @@ export class App {
       this.gchat.setMode(!this.profile ? 'hidden' : racing ? 'race' : 'menu');
       this.gchat.tick();
     }
+    // admin accounts: 1 pauses an online race at once, 2-4 open the quick command menus
+    const adminRace = g.view === 'race' && g.race && g.race.online && this.online && this.profile && this.profile.admin;
+    if (adminRace) { if (!this.adminQuick) this.adminQuick = new AdminQuick(this); this.adminQuick.tick(dt); }
+    else if (this.adminQuick) this.adminQuick.close();
     if (g.view === 'race' && g.race && g.race.online) {
       if (g.input.consume('pause')) { if (g.intro) g.skipIntro(); else this.online.requestPause(); }
       if (g.input.consume('quickpause')) this.online.quickPause();

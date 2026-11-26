@@ -42,6 +42,8 @@ export class Online {
     on('boom', (m) => this.raceEvent('rocketBoom', null, { x: m.x, y: m.y, z: m.z }));
     on('overtake', () => { const me = this.meRacer(); if (me) { me.ov = me.ov || { count: 0 }; me.ov.count++; this.raceEvent('overtake', me, {}); } });
     on('finish', (m) => this.onFinish(m));
+    // admin quick commands: the admin's own boost lands here
+    on('adminFx', (m) => { const me = this.meRacer(); if (me && m.fx === 'boost') giveBoost(me.kart, 1.6, 2.4, 'item'); });
     // coins for a lap, paid by the server as you cross the line
     on('lapCoins', (m) => {
       const prof = this.app.profile && this.app.profile.get();
@@ -194,12 +196,14 @@ export class Online {
   onSnap(m) {
     const race = this.game.race;
     if (!race || !race.online) return;
+    race.netTime = m.tm; // the server's race clock (the leaderboard gaps use it)
     for (const row of m.k) {
-      const [uid, x, y, z, yaw, vx, vz, sp, fl, d, place, lap, fin, shield] = row;
+      const [uid, x, y, z, yaw, vx, vz, sp, fl, d, place, lap, fin, shield, dist] = row;
       const r = race.racers.find((q) => q.data.uid === uid);
       if (!r) continue;
       r.place = place;
       r.serverLap = lap;
+      if (typeof dist === 'number') r.netDist = dist;
       r.kart.shield = !!shield;
       if (!r.remote) continue;
       let buf = this.buffers.get(uid);

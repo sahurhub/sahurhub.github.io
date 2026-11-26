@@ -18,6 +18,19 @@ const _v = new THREE.Vector3();
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+// leaderboard helpers: the car's model name without the maker ("RB16B", "MP4/25"), and when
+// a racer passed distance d (from its remembered [d, time] pairs). esc() is above.
+function shortCar(def) { return String(def.name || '').replace(/^(McLaren|Red Bull|Mercedes|Peugeot)\s+/, ''); }
+function timeAt(s, d, now) {
+  if (!s || !s.length || d < s[0][0]) return null;
+  const last = s[s.length - 1];
+  if (d >= last[0]) return now; // level (places are about to swap)
+  let lo = 0, hi = s.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (s[mid][0] <= d) lo = mid; else hi = mid; }
+  const a = s[lo], b = s[hi];
+  return a[1] + (b[1] - a[1]) * ((d - a[0]) / Math.max(1e-6, b[0] - a[0]));
+}
+
 export function fmtTime(t) {
   if (!isFinite(t) || t < 0) t = 0;
   const m = Math.floor(t / 60), s = t - m * 60;
@@ -35,7 +48,7 @@ export class Hud {
         <button type="button" data-b="full" title="Fullscreen">${icon('fullscreen')}</button>
         <button type="button" data-b="pause" title="Pause">${icon('pause')}</button>
       </div>
-      <canvas class="hud-map" width="${MAP_W}" height="${MAP_W}"></canvas>
+      <div class="hud-side"><div class="hud-board hidden"></div><canvas class="hud-map" width="${MAP_W}" height="${MAP_W}"></canvas></div>
       <div class="hud-lapbox"><div class="hud-laps"></div><div class="hud-time">0:00.000</div><div class="hud-lap"><b>1</b><span>/3</span></div></div>
       <div class="hud-pos"><span class="hud-pos-n">1</span><span class="hud-pos-s">ST</span></div>
       <div class="hud-banner"></div>
@@ -50,8 +63,9 @@ export class Hud {
       lap: $('.hud-lap b'), lapOf: $('.hud-lap span'), time: $('.hud-time'), laps: $('.hud-laps'),
       banner: $('.hud-banner'), toasts: $('.hud-toasts'), wrong: $('.hud-wrong'), map: $('.hud-map'), fps: $('.hud-fps'),
       item: $('.hud-item'), itemIcon: $('.hud-item-icon'), itemKey: $('.hud-item-key'), tags: $('.hud-tags'), buttons: $('.hud-buttons'),
-      notices: $('.hud-notices'), speed: $('.hud-speed b'),
+      notices: $('.hud-notices'), speed: $('.hud-speed b'), board: $('.hud-board'),
     };
+    this.resetBoard();
     this.shownSpeed = -1;
     this.mapCtx = this.el.map.getContext('2d');
     this.lastPlace = 0;
@@ -73,6 +87,7 @@ export class Hud {
   setSound(on) { this.el.buttons.querySelector('[data-b="sound"]').innerHTML = icon(on ? 'sound' : 'mute'); }
 
   setupMap(track) {
+    this.resetBoard(); // a new race: the leaderboard starts again
     const city = track.def && track.def.city;
     if (city) { this.setupCityMap(city); return; }
     let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
@@ -173,6 +188,52 @@ export class Hud {
       else if (race.online && race.countdown > 8 && e.banner.textContent !== 'WAITING...') this.banner('WAITING...', 'wait', 999);
     } else if (e.banner.textContent === 'WAITING...') e.banner.className = 'hud-banner';
     this.drawMap(race, r, colors);
+    this.updateBoard(race, r, dt, colors);
+  }
+
+  // ---------------------------------------------------------------- leaderboard
+  // Above the minimap: every racer's place, name, car and how far behind the car in front
+  // they are in seconds (+4.4). The gap is worked out from when the car in front passed the
+  // same spot on the track (every 2 m is remembered), like real race timing.
+
+  resetBoard() { this.boardSamples = new Map(); this.boardT = 0; this.boardHtml = ''; }
+
+  updateBoard(race, me, dt, colors) {
+    const box = this.el.board;
+    const show = race.racers.length > 1 && !race.roam && !race.practice;
+    box.classList.toggle('hidden', !show);
+    if (!show) return;
+    const online = !!race.online;
+    const now = online && race.netTime != null ? race.netTime : race.time;
+    const distOf = (r) => (online ? (r.netDist ?? 0) : r.progress.distance());
+    if (race.state === 'racing' || race.state === 'finished') {
+      for (const r of race.racers) {
+        if (r.finished) continue;
+        const d = distOf(r);
+        let s = this.boardSamples.get(r);
+        if (!s) this.boardSamples.set(r, s = []);
+        if (!s.length || d >= s[s.length - 1][0] + 2) s.push([d, now]);
+      }
+    }
+    this.boardT -= dt;
+    if (this.boardT > 0) return;
+    this.boardT = 0.25;
+    const rows = [...race.racers].sort((a, b) => a.place - b.place);
+    let html = '';
+    rows.forEach((r, i) => {
+      let gap = 'LEAD';
+      if (i > 0) {
+        const a = rows[i - 1];
+        let g = null;
+        if (r.finished && a.finished && r.finishTime && a.finishTime) g = r.finishTime - a.finishTime;
+        else { const t = timeAt(this.boardSamples.get(a), distOf(r), now); if (t != null) g = now - t; }
+        gap = g == null || !isFinite(g) ? '' : '+' + Math.max(0, g).toFixed(1);
+      }
+      const color = (colors && colors[r.index]) || r.def.colors[0];
+      html += `<div class="hb-row${r === me ? ' me' : ''}"><b>${r.place}</b><i style="background:${color}"></i>`
+        + `<span class="hb-name">${esc(r.name)}</span><span class="hb-car">${esc(shortCar(r.def))}</span><span class="hb-gap">${gap}</span></div>`;
+    });
+    if (html !== this.boardHtml) { box.innerHTML = html; this.boardHtml = html; }
   }
 
   // name tags over the other karts: place number and name

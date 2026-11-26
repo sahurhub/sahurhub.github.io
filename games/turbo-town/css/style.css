@@ -554,6 +554,28 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .party-panel { max-height: calc(100vh - 64px - 280px); }
 @media (max-width: 640px) { .party-panel { max-height: calc(100vh - 64px - 205px); } }
 
+/* right side of the race screen: the leaderboard, with the minimap under it */
+.hud-side { right: 14px; top: 66px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.hud-side .hud-map { position: static; transform: none; }
+.hud-board { width: min(210px, 24vw); padding: 4px 5px; color: #fff; background: rgba(43, 37, 96, 0.78); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.hud-board.hidden { display: none; }
+.hb-row { display: flex; align-items: center; gap: 5px; height: 17px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.hb-row b { flex: none; width: 17px; text-align: right; font-family: var(--pixel); font-weight: 400; font-size: 11px; }
+.hb-row i { flex: none; width: 8px; height: 8px; border: 1px solid #fff; }
+.hb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hb-car { flex: none; width: 52px; overflow: hidden; text-overflow: ellipsis; font-size: 11px; color: #cfc8ff; }
+.hb-gap { flex: none; width: 38px; text-align: right; font-variant-numeric: tabular-nums; color: #ffd84a; }
+.hb-row.me { background: rgba(255, 210, 63, 0.3); }
+@media (max-width: 700px) { .hb-car { display: none; } .hud-board { width: 30vw; } }
+
+/* admin quick commands (online races, admins only): a small menu on the left */
+.admin-quick { position: fixed; z-index: 45; left: 18px; top: 34%; min-width: 230px; background: rgba(43, 37, 96, 0.9); color: #fff;
+  border: 3px solid #fff; box-shadow: 5px 5px 0 var(--ink); padding: 8px 10px; pointer-events: none; }
+.aq-title { font-family: var(--pixel); font-size: 13px; color: var(--yellow, #ffd23f); margin-bottom: 6px; }
+.aq-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-weight: 700; font-size: 15px; }
+.aq-row kbd { min-width: 0; padding: 0 7px; color: var(--ink); font-size: 13px; }
+.aq-row.dim { opacity: 0.7; font-size: 13px; }
+
 /* free roam (Turbo City): no laps, places, items or wrong way */
 #hud.roam .hud-lapbox, #hud.roam .hud-pos, #hud.roam .hud-wrong, #hud.roam .hud-item, #hud.roam .hud-tags { display: none !important; }
 

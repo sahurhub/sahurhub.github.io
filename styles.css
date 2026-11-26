@@ -2039,3 +2039,6 @@ body.ready #nextup { translate: 0 0; }
     transition-delay: 0s !important;
   }
 }
+
+/* Home subtitle: hidden when empty (the line was removed 2026-11-26; the Christmas theme still writes its countdown here). */
+#view-home .subtitle:empty { display: none; }

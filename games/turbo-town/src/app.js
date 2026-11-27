@@ -58,7 +58,7 @@ export class App {
       this.gchat.tick();
     }
     // admin accounts: 1 pauses an online race at once, 2-4 open the quick command menus
-    const adminRace = g.view === 'race' && g.race && g.race.online && this.online && this.profile && this.profile.admin;
+    const adminRace = g.view === 'race' && g.race && g.race.online && !g.race.spectating && this.online && this.profile && this.profile.admin;
     if (adminRace) { if (!this.adminQuick) this.adminQuick = new AdminQuick(this); this.adminQuick.tick(dt); }
     else if (this.adminQuick) this.adminQuick.close();
     if (g.view === 'race' && g.race && g.race.online) {

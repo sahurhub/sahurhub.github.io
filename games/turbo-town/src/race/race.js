@@ -76,7 +76,8 @@ export class Race {
         if (ev[i].type === 'driftStart') r.stats.drifts = (r.stats.drifts || 0) + 1;
       }
     }
-    collideKarts(this.racers.map((r) => r.kart));
+    // online: finished and AFK cars are ghosts nobody bumps into
+    collideKarts(this.racers.filter((r) => !(this.online && (r.finished || r.afk))).map((r) => r.kart));
     for (const r of this.racers) this.track_(r, dt);
     this.rank();
     if (this.items) this.items.step(dt);

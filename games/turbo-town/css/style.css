@@ -568,6 +568,18 @@ kbd { font-size: 10px; padding: 6px 8px 5px; border: 3px solid var(--ink); borde
 .hb-row.me { background: rgba(255, 210, 63, 0.3); }
 @media (max-width: 700px) { .hb-car { display: none; } .hud-board { width: 30vw; } }
 
+/* watching a race (joined mid-race): the bar at the bottom, no item slot or wrong-way sign */
+#hud.spectating .hud-item, #hud.spectating .hud-wrong { display: none !important; }
+.spectate-panel { position: fixed; z-index: 44; left: 50%; bottom: 72px; transform: translateX(-50%); display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 6px; max-width: calc(100vw - 24px); padding: 6px 8px; background: rgba(43, 37, 96, 0.88); border: 3px solid #fff; box-shadow: 5px 5px 0 var(--ink); color: #fff; }
+.sp-btn { font-family: var(--pixel); font-size: 12px; padding: 6px 10px; cursor: pointer; color: var(--ink); background: #fff; border: 2px solid var(--ink); }
+.sp-btn.cam { background: var(--yellow, #ffd23f); }
+.sp-btn.leave { background: #ff6b81; color: #fff; }
+.sp-name { display: flex; flex-direction: column; align-items: center; min-width: 130px; line-height: 1.1; }
+.sp-name span { font-family: var(--pixel); font-size: 10px; color: #cfc8ff; }
+.sp-name b { font-size: 16px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-help { flex-basis: 100%; text-align: center; font-size: 12px; color: #d8d4ff; }
+
 /* admin quick commands (online races, admins only): a small menu on the left */
 .admin-quick { position: fixed; z-index: 45; left: 18px; top: 34%; min-width: 230px; background: rgba(43, 37, 96, 0.9); color: #fff;
   border: 3px solid #fff; box-shadow: 5px 5px 0 var(--ink); padding: 8px 10px; pointer-events: none; }

@@ -209,8 +209,10 @@ export function OnlineResults(ui, params) {
   const el = h('div', { class: 'menu-results' },
     h('div', { class: 'res-head' },
       h('div', { class: 'res-big place' + Math.min(4, myRow ? myRow.place : 4) }, myRow ? ordinal(myRow.place) : '-'),
-      h('div', {}, h('h2', {}, 'Online race'), myRow && myRow.time ? h('p', {}, 'Time ' + fmtTime(myRow.time) + (myRow.best ? '   Best lap ' + fmtTime(myRow.best) : '')) : h('p', {}, 'Did not finish'),
-        h('p', { class: 'muted' }, (myRow ? myRow.overtakes : 0) + ' overtakes'))),
+      h('div', {}, h('h2', {}, end.watched ? 'Race results' : 'Online race'),
+        end.watched ? h('p', {}, 'You watched this race. You race in the next one.')
+          : myRow && myRow.time ? h('p', {}, 'Time ' + fmtTime(myRow.time) + (myRow.best ? '   Best lap ' + fmtTime(myRow.best) : '')) : h('p', {}, 'Did not finish'),
+        end.watched ? null : h('p', { class: 'muted' }, (myRow ? myRow.overtakes : 0) + ' overtakes'))),
     h('div', { class: 'res-cols' },
       h('div', { class: 'res-table' }, ...end.results.map((r) => h('div', { class: 'res-row' + (r.uid === me.uid ? ' me' : '') + (r.place <= 3 ? ' p' + r.place : '') },
         h('span', { class: 'res-place' }, ordinal(r.place)), h('span', { class: 'res-name' }, r.name + (r.left ? ' (left)' : '')),

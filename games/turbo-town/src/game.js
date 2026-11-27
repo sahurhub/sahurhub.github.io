@@ -142,6 +142,9 @@ export class Game {
   }
 
   endRace() {
+    if (this.spectator) { this.spectator.dispose(); this.spectator = null; }
+    this.focus = 0;
+    this.hud.setSpectating(false);
     if (this.visuals) for (const v of this.visuals) v.dispose();
     if (this.ghost) { this.ghost.dispose(); this.ghost = null; }
     if (this.itemVis) { this.itemVis.dispose(); this.itemVis = null; }
@@ -214,6 +217,7 @@ export class Game {
     race.racers.forEach((r, i) => {
       const v = this.visuals[i];
       v.update(r.kart, alpha, dt);
+      v.setGhost(race.online && (r.finished || r.afk)); // online: finished or AFK = see-through
       if (!this.paused) {
         const near = !player || r === player || Math.hypot(r.kart.x - player.kart.x, r.kart.z - player.kart.z) < 60;
         kartEffects(r.kart, v, this.fx, dt, near, this.skids);
@@ -231,10 +235,13 @@ export class Game {
       const k = focus.kart;
       this.cam.update({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, speed: k.speed, top: k.p.top, boost: k.boostT > 0, drift: k.driftVis, back: k.input.back && !player?.finished, air: !k.grounded }, dt, this.map.ctx.groundAt);
       if (this.intro) this.introCamera(v);
-      this.r.follow(v.x, v.y, v.z);
-      if (player && !this.intro) {
-        this.hud.update(race, player, dt, this.colors);
-        this.hud.tags(race, player, this.visuals, this.r.camera);
+      // spectating: broadcast and free cameras take over from the chase camera
+      if (this.spectator && !this.intro) this.spectator.update(dt, v, focus);
+      const cp = this.r.camera.position;
+      if (this.spectator && this.spectator.mode === 'free') this.r.follow(cp.x, cp.y, cp.z); else this.r.follow(v.x, v.y, v.z);
+      if ((player || this.spectator) && !this.intro) {
+        this.hud.update(race, focus, dt, this.colors);
+        this.hud.tags(race, focus, this.visuals, this.r.camera);
       }
     }
     if (player) {

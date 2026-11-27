@@ -125,7 +125,7 @@ export class KartVisual {
     if (this.steerWheel) this.steerWheel.quaternion.copy(this.steerWheel.userData.base).multiply(_q3.setFromAxisAngle(_yAxis, -k.steer * 1.4));
     // blob shadow stays on the ground under the kart
     const above = Math.max(0, y - (k.gy ?? y));
-    this.blob.visible = this.useBlob && !k.rescue && above < 12;
+    this.blob.visible = this.useBlob && !k.rescue && above < 12 && !this.ghosted;
     this.blob.position.y = 0.03 - above;
     this.blob.material.opacity = Math.max(0.06, 0.42 - above * 0.06);
     // flashing while invulnerable
@@ -133,6 +133,27 @@ export class KartVisual {
   }
 
   land(impact) { this.bounceV -= Math.min(3.2, impact * 0.35); }
+
+  // see-through "ghost" (online: finished or AFK cars, which nobody can bump into)
+  setGhost(on) {
+    on = !!on;
+    if (on === !!this.ghosted) return;
+    this.ghosted = on;
+    this.body.traverse((o) => {
+      if (!o.isMesh) return;
+      if (on) {
+        if (!o.userData.solidMat) o.userData.solidMat = o.material;
+        const m = o.userData.solidMat.clone();
+        m.transparent = true; m.opacity = 0.35; m.depthWrite = false;
+        o.material = m;
+        o.castShadow = false;
+      } else if (o.userData.solidMat) {
+        o.material.dispose();
+        o.material = o.userData.solidMat;
+        o.castShadow = true;
+      }
+    });
+  }
 
   // world position of a local anchor
   worldPoint(local, out = _v) { return out.copy(local).applyMatrix4(this.body.matrixWorld); }

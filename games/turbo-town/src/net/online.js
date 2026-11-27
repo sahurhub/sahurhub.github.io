@@ -10,8 +10,11 @@ import { giveBoost, spinOut } from '../physics/kart-physics.js';
 import { KartVisual } from '../karts/kart-visual.js';
 import { paintColors } from '../shared/cosmetics.js';
 import * as screens from '../ui/screens/index.js';
+import { createAI } from '../ai/ai-driver.js';
+import { SpectatorCam, MODE_NAMES } from '../camera/spectator-camera.js';
 
-const FL = { RESPAWN: 1, DRIFT: 2, BOOST: 4, AIR: 8, SPIN: 16, SHIELD: 32, RAINBOW: 64, TRAIL: 128 };
+// INPUT: the player is pressing something (the server uses it for the AFK check)
+const FL = { RESPAWN: 1, DRIFT: 2, BOOST: 4, AIR: 8, SPIN: 16, SHIELD: 32, RAINBOW: 64, TRAIL: 128, INPUT: 256 };
 const INTERP_MS = 130;
 
 export class Online {
@@ -29,6 +32,7 @@ export class Online {
     on('chat', (m) => this.onChat(m));
     on('ps', (m) => this.onPractice(m.k));
     on('raceLoad', (m) => this.onRaceLoad(m));
+    on('spectate', (m) => this.onSpectate(m));
     on('raceStart', (m) => this.onRaceStart(m));
     on('snap', (m) => this.onSnap(m));
     on('roulette', () => { const me = this.meRacer(); if (me) { me.roulette = TU.roulette; } });
@@ -81,7 +85,9 @@ export class Online {
     const first = !this.party;
     this.party = p;
     if (this.app.gchat) this.app.gchat.setParty(p);
-    if (first && p.state === 'lobby') this.enterLobby();
+    // joined while a race is running: the server sends 'spectate' (watch it); joined while
+    // the results are up: wait in the lobby for everyone to come back
+    if (first && (p.state === 'lobby' || p.state === 'results')) this.enterLobby();
     // missed the end of a race (connection trouble): go back to the lobby with everyone
     else if (p.state === 'lobby' && (this.mode === 'race' || this.mode === 'results')) this.enterLobby();
     if (this.lobbyScreen && this.lobbyScreen.refresh) this.lobbyScreen.refresh();
@@ -97,6 +103,7 @@ export class Online {
 
   exitToMenu() {
     this.mode = 'none';
+    this.endSpectate();
     if (this.app.gchat) this.app.gchat.setParty(null);
     this.clearRemote();
     this.game.endRace();
@@ -107,6 +114,7 @@ export class Online {
 
   async enterLobby() {
     if (!this.party) return;
+    this.endSpectate();
     this.mode = 'lobby';
     this.resultsScreen = null;
     this.game.paused = false;
@@ -155,7 +163,81 @@ export class Online {
   racerOf(uid) { const race = this.game.race; return race && race.online ? race.racers.find((r) => r.data.uid === uid) : null; }
   raceEvent(type, racer, extra) { const race = this.game.race; if (race) race.emit(type, racer, extra); }
 
+  // ---------------------------------------------------------------- watching a race
+  // Joined the party mid-race: load the race with every car driven by the network, and watch
+  // with the spectator cameras (camera/spectator-camera.js) until it ends.
+  async onSpectate(m) {
+    this.endSpectate();
+    this.buffers = new Map();
+    this.mode = 'race';
+    this.spectating = true;
+    this.clearRemote();
+    this.ui.hide();
+    this.app.showLoading('Getting ready to watch the race');
+    const racers = m.grid.map((uid) => {
+      const pl = m.players.find((x) => x.uid === uid);
+      const def = KART_BY_ID[pl.kart] || KART_BY_ID.starter;
+      return { kart: pl.kart, name: pl.name, isPlayer: false, remote: true, data: { uid, paint: paintColors(pl.look && pl.look.paint, def), cosmetics: lookCosmetics(pl.look) } };
+    });
+    const race = await this.game.startRace({ map: m.map, racers, laps: 3, items: false, countdown: 99, online: true });
+    race.online = true;
+    race.spectating = true;
+    race.items = this.items = new OnlineItems(race, this);
+    this.game.itemVis = null;
+    const { ItemVisuals } = await import('../items/item-visuals.js');
+    this.game.itemVis = new ItemVisuals(this.game, race);
+    // the race may already be going (then straight in, no countdown or GO!)
+    const left = m.startAt ? (m.startAt - this.net.serverNow()) / 1000 : 99;
+    if (m.startAt && left <= 0) { race.countdown = 0; race.state = 'racing'; for (const r of race.racers) r.kart.frozen = false; }
+    else race.countdown = Math.max(0.2, left);
+    for (const f of m.finished || []) {
+      const r = this.racerOf(f.u);
+      if (r && !r.finished) { race.finish(r); r.finishTime = f.time; r.place = f.place; }
+    }
+    this.app.hideLoading();
+    this.game.hud.setSpectating(true);
+    this.game.hud.show(true);
+    this.game.spectator = new SpectatorCam(this.game);
+    this.showSpectatePanel();
+  }
+
+  showSpectatePanel() {
+    if (!this.spectEl) { this.spectEl = document.createElement('div'); this.spectEl.className = 'spectate-panel'; document.body.appendChild(this.spectEl); }
+    const sc = this.game.spectator;
+    if (!sc) return;
+    const el = this.spectEl;
+    el.innerHTML = '';
+    const btn = (label, title, fn, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sp-btn ' + cls; b.textContent = label; b.title = title; b.addEventListener('click', () => { fn(); b.blur(); }); return b; };
+    const name = document.createElement('div');
+    name.className = 'sp-name';
+    const help = document.createElement('div');
+    help.className = 'sp-help';
+    const camBtn = btn('', 'Change camera (C)', () => sc.nextMode(), 'cam');
+    const refresh = () => {
+      const r = this.game.race && this.game.race.racers[this.game.focus || 0];
+      name.innerHTML = '<span>WATCHING</span><b></b>';
+      name.querySelector('b').textContent = r ? (r.place ? r.place + '. ' : '') + r.name : '-';
+      camBtn.textContent = MODE_NAMES[sc.mode] + ' (C)';
+      help.textContent = sc.mode === 'free' ? 'W A S D move, arrows or drag to look, Space up, Shift down' : 'Q / E: watch another racer   C: change camera';
+    };
+    sc.onChange = refresh;
+    el.append(btn('<', 'Previous racer (Q)', () => sc.switchFocus(-1)), name, btn('>', 'Next racer (E)', () => sc.switchFocus(1)), camBtn,
+      btn('Leave', 'Leave the party', () => this.leave(), 'leave'), help);
+    refresh();
+    clearInterval(this.spectTimer);
+    this.spectTimer = setInterval(refresh, 1000); // places change while you watch
+  }
+
+  endSpectate() {
+    this.spectating = false;
+    clearInterval(this.spectTimer);
+    if (this.spectEl) { this.spectEl.remove(); this.spectEl = null; }
+    if (this.game.spectator) { this.game.spectator.dispose(); this.game.spectator = null; }
+    this.game.hud.setSpectating(false);
+  }
+
   async onRaceLoad(m) {
+    this.endSpectate();
     // ready before anything waits: tickRace runs every frame while this is loading
     this.buffers = new Map();
     this.mode = 'race';
@@ -197,13 +279,18 @@ export class Online {
     const race = this.game.race;
     if (!race || !race.online) return;
     race.netTime = m.tm; // the server's race clock (the leaderboard gaps use it)
+    if (race.spectating && m.tm > 0) race.time = m.tm; // watchers show the real race time
     for (const row of m.k) {
-      const [uid, x, y, z, yaw, vx, vz, sp, fl, d, place, lap, fin, shield, dist] = row;
+      const [uid, x, y, z, yaw, vx, vz, sp, fl, d, place, lap, fin, shield, dist, afk] = row;
       const r = race.racers.find((q) => q.data.uid === uid);
       if (!r) continue;
       r.place = place;
       r.serverLap = lap;
       if (typeof dist === 'number') r.netDist = dist;
+      // AFK (the server decides): see-through and no collisions until they drive again
+      const nowAfk = !!afk;
+      if (r.isPlayer && nowAfk && !r.afk) this.game.hud.notice('You are AFK: your car is see-through until you drive again', 'pause', 4, 'afk');
+      r.afk = nowAfk;
       r.kart.shield = !!shield;
       if (!r.remote) continue;
       let buf = this.buffers.get(uid);
@@ -281,6 +368,9 @@ export class Online {
     race.finish(r);
     r.finishTime = m.time;
     r.place = m.place;
+    // like single player: the computer drives your car on after the finish. Online it is a
+    // see-through ghost nobody can bump into (game.js / race.js check r.finished)
+    if (r.isPlayer) r.controller = createAI('hard');
   }
 
   onRaceEnd(m) {
@@ -306,7 +396,7 @@ export class Online {
 
   requestPause() {
     const race = this.game.race;
-    if (!race || !race.online || race.state !== 'racing') return;
+    if (!race || !race.online || race.state !== 'racing' || this.spectating) return; // watchers have no vote
     this.pausePanel = !this.pausePanel;
     this.renderPause();
   }
@@ -314,7 +404,7 @@ export class Online {
   // the ` key: vote for a pause straight away (no menu); press it again to take it back
   quickPause() {
     const race = this.game.race;
-    if (!race || !race.online || race.state !== 'racing') return;
+    if (!race || !race.online || race.state !== 'racing' || this.spectating) return;
     const s = this.pauseState;
     if (s && (s.state === 'paused' || s.state === 'countdown')) { if (s.state === 'paused') this.readyUp(); return; }
     const iVoted = !!(s && s.votes && s.votes.includes(this.me.uid));
@@ -441,7 +531,11 @@ class OnlineItems {
   }
   step(dt) {
     const race = this.race, me = race.player;
-    if (!me || race.state !== 'racing') return;
+    if (race.state !== 'racing') return;
+    if (!me) { // watching: only the other cars' effect timers
+      for (const r of race.racers) { const rk = r.kart; if (rk.trailT > 0) rk.trailT -= dt; if (rk.rainbowT > 0) rk.rainbowT -= dt; if (rk.frozenT > 0) rk.frozenT -= dt; }
+      return;
+    }
     const k = me.kart;
     // drive through a box: ask the server for it (it checks we really were there)
     for (const b of this.boxes) {
@@ -484,8 +578,10 @@ class OnlineItems {
 // ------------------------------------------------------------------ helpers
 
 function flagsOf(k) {
+  const i = k.input;
   return (k.drift.on ? FL.DRIFT : 0) | (k.boostT > 0 ? FL.BOOST : 0) | (!k.grounded ? FL.AIR : 0) | (k.spinT > 0 ? FL.SPIN : 0)
-    | (k.shield ? FL.SHIELD : 0) | (k.rainbowT > 0 ? FL.RAINBOW : 0) | (k.trailT > 0 ? FL.TRAIL : 0);
+    | (k.shield ? FL.SHIELD : 0) | (k.rainbowT > 0 ? FL.RAINBOW : 0) | (k.trailT > 0 ? FL.TRAIL : 0)
+    | (i && (i.throttle || i.steer || i.item || i.back) ? FL.INPUT : 0);
 }
 
 function applyFlags(k, fl, d) {

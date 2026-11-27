@@ -82,6 +82,8 @@ export class Hud {
 
   // free roam: only the speedometer, the minimap and the buttons
   setRoam(on) { this.root.classList.toggle('roam', on); }
+  // watching a race: no item slot or wrong-way sign (they belong to the racer you watch)
+  setSpectating(on) { this.root.classList.toggle('spectating', on); }
 
   // the sound button shows whether sound is on
   setSound(on) { this.el.buttons.querySelector('[data-b="sound"]').innerHTML = icon(on ? 'sound' : 'mute'); }

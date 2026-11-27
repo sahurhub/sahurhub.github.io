@@ -47,6 +47,15 @@ export const MAP_INFO = [
   { id: 'haunted-hollow', name: 'Haunted Hollow', season: 'autumn' },
   { id: 'frostbite-falls', name: 'Frostbite Falls', season: 'winter' },
   { id: 'candy-cane-kingdom', name: 'Candy Cane Kingdom', season: 'winter' },
+  // the Explorer and Thrill cups (2026-11-27): "season" is the cup's theme on the map cards
+  { id: 'dusty-canyon', name: 'Dusty Canyon', season: 'explorer' },
+  { id: 'jungle-ruins', name: 'Jungle Ruins', season: 'explorer' },
+  { id: 'lava-peak', name: 'Lava Peak', season: 'explorer' },
+  { id: 'harbour-rush', name: 'Harbour Rush', season: 'explorer' },
+  { id: 'neon-nights', name: 'Neon Nights', season: 'thrill' },
+  { id: 'grand-prix-circuit', name: 'Grand Prix Circuit', season: 'thrill' },
+  { id: 'sky-islands', name: 'Sky Islands', season: 'thrill' },
+  { id: 'amazon-rainforest', name: 'Amazon Rainforest', season: 'thrill' },
 ];
 
 // Each cup: its two seasonal maps and two guests from other seasons. Every map is at home
@@ -57,6 +66,9 @@ export const CUPS = [
   { id: 'summer', name: 'Summer Cup', maps: ['tropical-splash', 'pumpkin-patch', 'sunburst-speedway', 'candy-cane-kingdom'], color: '#ffb02e' },
   { id: 'autumn', name: 'Autumn Cup', maps: ['pumpkin-patch', 'mushroom-meadow', 'haunted-hollow', 'tropical-splash'], color: '#ff6b2c' },
   { id: 'winter', name: 'Winter Cup', maps: ['frostbite-falls', 'blossom-valley', 'candy-cane-kingdom', 'haunted-hollow'], color: '#4fc3ff' },
+  // after the Winter Cup: four adventure places, then four fast and flashy ones
+  { id: 'explorer', name: 'Explorer Cup', maps: ['dusty-canyon', 'jungle-ruins', 'lava-peak', 'harbour-rush'], color: '#3ddc84' },
+  { id: 'thrill', name: 'Thrill Cup', maps: ['neon-nights', 'grand-prix-circuit', 'sky-islands', 'amazon-rainforest'], color: '#a55eea' },
 ];
 // Blossom Valley is open from the start so Single Race and Time Trials are never empty.
 export const START_MAPS = ['blossom-valley'];

@@ -102,7 +102,7 @@ function distToPoly(x, z, pts) {
 
 function makeWaters(track, list) {
   return list.map((w, idx) => {
-    const out = { id: w.id || 'water' + idx, level: w.level, deep: !!w.deep, depth: w.depth ?? (w.deep ? 2.4 : 0.9), color: w.color };
+    const out = { id: w.id || 'water' + idx, level: w.level, deep: !!w.deep, depth: w.depth ?? (w.deep ? 2.4 : 0.9), color: w.color, carve: w.carve };
     if (w.cross != null) {
       // a river crossing the track at lap distance w.cross, running sideways to it
       const p = pointAt(track.main, w.cross);
@@ -157,8 +157,11 @@ function makeTerrain(ctx) {
     const lower = path.id === 'main' ? 0 : 0.08;
     for (let i = 0; i < segs; i++) {
       const a = path.pts[i], b = path.pts[(i + 1) % n];
-      if (path.id === 'main' && ctx.inBridge(a.s) && ctx.inBridge(b.s)) {
-        // keep the ground well below the bridge deck
+      const deepGap = def.gapDepth && path.id === 'main' && ctx.inGap(a.s) && ctx.inGap(b.s);
+      if (path.id === 'main' && ((ctx.inBridge(a.s) && ctx.inBridge(b.s)) || deepGap)) {
+        // keep the ground well below the bridge deck (or far below a jump gap, def.gapDepth:
+        // a real drop between floating islands)
+        const drop = deepGap ? def.gapDepth : 2.2;
         const ix0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - 14 - x0) / cell)), ix1 = Math.min(nx - 1, Math.ceil((Math.max(a.x, b.x) + 14 - x0) / cell));
         const iz0 = Math.max(0, Math.floor((Math.min(a.z, b.z) - 14 - z0) / cell)), iz1 = Math.min(nz - 1, Math.ceil((Math.max(a.z, b.z) + 14 - z0) / cell));
         const ex = b.x - a.x, ez = b.z - a.z, el = ex * ex + ez * ez || 1;
@@ -166,7 +169,7 @@ function makeTerrain(ctx) {
           const x = x0 + ix * cell, z = z0 + iz * cell;
           const t = clamp(((x - a.x) * ex + (z - a.z) * ez) / el, 0, 1);
           const d = Math.hypot(x - a.x - ex * t, z - a.z - ez * t);
-          if (d < a.w / 2 + 6) CAP[iz * nx + ix] = Math.min(CAP[iz * nx + ix], a.y + (b.y - a.y) * t - 2.2);
+          if (d < a.w / 2 + 6) CAP[iz * nx + ix] = Math.min(CAP[iz * nx + ix], a.y + (b.y - a.y) * t - drop);
         }
         continue;
       }
@@ -206,8 +209,10 @@ function makeTerrain(ctx) {
       if (D[k] <= IN[k]) h = Y[k] - 0.45;
       else h = lerp(Y[k] - 0.45, h0, smoothstep(0, 1, (D[k] - IN[k]) / blend));
     }
-    // water carves the ground
+    // water carves the ground (carve: false = a sea of clouds far below that leaves the
+    // floating islands alone)
     for (const w of waters) {
+      if (w.carve === false) continue;
       const dd = w.dist(x, z);
       const bank = 9;
       if (dd < bank) {
@@ -250,7 +255,7 @@ function makeTerrain(ctx) {
     const far = D[k] - IN[k];
     if (far > 60) C.lerp(cFar, smoothstep(60, 160, far) * 0.6);
     let wd = Infinity;
-    for (const w of waters) wd = Math.min(wd, w.dist(x, z));
+    for (const w of waters) if (w.carve !== false) wd = Math.min(wd, w.dist(x, z));
     if (wd < 6) C.lerp(cSand, smoothstep(6, 0, wd));
     void cDirt;
     if (specks.length && far > 4 && wd > 6 && rng() < (pal.speckChance ?? 0.12)) C.lerp(specks[Math.floor(rng() * specks.length)], 0.75);
@@ -697,6 +702,10 @@ const RAIL_STYLES = {
   iron: { beams: [{ y: 0.86, h: 0.08, t: 0.08, c: '#3b2a5f' }, { y: 0.24, h: 0.08, t: 0.08, c: '#3b2a5f' }], bars: { every: 0.8, w: 0.06, h: 0.96, c: '#4a3a70' }, post: { every: 4, w: 0.18, h: 1.06, c: '#2b1f48', cap: { w: 0.26, h: 0.26, c: '#ff8a1f' } } },
   ice: { beams: [{ y: 0.5, h: 0.3, t: 0.14, c: '#9fd8ff' }, { y: 0.8, h: 0.09, t: 0.26, c: '#ffffff' }], post: { every: 4, w: 0.18, h: 0.8, c: '#5fb8ef' } },
   candy: { beams: [{ y: 0.6, h: 0.22, t: 0.2, c: '#ff3d5a', c2: '#ffffff' }], post: { every: 3, w: 0.2, h: 0.84, c: '#ffffff', cap: { w: 0.36, h: 0.22, c: '#ff8ac4' } } },
+  // old stone blocks (Jungle Ruins), rope between wooden posts (Amazon), tyre-and-steel (circuit)
+  stone: { beams: [{ y: 0.0, h: 0.66, t: 0.5, c: '#b9b08f', c2: '#a39a7a' }], post: { every: 3, w: 0.62, h: 0.82, c: '#8f8a6e', cap: { w: 0.7, h: 0.12, c: '#6fae4a' } } },
+  rope: { beams: [{ y: 0.78, h: 0.07, t: 0.07, c: '#e0c48a' }, { y: 0.45, h: 0.07, t: 0.07, c: '#d2b478' }], post: { every: 2.8, w: 0.22, h: 0.96, c: '#7a4f2a', cap: { w: 0.26, h: 0.08, c: '#4c9a3a' } } },
+  armco: { beams: [{ y: 0.62, h: 0.3, t: 0.1, c: '#e8ecf4' }, { y: 0.2, h: 0.36, t: 0.5, c: '#2b2b3a', c2: '#ff4757' }], post: { every: 3.5, w: 0.14, h: 0.8, c: '#9aa3b8' } },
 };
 
 // Guard rails right at the edge of the drivable area, like a real go-kart track. The
@@ -744,7 +753,7 @@ function buildBarriers(ctx) {
         const x = p.x + p.rx * l, z = p.z + p.rz * l;
         const e = world.edge(x, p.y, z, 0, {});
         if (e && e.excess < -0.15) return false; // inside another road (a junction)
-        for (const w of ctx.waters) if (w.dist(x, z) < 0.5) return false;
+        for (const w of ctx.waters) if (w.carve !== false && w.dist(x, z) < 0.5) return false; // (not the cloud sea)
         return true;
       });
       const okAt = (d) => { const i = Math.round(d / path.step); return path.closed ? ok[((i % n) + n) % n] : ok[Math.min(n - 1, Math.max(0, i))]; };
@@ -818,7 +827,7 @@ function edgePoints(ctx, spacing, offset) {
         const e = world.edge(x, p.y, z, 0, {});
         if (e && e.excess < -0.3) continue; // inside another corridor
         let skip = false;
-        for (const w of ctx.waters) if (w.dist(x, z) < 1) skip = true;
+        for (const w of ctx.waters) if (w.carve !== false && w.dist(x, z) < 1) skip = true;
         if (skip) continue;
         out.push({ x, y: yLat(p, lat), z, yaw: p.heading, side, s: p.s, path: path.id, curv: p.curv });
       }

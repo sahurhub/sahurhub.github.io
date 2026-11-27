@@ -13,7 +13,7 @@ export function edgeDistance(ctx, x, z) {
 
 export function waterDistance(ctx, x, z) {
   let d = Infinity;
-  for (const w of ctx.waters) d = Math.min(d, w.dist(x, z));
+  for (const w of ctx.waters) if (w.carve !== false) d = Math.min(d, w.dist(x, z)); // (not a cloud sea)
   return d;
 }
 

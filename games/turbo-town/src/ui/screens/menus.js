@@ -11,7 +11,7 @@ import { Admin } from './admin.js';
 import { ACCS, TITLES, FRAMES, BOOSTS } from '../../shared/cosmetics.js';
 import { ACHIEVEMENTS } from '../../shared/achievements.js';
 
-const SEASON_COLORS = { spring: '#ff7ab8', summer: '#ffb02e', autumn: '#ff6b2c', winter: '#4fc3ff' };
+const SEASON_COLORS = { spring: '#ff7ab8', summer: '#ffb02e', autumn: '#ff6b2c', winter: '#4fc3ff', explorer: '#3ddc84', thrill: '#a55eea' };
 const STAT_NAMES = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Handling'], ['drift', 'Drift'], ['braking', 'Braking'], ['weight', 'Weight'], ['offroad', 'Off-road'], ['grip', 'Grip']];
 
 function topBar(app) {

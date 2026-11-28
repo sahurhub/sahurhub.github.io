@@ -1,4 +1,5 @@
-// TURBO TOWN - the 8 cars (real race cars with their own liveries; the ids stay the old kart ids).
+// TURBO TOWN - the 16 cars (real race cars with their own liveries; the first 8 keep the old
+// kart ids, the 8 added on 2026-11-28 are named after the car).
 // Shared by the game and the server (pure data).
 // Stats are 1-10. Every kart trades something away; none is best at everything.
 //   speed     top speed            accel   acceleration
@@ -57,9 +58,71 @@ export const KARTS = [
     stats: { speed: 9, accel: 7, handling: 4, drift: 5, braking: 5, weight: 6, offroad: 3, grip: 3 },
     stability: 0.4, recovery: 1.0, colors: ['#a9b0b8', '#e10600'],
   },
-];
+  // added 2026-11-28, cheapest first; prices follow the measured ratings below
+  {
+    id: 'at01', name: 'AlphaTauri AT01', price: 2900, level: 10,
+    blurb: 'The 2020 Monza winner. Quick in a straight line and easy to drive.',
+    stats: { speed: 8, accel: 7, handling: 7, drift: 6, braking: 6, weight: 5, offroad: 5, grip: 5 },
+    stability: 0.85, recovery: 1.0, colors: ['#1b2a4a', '#ffffff'],
+  },
+  {
+    id: 'porsche919', name: 'Porsche 919 Hybrid', price: 3400, level: 11,
+    blurb: 'A Le Mans winner with a hybrid kick. Heavy and planted: shrugs off hits and bumps.',
+    stats: { speed: 9, accel: 9, handling: 6, drift: 5, braking: 8, weight: 9, offroad: 5, grip: 7 },
+    stability: 1.0, recovery: 0.9, colors: ['#e8eaed', '#d5001c'],
+  },
+  {
+    id: 'r26', name: 'Renault R26', price: 3700, level: 12,
+    blurb: 'The 2006 champion. Rockets off the line and gets back up to speed in a flash.',
+    stats: { speed: 8, accel: 9, handling: 7, drift: 7, braking: 7, weight: 5, offroad: 4, grip: 5 },
+    stability: 0.8, recovery: 1.1, colors: ['#1e5aa8', '#ffcc00'],
+  },
+  {
+    id: 'f2004', name: 'Ferrari F2004', price: 4400, level: 13,
+    blurb: 'The 2004 champion that won almost every race. Fast, sharp and hard to beat.',
+    stats: { speed: 9, accel: 9, handling: 8, drift: 7, braking: 8, weight: 4, offroad: 4, grip: 5 },
+    stability: 0.85, recovery: 1.1, colors: ['#dc0000', '#ffffff'],
+  },
+  {
+    id: 'mcl35m', name: 'McLaren MCL35M', price: 5000, level: 14,
+    blurb: 'The 2021 Monza winner. Slippery and fast, steady at top speed.',
+    stats: { speed: 9, accel: 7, handling: 8, drift: 6, braking: 7, weight: 5, offroad: 4, grip: 6 },
+    stability: 0.9, recovery: 1.0, colors: ['#ff8000', '#1e88e5'],
+  },
+  {
+    id: 'bolide', name: 'Bugatti Bolide', price: 5800, level: 16,
+    blurb: 'A 1,600 horsepower track hypercar. The fiercest speed and acceleration, a handful in the bends.',
+    stats: { speed: 10, accel: 10, handling: 6, drift: 6, braking: 9, weight: 7, offroad: 5, grip: 7 },
+    stability: 0.75, recovery: 1.0, colors: ['#1c1c1c', '#00b3ff'],
+  },
+  {
+    id: 'mcl39', name: 'McLaren MCL39', price: 6600, level: 18,
+    blurb: 'The 2025 champion. Brilliant in the corners and quick everywhere.',
+    stats: { speed: 10, accel: 9, handling: 9, drift: 8, braking: 8, weight: 5, offroad: 4, grip: 7 },
+    stability: 0.95, recovery: 1.0, colors: ['#ff8000', '#111111'],
+  },
+  {
+    id: 'rb19', name: 'Red Bull RB19', price: 8000, level: 20,
+    blurb: 'The most dominant F1 car ever: 21 wins from 22 races. The best car in the game.',
+    stats: { speed: 10, accel: 10, handling: 9, drift: 9, braking: 9, weight: 5, offroad: 5, grip: 7 },
+    stability: 1.0, recovery: 1.1, colors: ['#1b1f3b', '#e10600'],
+  },];
 
 export const KART_BY_ID = Object.fromEntries(KARTS.map((k) => [k.id, k]));
+
+// How good each car is overall (1-100), measured on 2026-11-28: every car ran 3 laps alone
+// with the same expert computer driver on Blossom Valley, Sunburst Speedway, Mushroom
+// Meadow, Grand Prix Circuit and Haunted Hollow; each car's middle three results (time
+// behind the fastest car on that map) give its rating (best car 98, slowest 45). Runs vary
+// by about 1%, so cars a few points apart are close. Pickers list the cars in this order,
+// weakest first. Re-measure if stats change.
+export const KART_RATING = {
+  drifter: 45, starter: 48, breeze: 54, speedster: 55, frost: 56, hauler: 60, at01: 66, thunder: 71,
+  rocket: 73, porsche919: 77, r26: 77, f2004: 84, mcl35m: 89, bolide: 92, mcl39: 95, rb19: 98,
+};
+export const kartRating = (id) => KART_RATING[id] ?? 50;
+// the cars from weakest to best (ties keep the list order)
+export const KARTS_BY_RATING = KARTS.map((k, i) => ({ k, i })).sort((a, b) => kartRating(a.k.id) - kartRating(b.k.id) || a.i - b.i).map((o) => o.k);
 
 // Turn 1-10 stats into physical values used by the kart physics.
 export function deriveKart(def) {

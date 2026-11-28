@@ -20,7 +20,7 @@ function esc(s) { return String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp
 
 // leaderboard helpers: the car's model name without the maker ("RB16B", "MP4/25"), and when
 // a racer passed distance d (from its remembered [d, time] pairs). esc() is above.
-function shortCar(def) { return String(def.name || '').replace(/^(McLaren|Red Bull|Mercedes|Peugeot)\s+/, ''); }
+function shortCar(def) { return String(def.name || '').replace(/^(McLaren|Red Bull|Mercedes|Peugeot|Ferrari|Renault|Porsche|Bugatti|AlphaTauri)\s+/, ''); }
 function timeAt(s, d, now) {
   if (!s || !s.length || d < s[0][0]) return null;
   const last = s[s.length - 1];

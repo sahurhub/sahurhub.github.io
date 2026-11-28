@@ -1,6 +1,6 @@
 // TURBO TOWN - sign in, multiplayer hub, party lobby, online results and the pause vote.
 import { h, btn, header, icon } from '../ui.js';
-import { KARTS, KART_BY_ID } from '../../shared/karts.js';
+import { KART_BY_ID, KARTS_BY_RATING, kartRating } from '../../shared/karts.js';
 import { MAP_INFO, MAX_RACERS, pauseVotesNeeded } from '../../shared/rules.js';
 import { fmtTime, ordinal } from '../hud.js';
 import { chatLogin, chatSignup } from '../../net/net.js';
@@ -175,8 +175,9 @@ export function PartyLobby(ui, params) {
     if (kartPicker) { kartPicker.remove(); kartPicker = null; return; }
     const prof = app.profile.get();
     kartPicker = h('div', { class: 'panel kart-picker' }, h('h3', {}, 'Kart'),
-      h('div', { class: 'pick-row' }, ...KARTS.filter((k) => prof.karts.includes(k.id)).map((k) => {
-        const b = h('button', { class: 'pick' + (prof.kart === k.id ? ' on' : ''), style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name);
+      // the cars you own, weakest first, best last
+      h('div', { class: 'pick-row' }, ...KARTS_BY_RATING.filter((k) => prof.karts.includes(k.id)).map((k) => {
+        const b = h('button', { class: 'pick' + (prof.kart === k.id ? ' on' : ''), style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name, h('span', { class: 'pick-rate' }, String(kartRating(k.id))));
         b.addEventListener('click', async () => { await app.profile.select(k.id); await online.setKart(k.id); toggleKartPicker(); online.enterLobby(); });
         return b;
       })));

@@ -198,14 +198,17 @@ export class App {
     return order;
   }
 
-  // up to 7 computer racers (names from the racer list) in random karts
+  // up to 7 computer racers (names from the racer list) in random karts. They only use the
+  // first 8 cars, so adding the faster cars did not make races harder (the Computer skill
+  // setting decides that).
   makeEntrants(count) {
     const rng = makeRng(Math.floor(Math.random() * 1e9));
     const drivers = DRIVERS.slice(0, 7);
+    const aiKarts = KARTS.slice(0, 8);
     const out = [{ id: 'me', isPlayer: true }];
     for (let i = 0; i < Math.min(count, drivers.length); i++) {
       const d = drivers[i];
-      out.push({ id: 'ai_' + d.id, name: d.name, kart: KARTS[Math.floor(rng() * KARTS.length)].id });
+      out.push({ id: 'ai_' + d.id, name: d.name, kart: aiKarts[Math.floor(rng() * aiKarts.length)].id });
     }
     return out;
   }

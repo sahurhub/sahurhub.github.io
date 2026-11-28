@@ -174,6 +174,10 @@ h3 { font-size: 18px; color: #4a4287; }
 .stat { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 10px; margin: 4px 0; font-weight: 600; font-size: 15px; }
 .stat-bar { height: 12px; background: #e9e5ff; border-radius: 99px; overflow: hidden; }
 .stat-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb02e, #ff4f9a); border-radius: 99px; transition: width 0.3s; }
+/* the overall rating row above the stats, and the rating number on each car button */
+.stat-overall { grid-template-columns: 120px 1fr 34px; font-weight: 800; margin-bottom: 8px; }
+.stat-num { font-family: var(--pixel); font-size: 14px; text-align: right; }
+.pick-rate { font-family: var(--pixel); font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--ink); color: #fff; margin-left: 2px; }
 .lockline { color: #b2475a; font-weight: 600; }
 .okline { color: #0f9d58; font-weight: 600; }
 

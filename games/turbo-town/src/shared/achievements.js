@@ -12,7 +12,8 @@ export const ACHIEVEMENTS = [
   { id: 'online_race', name: 'Racing Friends', desc: 'Finish an online race', coins: 100, test: (s) => s.onlineRaces >= 1 },
   { id: 'online_win', name: 'Online Hero', desc: 'Win an online race', coins: 250, test: (s) => s.onlineWins >= 1 },
   { id: 'karts_4', name: 'Collector', desc: 'Own 4 karts', coins: 150, test: (s, p) => p.karts.length >= 4 },
-  { id: 'karts_8', name: 'Full Garage', desc: 'Own all 8 karts', coins: 600, test: (s, p) => p.karts.length >= 8 },
+  { id: 'karts_8', name: 'Big Garage', desc: 'Own 8 karts', coins: 600, test: (s, p) => p.karts.length >= 8 },
+  { id: 'karts_16', name: 'Full Garage', desc: 'Own all 16 karts', coins: 1500, test: (s, p) => p.karts.length >= 16 },
   { id: 'records_8', name: 'Time Traveller', desc: 'Set a Time Trial on all 8 maps', coins: 300, test: (s, p) => Object.keys(p.records || {}).length >= 8 },
   { id: 'level_10', name: 'Rising Star', desc: 'Reach level 10', coins: 200, test: (s, p, lv) => lv >= 10 },
 ];

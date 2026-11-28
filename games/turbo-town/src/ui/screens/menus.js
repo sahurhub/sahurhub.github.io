@@ -1,6 +1,6 @@
 // TURBO TOWN - menu screens.
 import { h, btn, header, statBar, icon } from '../ui.js';
-import { KARTS, KART_BY_ID } from '../../shared/karts.js';
+import { KART_BY_ID, KARTS_BY_RATING, kartRating } from '../../shared/karts.js';
 import { CUPS, MAP_INFO, AI_DIFFICULTIES, levelFromXp } from '../../shared/rules.js';
 import { MAP_BY_ID } from '../../maps/index.js';
 import { fmtTime } from '../hud.js';
@@ -13,6 +13,11 @@ import { ACHIEVEMENTS } from '../../shared/achievements.js';
 
 const SEASON_COLORS = { spring: '#ff7ab8', summer: '#ffb02e', autumn: '#ff6b2c', winter: '#4fc3ff', explorer: '#3ddc84', thrill: '#a55eea' };
 const STAT_NAMES = [['speed', 'Speed'], ['accel', 'Acceleration'], ['handling', 'Handling'], ['drift', 'Drift'], ['braking', 'Braking'], ['weight', 'Weight'], ['offroad', 'Off-road'], ['grip', 'Grip']];
+// the overall rating (how good the car is, 1-100) above the stat bars
+const overallBar = (id) => h('div', { class: 'stat stat-overall' },
+  h('span', { class: 'stat-label' }, 'Overall'),
+  h('span', { class: 'stat-bar' }, h('i', { style: { width: kartRating(id) + '%', background: '#ffb02e' } })),
+  h('b', { class: 'stat-num' }, String(kartRating(id))));
 
 function topBar(app) {
   const p = app.profile.get();
@@ -65,15 +70,16 @@ export function KartSelect(ui, params) {
     const def = KART_BY_ID[kart];
     const owned = prof.hasKart(kart);
     info.innerHTML = '';
-    info.append(h('h2', {}, def.name), h('p', { class: 'muted' }, def.blurb),
+    info.append(h('h2', {}, def.name), h('p', { class: 'muted' }, def.blurb), overallBar(kart),
       ...STAT_NAMES.map(([k, n]) => statBar(n, def.stats[k], 10)),
-      owned ? null : h('p', { class: 'lockline', html: icon('lock') + ` Unlocks at level ${def.level} for ${def.price} coins (buy it in the Garage)` }));
+      owned ? '' : h('p', { class: 'lockline', html: icon('lock') + ` Unlocks at level ${def.level} for ${def.price} coins (buy it in the Garage)` }));
     go.disabled = !owned;
     kartList.querySelectorAll('.pick').forEach((b) => b.classList.toggle('on', b.dataset.id === kart));
     show();
   };
-  for (const k of KARTS) {
-    const b = h('button', { class: 'pick' + (prof.hasKart(k.id) ? '' : ' locked'), 'data-id': k.id, style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name);
+  // weakest car first, best last
+  for (const k of KARTS_BY_RATING) {
+    const b = h('button', { class: 'pick' + (prof.hasKart(k.id) ? '' : ' locked'), 'data-id': k.id, style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name, h('span', { class: 'pick-rate' }, String(kartRating(k.id))));
     b.addEventListener('click', () => { kart = k.id; render(); });
     kartList.appendChild(b);
   }
@@ -185,7 +191,7 @@ export function Garage(ui) {
     tabs.querySelectorAll('.seg-b').forEach((b) => b.classList.toggle('on', b.dataset.t === tab));
     panel.innerHTML = '';
     if (tab === 'kart' || !owned) {
-      panel.append(h('h2', {}, def.name), h('p', { class: 'muted' }, def.blurb), ...STAT_NAMES.map(([k, n]) => statBar(n, def.stats[k], 10)));
+      panel.append(h('h2', {}, def.name), h('p', { class: 'muted' }, def.blurb), overallBar(kart), ...STAT_NAMES.map(([k, n]) => statBar(n, def.stats[k], 10)));
       if (owned) panel.append(h('p', { class: 'okline', html: icon('check') + ' You own this car. Drag the car to spin it.' }));
       else {
         const can = prof.canBuyKart(kart);
@@ -226,8 +232,8 @@ export function Garage(ui) {
   }
   const rebuild = () => {
     list.innerHTML = '';
-    for (const k of KARTS) {
-      const b = h('button', { class: 'pick' + (prof.hasKart(k.id) ? '' : ' locked'), 'data-id': k.id, style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name);
+    for (const k of KARTS_BY_RATING) {
+      const b = h('button', { class: 'pick' + (prof.hasKart(k.id) ? '' : ' locked'), 'data-id': k.id, style: { '--c': k.colors[0] } }, h('span', { class: 'pick-dot' }), k.name, h('span', { class: 'pick-rate' }, String(kartRating(k.id))));
       b.addEventListener('click', () => { kart = k.id; render(); });
       list.appendChild(b);
     }
@@ -352,7 +358,9 @@ export function Credits(ui) {
       h('h2', {}, 'TURBO TOWN'),
       h('p', {}, 'A kart racer. The maps, items and sounds were made for this game.'),
       h('h3', {}, 'Car models'),
-      h('p', {}, 'All from Sketchfab under the Creative Commons Attribution 4.0 licence (CC BY 4.0): "Lowpoly F1 car" by Cutieunicorn (lukas.dlabek); "1991 McLaren MP4/6", "2011 Mercedes MGP W02", "2008 Mclaren MP4/23", "2021 Redbull RB16B" and "Mclaren MP4/25 Tooned" by Tyler_Dave; "Red Bull RB9" by JUSTGAME; "2024 | Peugeot 9X8 EVO" by sohyalebret. Changed for this game: squashed into a chunky arcade shape, trimmed down, wheels split off and a helmet added. Team names, logos and liveries belong to their owners.'),
+      h('p', {}, 'All from Sketchfab under the Creative Commons Attribution 4.0 licence (CC BY 4.0): "Lowpoly F1 car" by Cutieunicorn (lukas.dlabek); "1991 McLaren MP4/6", "2011 Mercedes MGP W02", "2008 Mclaren MP4/23", "2021 Redbull RB16B" and "Mclaren MP4/25 Tooned" by Tyler_Dave; "Red Bull RB9" by JUSTGAME; "2024 | Peugeot 9X8 EVO" by sohyalebret; "porsche 919 hybrid" and "bugatti bolide 24 tech" by Tyler_Kevin; "2004 Ferrari F2004" and "2006 Renault R26" by Tyler_Dave; "Mclaren 35M 2021 | www.vecarz.com" by heynic; "2025 McLaren MCL39" by abuhossain844.'),
+      h('p', {}, 'Under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 licence (CC BY-NC-SA 4.0): "Redbull RB19 Oracle | www.vecarz.com" by heynic and "2020 F1 Alpha Tauri AT01" by outpiston. Our changed versions of these two cars are shared under the same licence.'),
+      h('p', {}, 'Changed for this game: squashed into a chunky arcade shape, trimmed down, wheels split off and a helmet added. Team names, logos and liveries belong to their owners.'),
       h('h3', {}, 'Made with'),
       h('p', {}, 'three.js (MIT licence) for 3D graphics. Blender for all 3D models. Bungee and Nunito fonts (SIL Open Font Licence) from Google Fonts.'),
       h('h3', {}, 'Built by'),
